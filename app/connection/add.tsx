@@ -34,8 +34,25 @@ export default function AddConnectionScreen() {
 
   const buildUrl = () => {
     if (mode === "advanced") return url.trim()
-    if (!ip.trim()) return ""
-    return `http://${ip.trim()}:${port || "4096"}`
+    const raw = ip.trim()
+    if (!raw) return ""
+    // Be forgiving about pasted values: a full URL, a host:port, or a
+    // host with a trailing path. Extract scheme, host, and port so we
+    // never produce "http://http://host:4096:4096".
+    const schemeMatch = raw.match(/^(https?):\/\//i)
+    const scheme = schemeMatch ? schemeMatch[1].toLowerCase() : "http"
+    let rest = raw.replace(/^https?:\/\//i, "")
+    rest = rest.split("/")[0] // drop any path/query
+    let host = rest
+    let pastedPort = ""
+    const lastColon = rest.lastIndexOf(":")
+    // Only treat trailing ":NNNN" as a port (ignore IPv6 colons / bare host)
+    if (lastColon > -1 && /^\d+$/.test(rest.slice(lastColon + 1))) {
+      host = rest.slice(0, lastColon)
+      pastedPort = rest.slice(lastColon + 1)
+    }
+    const finalPort = pastedPort || port.trim() || "4096"
+    return `${scheme}://${host}:${finalPort}`
   }
 
   const handleQuickConnect = async () => {
@@ -48,7 +65,7 @@ export default function AddConnectionScreen() {
     setIsConnecting(true)
 
     // Test connection first
-    const success = await testConnection(
+    const result = await testConnection(
       {
         id: "",
         name: name || "My Server",
@@ -59,7 +76,7 @@ export default function AddConnectionScreen() {
       password || undefined,
     )
 
-    if (success) {
+    if (result.ok) {
       // Save and go back
       await addConnection(
         {
@@ -76,7 +93,7 @@ export default function AddConnectionScreen() {
       setIsConnecting(false)
       Alert.alert(
         "Connection Failed",
-        "Could not connect to the server.\n\nMake sure:\n1. OpenCode is running: opencode serve --hostname 0.0.0.0\n2. You're on the same WiFi network\n3. The IP address is correct",
+        `Could not connect to ${serverUrl}\n\n${result.error || "Unknown error"}\n\nMake sure:\n1. OpenCode is running: opencode serve --hostname 0.0.0.0\n2. You're on the same network (or Tailscale is connected)\n3. The address is correct (use the IP for tailnet if MagicDNS isn't enabled)`,
         [{ text: "OK" }],
       )
     }
@@ -128,13 +145,13 @@ export default function AddConnectionScreen() {
         <View style={styles.ipRow}>
           <TextInput
             style={[styles.input, styles.ipInput, isDark && styles.inputDark]}
-            placeholder="192.168.1.100"
+            placeholder="192.168.1.100 or my-mac.ts.net"
             placeholderTextColor={isDark ? "#666666" : "#999999"}
             value={ip}
             onChangeText={setIp}
             autoCapitalize="none"
             autoCorrect={false}
-            keyboardType="decimal-pad"
+            keyboardType="url"
           />
           <Text style={[styles.ipColon, isDark && styles.textDark]}>:</Text>
           <TextInput
