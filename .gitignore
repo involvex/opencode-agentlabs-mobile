@@ -10,3 +10,5 @@ ios/Pods/
 *.keystore
 .env
 .env.*
+keystores/
+*.jks
