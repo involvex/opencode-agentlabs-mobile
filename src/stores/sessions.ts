@@ -2,6 +2,7 @@ import { create } from "zustand"
 import type { Session, Message, Part, Event, MessageWithParts, Client } from "../lib/sdk"
 import { useConnections } from "./connections"
 import { useSettings } from "./settings"
+import { addBreadcrumb } from "../lib/sentry"
 
 // Helper to convert API response to our internal format
 function parseMessages(response: MessageWithParts[]): { messages: Message[]; parts: Record<string, Part[]> } {
@@ -96,6 +97,7 @@ export const useSessions = create<SessionsState>((set, get) => ({
       return
     }
 
+    addBreadcrumb({ category: "session", message: "select", data: { sessionID, hasDirectory: Boolean(directory) } })
     try {
       // Reset optimistic sending — SSE sessionStatus is the source of truth
       set((state) => ({

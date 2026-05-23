@@ -2,6 +2,7 @@ import { create } from "zustand"
 import { useConnections } from "./connections"
 import { useSessions } from "./sessions"
 import { send as notify } from "../lib/notifications"
+import { addBreadcrumb } from "../lib/sentry"
 import type { Client, Part, Session, Message } from "../lib/sdk"
 
 // Session status from the server
@@ -116,6 +117,7 @@ export const useEvents = create<EventsState>((set, get) => ({
     const currentController = controller
     set({ connected: true })
     console.log("[SSE] Connecting to event stream...")
+    addBreadcrumb({ category: "sse", message: "connecting" })
 
     // Run in background
     ;(async () => {
@@ -149,6 +151,12 @@ export const useEvents = create<EventsState>((set, get) => ({
         const baseDelay = RECONNECT_DELAYS_MS[Math.min(reconnectAttempts - 1, RECONNECT_DELAYS_MS.length - 1)]
         const jitteredDelay = Math.min(15_000, Math.round(baseDelay * (0.75 + Math.random() * 0.5)))
         console.warn(`[SSE] Connection lost, reconnecting in ${jitteredDelay}ms:`, reason)
+        addBreadcrumb({
+          category: "sse",
+          level: "warning",
+          message: "reconnect scheduled",
+          data: { attempt: reconnectAttempts, delayMs: jitteredDelay, reason: String(reason).slice(0, 200) },
+        })
         reconnectTimer = setTimeout(() => {
           reconnectTimer = null
           get().connect()
@@ -352,6 +360,7 @@ export const useEvents = create<EventsState>((set, get) => ({
 
   disconnect: () => {
     console.log("[SSE] Disconnecting")
+    addBreadcrumb({ category: "sse", message: "disconnected" })
     if (reconnectTimer) {
       clearTimeout(reconnectTimer)
       reconnectTimer = null

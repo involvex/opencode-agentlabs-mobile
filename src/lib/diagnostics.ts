@@ -205,6 +205,37 @@ export function formatReport(report: DiagnosticReport): string {
   return lines.join("\n")
 }
 
+// Build a synthetic DiagnosticReport from an unexpected runtime error (e.g.
+// a React render crash or an unhandled promise rejection). Reuses the same
+// formatting / share pipeline as connection diagnostics so users only ever
+// see one kind of "Share report" UI.
+export function buildCrashReport(error: unknown, source: "react-boundary" | "global" = "global"): DiagnosticReport {
+  const err = error instanceof Error ? error : new Error(typeof error === "string" ? error : JSON.stringify(error))
+  const stackHead = (err.stack ?? "").split("\n").slice(0, 3).join(" | ")
+  const attempt: ProbeAttempt = {
+    name: source === "react-boundary" ? "react-render" : "runtime",
+    target: "app",
+    ok: false,
+    durationMs: 0,
+    error: err.message,
+    errorCause: stackHead || undefined,
+  }
+  return {
+    classification: "unknown",
+    summary: `App crashed (${source}): ${err.message}`,
+    url: "",
+    isHostname: false,
+    attempts: [attempt],
+    device: {
+      platform: Platform.OS,
+      osVersion: String(Platform.Version),
+      model: Device.modelName || "unknown",
+      appVersion: (appJson as { expo?: { version?: string } }).expo?.version || "unknown",
+    },
+    timestamp: new Date().toISOString(),
+  }
+}
+
 // Copy the report to the clipboard and open the native share sheet.
 // Works fully offline (unlike the Sentry auto-upload).
 export async function shareReport(report: DiagnosticReport): Promise<void> {

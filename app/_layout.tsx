@@ -11,10 +11,12 @@ import { useEvents } from "../src/stores/events"
 import { useCatalog } from "../src/stores/catalog"
 import { useSettings } from "../src/stores/settings"
 import { AuthGate } from "../src/components/AuthGate"
+import { ErrorBoundary } from "../src/components/ErrorBoundary"
 import * as notifications from "../src/lib/notifications"
-import { initSentry, wrap } from "../src/lib/sentry"
+import { addBreadcrumb, initSentry, wrap } from "../src/lib/sentry"
 
 initSentry()
+addBreadcrumb({ category: "app.lifecycle", message: "app started" })
 
 const queryClient = new QueryClient()
 
@@ -76,10 +78,11 @@ function RootLayout() {
   }
 
   return (
-    <GestureHandlerRootView style={{ flex: 1 }}>
-      <BottomSheetModalProvider>
-        <QueryClientProvider client={queryClient}>
-          <AuthGate>
+    <ErrorBoundary>
+      <GestureHandlerRootView style={{ flex: 1 }}>
+        <BottomSheetModalProvider>
+          <QueryClientProvider client={queryClient}>
+            <AuthGate>
             <Stack
               screenOptions={{
                 headerStyle: {
@@ -114,11 +117,12 @@ function RootLayout() {
                 }}
               />
             </Stack>
-            <StatusBar style={isDark ? "light" : "dark"} />
-          </AuthGate>
-        </QueryClientProvider>
-      </BottomSheetModalProvider>
-    </GestureHandlerRootView>
+              <StatusBar style={isDark ? "light" : "dark"} />
+            </AuthGate>
+          </QueryClientProvider>
+        </BottomSheetModalProvider>
+      </GestureHandlerRootView>
+    </ErrorBoundary>
   )
 }
 

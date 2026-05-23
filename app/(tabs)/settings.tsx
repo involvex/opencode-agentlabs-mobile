@@ -94,7 +94,9 @@ export default function SettingsScreen() {
 
   // Lazy-check OS permission for status display
   if (osGranted === null) {
-    notificationsGranted().then(setOsGranted)
+    notificationsGranted()
+      .then(setOsGranted)
+      .catch(() => setOsGranted(false))
   }
 
   return (

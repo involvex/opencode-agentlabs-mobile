@@ -2,6 +2,7 @@ import { create } from "zustand"
 import * as SecureStore from "expo-secure-store"
 import type { ServerConnection, ConnectionType } from "../lib/types"
 import { createClient, type Client, type Project } from "../lib/sdk"
+import { addBreadcrumb } from "../lib/sentry"
 
 const CONNECTIONS_KEY = "opencode_connections"
 const PASSWORDS_PREFIX = "opencode_password_"
@@ -216,6 +217,11 @@ export const useConnections = create<ConnectionsState>((set, get) => ({
     }
 
     set({ connections, activeConnection: active, client, clientBase: base, currentProject: project, serverHome: home })
+    addBreadcrumb({
+      category: "connection",
+      message: active ? `active connection set: ${active.type}` : "active connection cleared",
+      data: { id: active?.id, type: active?.type, hasProject: Boolean(project) },
+    })
   },
 
   testConnection: async (connection, password) => {
