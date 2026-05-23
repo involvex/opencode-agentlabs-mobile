@@ -2,7 +2,7 @@
   "expo": {
     "name": "OpenCode",
     "slug": "opencode-mobile",
-    "version": "1.0.0",
+    "version": "0.2.2",
     "orientation": "portrait",
     "scheme": "opencode",
     "userInterfaceStyle": "automatic",
@@ -21,7 +21,7 @@
       "bundler": "metro",
       "output": "static"
     },
-    "plugins": ["expo-router", "expo-secure-store", "expo-local-authentication"],
+    "plugins": ["expo-router", "expo-secure-store", "expo-local-authentication", "@sentry/react-native/expo"],
     "experiments": {
       "typedRoutes": true,
       "reactCompiler": true
