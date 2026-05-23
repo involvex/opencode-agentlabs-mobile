@@ -103,6 +103,36 @@ The correct Azure AI Services endpoint (with actual deployments) is:
 GitHub Actions workflow: `.github/workflows/cua-smoke.yml`
 Secrets required: `AZURE_OPENAI_API_KEY`, `AZURE_OPENAI_ENDPOINT` (already set on `dzianisv/opencode-mobile`).
 
+## Secrets Management
+
+All project secrets are stored in Bitwarden vault under folder **`opencode-mobile`**.
+
+Use the `bitwarden-cli` skill to read/write secrets. Quick reference:
+
+```bash
+# Unlock (needs BW_PASSWORD in env or ~/.bitwarden_credentials)
+source ~/.bitwarden_credentials
+export BW_SESSION=$(bw unlock --passwordenv BW_PASSWORD --raw)
+bw sync --session "$BW_SESSION"
+
+# Get a secret
+bw get notes "EXPO_PUBLIC_SENTRY_DSN" --session "$BW_SESSION"
+
+# List all secrets in the folder
+FOLDER_ID=$(bw list folders --session "$BW_SESSION" | jq -r '.[] | select(.name=="opencode-mobile") | .id')
+bw list items --session "$BW_SESSION" | jq --arg f "$FOLDER_ID" '[.[] | select(.folderId==$f) | {name}]'
+```
+
+Secrets stored in vault:
+- `EXPO_PUBLIC_SENTRY_DSN` — Sentry ingest DSN (embedded in APK at build time)
+- `SENTRY_AUTH_TOKEN` — sentry-cli upload token (source maps, releases)
+- `SENTRY_ORG` — `vibetechnologies`
+- `SENTRY_PROJECT` — `opencode-mobile`
+
+These same secrets are set as GitHub Actions secrets on `dzianisv/opencode-mobile` for CI builds.
+
+**Do NOT store secrets in `.env` files committed to the repo.** `.env` is gitignored — local copy only.
+
 ## GitHub Auth
 
 For pushes/gh CLI on this repo: `source ~/.env.d/github-dzianisv.env`
