@@ -73,15 +73,22 @@ export const useSessions = create<SessionsState>((set, get) => ({
   error: null,
 
   loadSessions: async () => {
-    const client = useConnections.getState().client
-    if (!client) {
+    const connState = useConnections.getState()
+    if (!connState.client) {
       set({ error: "No active connection" })
       return
     }
 
+    // When no project directory is explicitly selected, use the server home path so the
+    // session list shows all recent sessions across all projects — not just the server's CWD.
+    const listClient =
+      !connState.activeConnection?.directory && connState.serverHome
+        ? connState.clientForDirectory(connState.serverHome)
+        : connState.client
+
     try {
       set({ isLoading: true, error: null })
-      const sessions = await client.session.list({ roots: true, limit: 50 })
+      const sessions = await (listClient || connState.client).session.list({ roots: true, limit: 50 })
       set({ sessions, isLoading: false })
     } catch (error) {
       set({ error: "Failed to load sessions", isLoading: false })
