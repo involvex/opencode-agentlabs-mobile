@@ -48,16 +48,29 @@ jobs:
           node-version: 20
           cache: npm
 
+      - name: Check Apple prerequisites
+        id: check-apple
+        run: |
+          if [[ -n "${{ secrets.EAS_TOKEN }}" ]]; then
+            echo "proceed=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "proceed=false" >> "$GITHUB_OUTPUT"
+            echo "::warning::Apple Developer enrollment pending — EAS_TOKEN not set. Skipping iOS build."
+          fi
+
       # Install EAS CLI globally. Pin to a recent stable version.
       - name: Install EAS CLI
+        if: steps.check-apple.outputs.proceed == 'true'
         run: npm install -g eas-cli@13
 
       - name: Install dependencies
+        if: steps.check-apple.outputs.proceed == 'true'
         run: npm install --legacy-peer-deps
 
       # Bump ios.buildNumber to match github.run_number (monotonically increasing).
       # App Store Connect rejects duplicate build numbers for the same version string.
       - name: Bump ios.buildNumber in app.json
+        if: steps.check-apple.outputs.proceed == 'true'
         run: |
           node -e "
             const f = 'app.json';
@@ -73,6 +86,7 @@ jobs:
       # --platform ios: iOS only (Android is handled by publish-play-store.yml).
       # --profile production: uses the "production" profile in eas.json (created below if missing).
       - name: Build IPA via EAS
+        if: steps.check-apple.outputs.proceed == 'true'
         env:
           EXPO_TOKEN: ${{ secrets.EAS_TOKEN }}
           APPLE_APP_STORE_CONNECT_API_KEY_ID: ${{ secrets.APPLE_APP_STORE_CONNECT_API_KEY_ID }}
@@ -92,6 +106,7 @@ jobs:
 
       # Wait for the EAS build to complete (iOS builds typically take 15–25 minutes).
       - name: Wait for EAS build
+        if: steps.check-apple.outputs.proceed == 'true'
         env:
           EXPO_TOKEN: ${{ secrets.EAS_TOKEN }}
         run: |
@@ -102,6 +117,7 @@ jobs:
       # Submit to TestFlight via EAS Submit. Uses the same App Store Connect API key.
       # --latest: picks the most recent finished build for this app + platform.
       - name: Submit to TestFlight via EAS Submit
+        if: steps.check-apple.outputs.proceed == 'true'
         env:
           EXPO_TOKEN: ${{ secrets.EAS_TOKEN }}
           APPLE_APP_STORE_CONNECT_API_KEY_ID: ${{ secrets.APPLE_APP_STORE_CONNECT_API_KEY_ID }}
@@ -117,6 +133,7 @@ jobs:
       # NOTE: EAS Submit does not yet support whatsNew natively; use fastlane pilot
       # or App Store Connect API directly if per-build release notes are needed.
       - name: Upload TestFlight release notes (informational)
+        if: steps.check-apple.outputs.proceed == 'true'
         run: |
           echo "TestFlight release notes for this build:"
           cat distribution/whatsnew-ios/release-notes-en-US.txt
