@@ -1,4 +1,4 @@
-import { useEffect, useCallback, useState, useRef } from "react"
+import { useCallback, useState, useRef } from "react"
 import {
   View,
   Text,
@@ -14,10 +14,11 @@ import {
   KeyboardAvoidingView,
   Platform,
 } from "react-native"
-import { router } from "expo-router"
+import { router, useFocusEffect } from "expo-router"
 import { Ionicons } from "@expo/vector-icons"
 import { useSessions } from "../../src/stores/sessions"
 import { useConnections } from "../../src/stores/connections"
+import { useCatalog } from "../../src/stores/catalog"
 import type BottomSheet from "@gorhom/bottom-sheet"
 import type { Session } from "../../src/lib/sdk"
 import { DirectorySwitcher } from "../../src/components/chat"
@@ -123,6 +124,7 @@ export default function SessionsScreen() {
     addRecentDirectory,
     recentDirectories,
   } = useConnections()
+  const loadCatalog = useCatalog((s) => s.load)
   const dirSheetRef = useRef<BottomSheet>(null)
   const [refreshing, setRefreshing] = useState(false)
 
@@ -131,16 +133,19 @@ export default function SessionsScreen() {
       await switchDirectory(dir)
       loadSessions()
       refreshProject()
+      loadCatalog()
     },
-    [switchDirectory, loadSessions, refreshProject],
+    [switchDirectory, loadSessions, refreshProject, loadCatalog],
   )
 
-  useEffect(() => {
-    if (client) {
-      loadSessions()
-      refreshProject()
-    }
-  }, [client])
+  useFocusEffect(
+    useCallback(() => {
+      if (client) {
+        loadSessions()
+        refreshProject()
+      }
+    }, [client, loadSessions, refreshProject]),
+  )
 
   const onRefresh = useCallback(async () => {
     setRefreshing(true)
@@ -155,12 +160,14 @@ export default function SessionsScreen() {
 
   const submitRename = useCallback(async () => {
     const title = renameText.trim()
-    if (!title || !renaming || !client) return
-    await client.session.update(renaming.id, { title })
+    if (!title || !renaming) return
+    const renameClient = renaming.directory ? (clientForDirectory(renaming.directory) ?? client) : client
+    if (!renameClient) return
+    await renameClient.session.update(renaming.id, { title })
     setRenaming(null)
     setRenameText("")
     loadSessions()
-  }, [renaming, renameText, client, loadSessions])
+  }, [renaming, renameText, client, clientForDirectory, loadSessions])
 
   const handleDelete = useCallback(
     (session: Session) => {
