@@ -63,15 +63,20 @@ jobs:
           AZURE_OPENAI_API_KEY: ${{ secrets.AZURE_OPENAI_API_KEY }}
           AZURE_OPENAI_ENDPOINT: ${{ secrets.AZURE_OPENAI_ENDPOINT }}
           AZURE_OPENAI_API_VERSION: "2024-08-01-preview"
+          ARCHIVEBOX_URL: ${{ secrets.ARCHIVEBOX_URL }}
+          ARCHIVEBOX_API_KEY: ${{ secrets.ARCHIVEBOX_API_KEY }}
         run: |
           python3 scripts/android-cua-smoke.py \
             --model gpt-5.4 \
             --include-xml \
             --goal "You see the OpenCode mobile app. Tap '+' to create a new session. Type 'smoke test' in the message input and send it. Wait 5 seconds for the assistant to respond. Report success if you see an assistant message."
 
-      - name: Upload screenshots on failure
-        if: failure()
+      - name: Upload test artifacts
+        if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: cua-screenshots
-          path: /tmp/cua_*.png
+          name: cua-artifacts-${{ github.run_number }}
+          path: |
+            /tmp/cua_*.png
+            /tmp/cua_*.mp4
+          if-no-files-found: ignore

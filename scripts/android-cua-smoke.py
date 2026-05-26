@@ -49,6 +49,7 @@ import subprocess
 import sys
 import tempfile
 import time
+import threading
 from pathlib import Path
 
 try:
@@ -110,6 +111,101 @@ def screenshot_b64() -> str:
         return base64.b64encode(data).decode()
     finally:
         Path(path).unlink(missing_ok=True)
+
+
+# ---------------------------------------------------------------------------
+# Screen recording
+# ---------------------------------------------------------------------------
+
+def start_screen_recording(scenario_name: str) -> tuple:
+    """Start ADB screen recording. Returns (thread, stop_event, remote_path)."""
+    remote_path = f"/sdcard/cua_{scenario_name}.mp4"
+    stop_event = threading.Event()
+
+    def _record():
+        # --time-limit 180 caps at 3 min; we stop it early via SIGTERM via adb
+        try:
+            subprocess.run(
+                ["adb", "shell", f"screenrecord --time-limit 180 {remote_path}"],
+                capture_output=True, timeout=200,
+            )
+        except Exception:
+            pass
+
+    thread = threading.Thread(target=_record, daemon=True)
+    thread.start()
+    time.sleep(1.0)  # let recorder spin up
+    return thread, stop_event, remote_path
+
+
+def stop_screen_recording(thread: threading.Thread, remote_path: str,
+                          local_path: str) -> bool:
+    """Stop recorder, pull video to local_path. Returns True on success."""
+    # Stop screenrecord via pkill (SIGINT flushes MP4 moov atom)
+    subprocess.run(
+        ["adb", "shell", "pkill", "-2", "screenrecord"],
+        capture_output=True, timeout=10,
+    )
+    time.sleep(2.0)  # let MP4 finalise
+    thread.join(timeout=5)
+
+    result = subprocess.run(
+        ["adb", "pull", remote_path, local_path],
+        capture_output=True, timeout=30,
+    )
+    if result.returncode == 0 and Path(local_path).exists():
+        print(f"  [recording] saved to {local_path}")
+        return True
+    print(f"  [recording] pull failed: {result.stderr.decode(errors='replace').strip()}")
+    return False
+
+
+# ---------------------------------------------------------------------------
+# ArchiveBox upload
+# ---------------------------------------------------------------------------
+
+def upload_to_archivebox(video_path: str, scenario_name: str) -> bool:
+    """Upload video to ArchiveBox if ARCHIVEBOX_URL is configured.
+
+    Reads ARCHIVEBOX_URL and ARCHIVEBOX_API_KEY from environment.
+    Returns True if uploaded, False/skipped otherwise.
+    """
+    url = os.environ.get("ARCHIVEBOX_URL", "").rstrip("/")
+    api_key = os.environ.get("ARCHIVEBOX_API_KEY", "")
+    if not url:
+        print("  [archivebox] ARCHIVEBOX_URL not set — skipping upload")
+        return False
+
+    try:
+        import urllib.request
+        import urllib.parse
+
+        video_data = Path(video_path).read_bytes()
+        boundary = "----CUAUploadBoundary"
+        body_parts = []
+        body_parts.append(f"--{boundary}\r\nContent-Disposition: form-data; name=\"url\"\r\n\r\nfile://{scenario_name}.mp4".encode())
+        body_parts.append(
+            f"--{boundary}\r\nContent-Disposition: form-data; name=\"file\"; filename=\"{scenario_name}.mp4\"\r\nContent-Type: video/mp4\r\n\r\n".encode()
+            + video_data
+        )
+        body_parts.append(f"--{boundary}--\r\n".encode())
+        body = b"\r\n".join(body_parts)
+
+        headers = {
+            "Content-Type": f"multipart/form-data; boundary={boundary}",
+            "Content-Length": str(len(body)),
+        }
+        if api_key:
+            headers["X-API-Key"] = api_key
+
+        req = urllib.request.Request(f"{url}/api/v1/add", data=body, headers=headers, method="POST")
+        with urllib.request.urlopen(req, timeout=60) as resp:
+            resp_data = resp.read().decode(errors="replace")
+            print(f"  [archivebox] uploaded {scenario_name}.mp4 → {url} ({resp.status})")
+            return True
+    except Exception as exc:
+        print(f"  [archivebox] upload failed: {exc}")
+        return False
 
 
 def ui_dump() -> str:
@@ -410,18 +506,31 @@ def main():
             print(f"Goal: {scenario['goal'][:80]}...")
             print(f"{'='*60}")
 
-        result = run_cua(
-            goal=scenario["goal"],
-            max_steps=args.max_steps,
-            model=args.model,
-            include_ui_xml=args.include_xml,
-            verbose=not args.quiet,
-        )
+        # Start screen recording
+        rec_thread, _stop_ev, remote_path = start_screen_recording(scenario["name"])
+        local_video = f"/tmp/cua_{scenario['name']}.mp4"
+
+        try:
+            result = run_cua(
+                goal=scenario["goal"],
+                max_steps=args.max_steps,
+                model=args.model,
+                include_ui_xml=args.include_xml,
+                verbose=not args.quiet,
+            )
+        finally:
+            # Always stop and pull the recording
+            stop_screen_recording(rec_thread, remote_path, local_video)
+            upload_to_archivebox(local_video, scenario["name"])
+
         result["scenario"] = scenario["name"]
+        result["video"] = local_video if Path(local_video).exists() else None
         results.append(result)
 
         if not args.quiet:
             print(f"\nResult: {result['status']} in {result['steps']} steps")
+            if result.get("video"):
+                print(f"Video:  {result['video']}")
             if result.get("summary"):
                 print(f"Summary: {result['summary']}")
             if result.get("reason"):
