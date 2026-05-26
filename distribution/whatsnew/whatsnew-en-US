@@ -1,6 +1,6 @@
-Initial Internal testing release.
+v0.3.2 — Session visibility fix.
 
-- Connect to your self-hosted opencode server (HTTP)
-- Drive AI coding sessions from your phone
-- Streaming chat, diffs, file tree
-- Crash reporting via Sentry
+- Sessions from all projects now appear in the list (not just the server's current directory)
+- Sessions list refreshes every time you open the tab
+- Delete, rename, and permission replies work correctly for cross-project sessions
+- Agents and commands reload when you switch project directory
