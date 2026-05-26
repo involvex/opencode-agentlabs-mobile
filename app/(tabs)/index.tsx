@@ -1,4 +1,4 @@
-import { useEffect, useCallback, useState, useRef } from "react"
+import { useCallback, useState, useRef } from "react"
 import {
   View,
   Text,
@@ -14,7 +14,7 @@ import {
   KeyboardAvoidingView,
   Platform,
 } from "react-native"
-import { router } from "expo-router"
+import { router, useFocusEffect } from "expo-router"
 import { Ionicons } from "@expo/vector-icons"
 import { useSessions } from "../../src/stores/sessions"
 import { useConnections } from "../../src/stores/connections"
@@ -135,12 +135,14 @@ export default function SessionsScreen() {
     [switchDirectory, loadSessions, refreshProject],
   )
 
-  useEffect(() => {
-    if (client) {
-      loadSessions()
-      refreshProject()
-    }
-  }, [client])
+  useFocusEffect(
+    useCallback(() => {
+      if (client) {
+        loadSessions()
+        refreshProject()
+      }
+    }, [client, loadSessions, refreshProject]),
+  )
 
   const onRefresh = useCallback(async () => {
     setRefreshing(true)
