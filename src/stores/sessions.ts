@@ -193,7 +193,8 @@ export const useSessions = create<SessionsState>((set, get) => ({
   },
 
   deleteSession: async (sessionID) => {
-    const client = useConnections.getState().client
+    const session = get().sessions.find((s) => s.id === sessionID)
+    const client = clientFor(session?.directory)
     if (!client) {
       set({ error: "No active connection" })
       return

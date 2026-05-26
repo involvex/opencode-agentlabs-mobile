@@ -85,16 +85,6 @@ export const useCatalog = create<CatalogState>((set, get) => ({
           .filter((p) => p.models.length > 0)
       : []
 
-    console.log(
-      "[catalog] loaded:",
-      agents.length,
-      "agents,",
-      commands.length,
-      "commands,",
-      providers.length,
-      "providers (" + providers.reduce((n, p) => n + p.models.length, 0) + " models)",
-    )
-
     // Filter out hidden agents
     const visible = agents.filter((a) => !a.hidden)
 
