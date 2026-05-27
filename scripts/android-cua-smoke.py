@@ -50,6 +50,8 @@ import sys
 import tempfile
 import time
 import threading
+import re
+import xml.etree.ElementTree as ET
 from pathlib import Path
 
 try:
@@ -76,6 +78,107 @@ def adb(*args: str) -> str:
 
 
 _step_counter = 0
+APP_PACKAGE = "ai.opencode.mobile"
+
+
+def _bounds_center(bounds: str) -> tuple[int, int] | None:
+    match = re.match(r"\[(\d+),(\d+)\]\[(\d+),(\d+)\]", bounds or "")
+    if not match:
+        return None
+    x1, y1, x2, y2 = map(int, match.groups())
+    return ((x1 + x2) // 2, (y1 + y2) // 2)
+
+
+def current_foreground_package() -> str:
+    """Return resumed foreground package name when available."""
+    out = adb("shell", "dumpsys", "activity", "activities")
+    for line in out.splitlines():
+        if "mResumedActivity" not in line:
+            continue
+        match = re.search(r"\s([a-zA-Z0-9_\.]+)/", line)
+        if match:
+            return match.group(1)
+    return ""
+
+
+def ensure_app_foreground(package: str = APP_PACKAGE, retries: int = 3,
+                          verbose: bool = True) -> bool:
+    """Bring app to foreground before scenario start."""
+    for attempt in range(retries):
+        current = current_foreground_package()
+        if current == package:
+            return True
+
+        adb("shell", "monkey", "-p", package, "-c", "android.intent.category.LAUNCHER", "1")
+        time.sleep(2.0)
+
+        if verbose:
+            seen = current or "unknown"
+            print(f"  [prep] foreground package was '{seen}', launched '{package}' (attempt {attempt + 1}/{retries})")
+
+    return current_foreground_package() == package
+
+
+def maybe_dismiss_telemetry_consent(package: str = APP_PACKAGE,
+                                    verbose: bool = True) -> bool:
+    """Dismiss first-launch telemetry consent modal when present."""
+    xml = ui_dump()
+    if not xml:
+        return False
+
+    try:
+        root = ET.fromstring(xml)
+    except ET.ParseError:
+        return False
+
+    consent_markers = (
+        "help improve opencode",
+        "share anonymous crash reports",
+    )
+    dismiss_markers = (
+        "not now", "no thanks", "decline", "skip", "later",
+        "don't allow", "dont allow", "deny", "continue without",
+        "opt out", "cancel",
+    )
+
+    page_text = " ".join(
+        " ".join(filter(None, [
+            node.attrib.get("text", ""),
+            node.attrib.get("content-desc", ""),
+        ])).lower()
+        for node in root.iter()
+    )
+
+    if not any(marker in page_text for marker in consent_markers):
+        return False
+
+    candidates = []
+    for node in root.iter():
+        clickable = node.attrib.get("clickable") == "true"
+        if not clickable:
+            continue
+
+        label = " ".join(filter(None, [
+            node.attrib.get("text", ""),
+            node.attrib.get("content-desc", ""),
+            node.attrib.get("resource-id", ""),
+        ])).strip().lower()
+        center = _bounds_center(node.attrib.get("bounds", ""))
+        if not center:
+            continue
+        candidates.append((label, center))
+
+    for label, (x, y) in candidates:
+        if any(marker in label for marker in dismiss_markers):
+            adb("shell", "input", "tap", str(x), str(y))
+            time.sleep(1.0)
+            if verbose:
+                print(f"  [prep] dismissed telemetry consent via '{label or 'button'}' at ({x}, {y})")
+            return True
+
+    if verbose:
+        print("  [prep] telemetry consent detected but dismiss button was not found")
+    return False
 
 
 def screenshot_b64() -> str:
@@ -255,7 +358,6 @@ def execute_action(action: dict) -> str:
 
     elif act == "send":
         # Auto-locate send button: rightmost clickable ViewGroup in the bottom input bar
-        import re
         xml = ui_dump()
         # Find the EditText (message input) and the clickable element immediately after it
         # The send button is the last clickable ViewGroup in the input row
@@ -476,7 +578,34 @@ SMOKE_SCENARIOS = [
             "Report success if you see two assistant reply bubbles."
         ),
     },
+    {
+        "name": "verify_session_list",
+        "goal": (
+            "You see the OpenCode mobile app. Tap the '+' button (top-right) to create a new session. "
+            "Wait 2 seconds for the session to be created. "
+            "Navigate back to the sessions list by tapping the bottom-left 'Sessions' tab or pressing the back button. "
+            "Wait 3 seconds for the session list to load. "
+            "Report success if you can see at least one session entry in the list. "
+            "Report failure if the sessions list appears empty or shows an error message."
+        ),
+    },
 ]
+
+# Extended scenarios requiring an external OpenCode server.
+# Run with: python scripts/android-cua-smoke.py --opencode-url http://<host>:<port>
+def _connect_and_verify_sessions_goal(url: str) -> str:
+    return (
+        f"You see the OpenCode mobile app. "
+        "Go to the Connections tab (bottom navigation bar). "
+        "If a connection to the server already exists, tap it to make it active and skip to the next step. "
+        "Otherwise tap '+' or 'Add Connection', "
+        f"enter the URL '{url}', leave username/password blank, tap Save or Connect. "
+        "Wait 3 seconds. "
+        "Now navigate to the Sessions tab (bottom navigation bar). "
+        "Wait 5 seconds for sessions to load. "
+        "Report SUCCESS if you see at least one session listed (a session title is visible). "
+        "Report FAILURE if the sessions list is empty, shows 'No sessions yet', or shows an error."
+    )
 
 
 def main():
@@ -486,6 +615,16 @@ def main():
     parser.add_argument("--max-steps", type=int, default=30)
     parser.add_argument("--include-xml", action="store_true", help="Include UI XML in context")
     parser.add_argument("--quiet", action="store_true")
+    parser.add_argument(
+        "--opencode-url",
+        help="OpenCode server URL (e.g. http://100.108.64.76:4096). "
+             "Used by the default connect-and-verify regression scenario.",
+    )
+    parser.add_argument(
+        "--skip-connect-scenario",
+        action="store_true",
+        help="Skip the default connect-and-verify regression scenario.",
+    )
     args = parser.parse_args()
 
     # Verify ADB
@@ -496,7 +635,15 @@ def main():
     except FileNotFoundError:
         sys.exit("adb not found in PATH")
 
-    scenarios = [{"name": "custom", "goal": args.goal}] if args.goal else SMOKE_SCENARIOS
+    scenarios = [{"name": "custom", "goal": args.goal}] if args.goal else list(SMOKE_SCENARIOS)
+
+    # Keep connect-and-verify in the default smoke path so regressions are exercised.
+    if not args.goal and not args.skip_connect_scenario:
+        connect_url = args.opencode_url or os.environ.get("OPENCODE_URL") or "http://100.108.64.76:4096"
+        scenarios.append({
+            "name": "connect_and_verify_sessions",
+            "goal": _connect_and_verify_sessions_goal(connect_url),
+        })
 
     results = []
     for scenario in scenarios:
@@ -511,6 +658,11 @@ def main():
         local_video = f"/tmp/cua_{scenario['name']}.mp4"
 
         try:
+            if not ensure_app_foreground(verbose=not args.quiet):
+                print(f"  [prep] warning: could not confirm {APP_PACKAGE} in foreground")
+            maybe_dismiss_telemetry_consent(verbose=not args.quiet)
+            ensure_app_foreground(verbose=not args.quiet)
+
             result = run_cua(
                 goal=scenario["goal"],
                 max_steps=args.max_steps,
