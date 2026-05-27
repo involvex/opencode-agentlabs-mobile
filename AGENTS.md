@@ -103,6 +103,17 @@ The correct Azure AI Services endpoint (with actual deployments) is:
 GitHub Actions workflow: `.github/workflows/cua-smoke.yml`
 Secrets required: `AZURE_OPENAI_API_KEY`, `AZURE_OPENAI_ENDPOINT` (already set on `dzianisv/opencode-mobile`).
 
+**Triggers**: Runs on push to `main` (with path filters) AND on `v*` tags (releases).
+
+### When to run CUA test
+
+**MANDATORY**: Run the CUA smoke test before any merge to `main` or release:
+1. Before merging a PR that touches `src/**`, `app/**`, or `scripts/android-cua-smoke.py`
+2. After creating a release tag — CI runs it automatically
+3. When debugging UI issues — run locally with `--include-xml` for richer context
+
+If the CUA test fails, do NOT merge or release until fixed.
+
 ## Secrets Management
 
 All project secrets are stored in Bitwarden vault under folder **`opencode-mobile`**.
