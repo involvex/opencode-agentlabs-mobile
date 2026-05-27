@@ -144,9 +144,39 @@ These same secrets are set as GitHub Actions secrets on `dzianisv/opencode-mobil
 
 **Do NOT store secrets in `.env` files committed to the repo.** `.env` is gitignored — local copy only.
 
+## Chrome DevTools (Browser Automation)
+
+The project uses `@vibebrowser/chrome-devtools-mcp` from `github.com/dzianisv/chrome-devtools-mcp`. It runs an MCP server over HTTP/SSE, allowing multiple agents to connect remotely.
+
+**No `--remote-debugging-port` needed.** The daemon discovers Chrome via `--autoConnect` (reads `DevToolsActivePort` file). Port is discovered automatically.
+
+**Local Copilot CLI config** (in `.github/copilot-mcp.json` or IDE MCP settings):
+```json
+{
+  "chrome-devtools": {
+    "type": "remote",
+    "url": "http://localhost:9333/mcp",
+    "enabled": true
+  }
+}
+```
+
+**Starting the daemon:**
+```bash
+chrome-devtools start --autoConnect --port 9333
+```
+
 ## GitHub Auth
 
 For pushes/gh CLI on this repo: `source ~/.env.d/github-dzianisv.env`
+
+## Google Play Console
+
+- **Developer account**: VIBE TECHNOLOGIES, LLC (ID: `8842655543970815326`)
+- **App**: OpenCode Mobile (package: `ai.opencode.mobile`, app ID: `4975545755653045321`)
+- **Console URL**: https://play.google.com/console/u/6/developers/8842655543970815326/app/4975545755653045321/app-dashboard
+- **Track**: Internal testing (no review required, up to 100 testers)
+- **Service account**: `playstore-deploy@opencode-mobile-deploy.iam.gserviceaccount.com`
 
 ## Related Issues
 
