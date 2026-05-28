@@ -15,6 +15,13 @@ jobs:
   cua-test:
     runs-on: ubuntu-latest
     timeout-minutes: 45
+    env:
+      AZURE_OPENAI_API_KEY: ${{ secrets.AZURE_OPENAI_API_KEY }}
+      AZURE_OPENAI_ENDPOINT: ${{ secrets.AZURE_OPENAI_ENDPOINT }}
+      AZURE_OPENAI_API_VERSION: "2024-08-01-preview"
+      OPENCODE_URL: "http://100.108.64.76:4096"
+      ARCHIVEBOX_URL: ${{ secrets.ARCHIVEBOX_URL }}
+      ARCHIVEBOX_API_KEY: ${{ secrets.ARCHIVEBOX_API_KEY }}
     steps:
       - uses: actions/checkout@v6
 
@@ -48,20 +55,6 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-gradle-
 
-      - name: Install Android system image & create AVD
-        run: |
-          sdkmanager "system-images;android-34;google_apis;x86_64" "emulator" "platform-tools"
-          echo "no" | avdmanager create avd -n test -k "system-images;android-34;google_apis;x86_64" --force
-          avdmanager list avd
-
-      - name: Start emulator
-        run: |
-          nohup emulator -avd test -no-window -no-audio -no-boot-anim -gpu swiftshader_indirect -no-snapshot -port 5554 > /tmp/emulator.log 2>&1 &
-          adb wait-for-device
-          timeout 180 bash -c 'while [ "$(adb shell getprop sys.boot_completed 2>/dev/null)" != "1" ]; do sleep 3; done'
-          echo "Emulator booted successfully"
-          adb shell getprop ro.build.version.sdk
-
       - name: Install dependencies & build APK
         run: |
           npm install --legacy-peer-deps
@@ -69,29 +62,21 @@ jobs:
           keytool -genkey -v -keystore android/app/debug.keystore -storepass android -alias androiddebugkey -keypass android -keyalg RSA -keysize 2048 -validity 10000 -dname "CN=Android Debug,O=Android,C=US"
           cd android && ./gradlew assembleRelease
 
-      - name: Install APK on emulator
-        run: adb install android/app/build/outputs/apk/release/app-release.apk
-
-      - name: Launch app
-        run: |
-          adb shell am start -n ai.opencode.mobile/.MainActivity
-          sleep 5
-
       - name: Install Python deps
         run: pip install openai
 
-      - name: Run CUA smoke test
-        env:
-          AZURE_OPENAI_API_KEY: ${{ secrets.AZURE_OPENAI_API_KEY }}
-          AZURE_OPENAI_ENDPOINT: ${{ secrets.AZURE_OPENAI_ENDPOINT }}
-          AZURE_OPENAI_API_VERSION: "2024-08-01-preview"
-          OPENCODE_URL: "http://100.108.64.76:4096"
-          ARCHIVEBOX_URL: ${{ secrets.ARCHIVEBOX_URL }}
-          ARCHIVEBOX_API_KEY: ${{ secrets.ARCHIVEBOX_API_KEY }}
-        run: |
-          python3 scripts/android-cua-smoke.py \
-            --model gpt-5.4 \
-            --include-xml
+      - name: Run CUA smoke test with emulator
+        uses: reactivecircus/android-emulator-runner@v2
+        with:
+          api-level: 30
+          arch: x86_64
+          target: google_apis
+          emulator-options: -no-window -no-audio -no-boot-anim -gpu swiftshader_indirect -no-snapshot
+          script: |
+            adb install android/app/build/outputs/apk/release/app-release.apk
+            adb shell am start -n ai.opencode.mobile/.MainActivity
+            sleep 5
+            python3 scripts/android-cua-smoke.py --model gpt-5.4 --include-xml
 
       - name: Upload test artifacts
         if: always()
@@ -101,5 +86,4 @@ jobs:
           path: |
             /tmp/cua_*.png
             /tmp/cua_*.mp4
-            /tmp/emulator.log
           if-no-files-found: ignore
