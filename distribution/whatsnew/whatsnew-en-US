@@ -1,6 +1,7 @@
-v0.3.2 — Session visibility fix.
+v0.4.1 — Stability and UX improvements.
 
-- Sessions from all projects now appear in the list (not just the server's current directory)
-- Sessions list refreshes every time you open the tab
-- Delete, rename, and permission replies work correctly for cross-project sessions
-- Agents and commands reload when you switch project directory
+- Improved markdown rendering with copy-to-clipboard for code blocks
+- Better session status indicators (idle/busy/retry)
+- Connection management improvements
+- Biometric authentication gate
+- Bug fixes and performance improvements
