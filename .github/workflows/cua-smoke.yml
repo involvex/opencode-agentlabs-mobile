@@ -56,6 +56,8 @@ jobs:
             ${{ runner.os }}-gradle-
 
       - name: Install dependencies & build APK
+        env:
+          SENTRY_DISABLE_AUTO_UPLOAD: "true"
         run: |
           npm install --legacy-peer-deps
           npx expo prebuild --platform android --no-install
