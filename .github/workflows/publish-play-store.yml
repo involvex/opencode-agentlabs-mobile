@@ -63,6 +63,15 @@ jobs:
           node -e "const f='app.json';const j=require('./'+f);j.expo.android=j.expo.android||{};j.expo.android.versionCode=${{ github.run_number }};require('fs').writeFileSync(f,JSON.stringify(j,null,2)+'\n')"
           echo "versionCode now: $(node -p "require('./app.json').expo.android.versionCode")"
 
+      - name: Purge stale generated sources
+        # The Android build cache (restore-keys prefix fallback) can restore a
+        # generated autolinking tree from a previous package id. Gradle then
+        # reuses ReactNativeApplicationEntryPoint.java referencing the OLD
+        # package (ai.opencode.mobile.BuildConfig) and compileReleaseJavaWithJavac
+        # fails. Delete generated sources so prebuild + Gradle regenerate them
+        # for the current package (cc.agentlabs.opencode).
+        run: rm -rf android/app/build/generated android/build/generated android/app/build/intermediates
+
       - name: Expo prebuild
         run: npx expo prebuild --platform android --no-install
 

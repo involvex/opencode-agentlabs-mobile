@@ -201,7 +201,7 @@ For pushes/gh CLI on this repo: `source ~/.env.d/github-dzianisv.env`
 ## Google Play Console
 
 - **Developer account**: VIBE TECHNOLOGIES, LLC (ID: `8842655543970815326`), Google login `vibeteaichnologies@gmail.com`. The `/u/N/` index is NOT stable — if a console URL bounces to accept-terms/create-developer-account you're on the wrong Google account (e.g. `dzianisvv@gmail.com` hits a ToS gate); use the developer-account chooser to reach VIBE.
-- **Rebrand (2026-05-30)**: package renamed `ai.opencode.mobile` → `cc.agentlabs.opencode`. A NEW Play Console app is required (package IDs can't be renamed). New app ID: TBD (creation in progress / teammate-owned). First AAB upload for a new app must be MANUAL via UI (Google blocks the Developer API for a new app's first release); CI can publish updates after.
+- **Rebrand (2026-05-30)**: package renamed `ai.opencode.mobile` → `cc.agentlabs.opencode`. A NEW Play Console app is required (package IDs can't be renamed) — creation NOT yet confirmed (do not record an app ID until verified from a live dashboard URL). First AAB upload for a new app must be MANUAL via UI (Google blocks the Developer API for a new app's first release); CI can publish updates after. CI `packageName` already = `cc.agentlabs.opencode`.
 - **Legacy app (orphaned)**: `ai.opencode.mobile`, app ID `4975545755653045321` — published v19 to internal track (run 26662900471), superseded by the rebrand.
 - **Track**: Internal testing (no review required, up to 100 testers)
 - **Service account**: `playstore-deploy@opencode-mobile-deploy.iam.gserviceaccount.com` (account-level API access already granted)
