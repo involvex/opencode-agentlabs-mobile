@@ -1,4 +1,4 @@
-package ai.opencode.mobile
+package cc.agentlabs.opencode
 
 import android.os.Build
 import android.os.Bundle

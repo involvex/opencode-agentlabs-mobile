@@ -14,7 +14,7 @@
     },
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "ai.opencode.mobile",
+      "bundleIdentifier": "cc.agentlabs.opencode",
       "buildNumber": "1",
       "entitlements": {
         "aps-environment": "production"
@@ -33,7 +33,7 @@
       }
     },
     "android": {
-      "package": "ai.opencode.mobile",
+      "package": "cc.agentlabs.opencode",
       "versionCode": 4,
       "usesCleartextTraffic": true,
       "adaptiveIcon": {

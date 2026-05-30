@@ -9,7 +9,7 @@ platform :android do
       build_type: "Release"
     )
     upload_to_play_store(
-      package_name: "ai.opencode.mobile",
+      package_name: "cc.agentlabs.opencode",
       track: "internal",
       aab: "../android/app/build/outputs/bundle/release/app-release.aab",
       json_key: ENV["SUPPLY_JSON_KEY"] || "play-store-key.json",

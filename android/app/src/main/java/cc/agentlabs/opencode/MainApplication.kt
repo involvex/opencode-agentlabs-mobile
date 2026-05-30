@@ -1,4 +1,4 @@
-package ai.opencode.mobile
+package cc.agentlabs.opencode
 
 import android.app.Application
 import android.content.res.Configuration
