@@ -78,7 +78,7 @@ def adb(*args: str) -> str:
 
 
 _step_counter = 0
-APP_PACKAGE = "ai.opencode.mobile"
+APP_PACKAGE = "cc.agentlabs.opencode"
 
 
 def _bounds_center(bounds: str) -> tuple[int, int] | None:
