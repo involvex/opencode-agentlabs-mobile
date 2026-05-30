@@ -18,7 +18,7 @@ Reference: https://developer.apple.com/programs/enroll/
 | Primary Contact / Authorized Agent | Dzianis Vashchuk | Governor of LLC |
 | Primary Contact Phone | (use a number reachable for Apple's verification call) | |
 | Primary Contact Email | support@vibebrowser.app | |
-| Website | https://www.vibebrowser.app/ | |
+| Website | https://agentlabs.cc/opencode | |
 
 ---
 
@@ -62,7 +62,7 @@ Fill as follows:
 | ZIP | `98108` |
 | Country | `United States` |
 | Phone | (Dzianis's direct mobile — Apple calls this) |
-| Website | `https://www.vibebrowser.app/` |
+| Website | `https://agentlabs.cc/opencode` |
 
 ### Step 4 — Verify Your Authority
 
