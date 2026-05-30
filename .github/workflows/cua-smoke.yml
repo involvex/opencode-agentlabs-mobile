@@ -76,7 +76,7 @@ jobs:
           emulator-options: -no-window -no-audio -no-boot-anim -gpu swiftshader_indirect -no-snapshot
           script: |
             adb install android/app/build/outputs/apk/release/app-release.apk
-            adb shell am start -n ai.opencode.mobile/.MainActivity
+            adb shell am start -n cc.agentlabs.opencode/.MainActivity
             sleep 5
             python3 scripts/android-cua-smoke.py --model gpt-5.4 --include-xml
 
