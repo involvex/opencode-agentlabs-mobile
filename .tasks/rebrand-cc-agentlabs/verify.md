@@ -19,13 +19,20 @@ publish-play-store.yml builds app-release.aab with applicationId cc.agentlabs.op
 - New Play Console app + first manual AAB upload + testers → teammate-owned.
 - Apply SEO copy in console (task #3) → teammate-owned.
 
-## Runtime launch evidence (cua-smoke dispatch 26682904019 @ 6405e2b)
+## Runtime launch evidence (cua-smoke dispatch 26682904019 @ 6405e2b, job 78646227551)
+Verbatim from job log:
 ```
-Starting: Intent { cmp=cc.agentlabs.opencode/.MainActivity }
-[prep] foreground package: cc.agentlabs.opencode
-[step 1..14] vision-LLM drove live app
-[step 14] fail -> Connection failed: timeout to http://100.108.64.76:4096
+L2840 [command]/usr/bin/sh -c adb shell am start -n cc.agentlabs.opencode/.MainActivity
+L2841 Starting: Intent { cmp=cc.agentlabs.opencode/.MainActivity }
+L2886 [step 1] tap -> tapped (160, 420)
+L2888 [step 3] type -> typed '100.108.64.76'
+L2900 [step 15] fail -> FAIL: Connection failed error is shown
+L2904 Result: fail in 15 steps
 ```
-New package launches + foregrounds + renders UI. Fail = env gap #15 (CI can't reach dev server), not a regression.
+Screenshot proof (artifact cua-artifacts-20):
+- cua_step_001.png: Sessions screen renders — "No Connection / Add a server connection to get started / Add Connection", bottom nav Sessions|Connections|Settings.
+- cua_step_015.png: "Connect to OpenCode" Add-Connection form (IP/port 4096/name/password fields) — app fully interactive.
 
-PROD: n/a for this slice (Play Store upload teammate-owned). RENAME: pass (build green + runtime launch verified).
+New package launches via `.MainActivity`, foregrounds, and renders the real OpenCode UI; vision-LLM drove 15 interaction steps. Failure = connection timeout to dev server 100.108.64.76:4096 (CI can't reach Tailscale host) = env gap #15, identical to pre-rebrand run 26563595855. NOT a rename regression.
+
+PROD: n/a for this slice (Play Store upload teammate-owned). RENAME: pass — build green (APK 26683001496) + runtime launch + UI render verified with log + screenshot evidence.
