@@ -18,6 +18,12 @@
 
 **Stop discipline:** If a tool returns the same error 3× (or no new artifact/commit is produced across several turns), STOP. Print a BLOCKED summary with the single human action needed. A vague "please do X and let me know" that leaves you idle is worse than a clean stop — don't do it.
 
+**Work-tracking discipline:**
+- Track multi-step/upgrade work in the **related GitHub issue**, updated via `gh issue comment` — NOT by repeatedly editing AGENTS.md and NOT in scratch files under `/tmp` (e.g. no `/tmp/playconsole-fill.md`). Keep reference material (listing copy, form answers) in the repo under `distribution/` or as issue comments.
+- AGENTS.md is for durable conventions only; do not churn it with task status.
+- **Never claim a step done without verifying it in the real channel** (e.g. an app exists only if it appears in the Play Console app-list; an AAB is the right package only if its manifest says so). Do not invent IDs.
+- **Driving web UIs:** snapshot → act on the *current* uids → re-snapshot. Never fire batched/guessed clicks; if a page shows "Loading"/an error toast, wait and re-snapshot rather than clicking blind.
+
 ## Overview
 
 React Native / Expo mobile client for opencode. Connects to an opencode server instance via HTTP + SSE for real-time updates.
@@ -201,7 +207,7 @@ For pushes/gh CLI on this repo: `source ~/.env.d/github-dzianisv.env`
 ## Google Play Console
 
 - **Developer account**: VIBE TECHNOLOGIES, LLC (ID: `8842655543970815326`), Google login `vibeteaichnologies@gmail.com`. The `/u/N/` index is NOT stable — if a console URL bounces to accept-terms/create-developer-account you're on the wrong Google account (e.g. `dzianisvv@gmail.com` hits a ToS gate); use the developer-account chooser to reach VIBE.
-- **Rebrand (2026-05-30)**: package renamed `ai.opencode.mobile` → `cc.agentlabs.opencode`. A NEW Play Console app is required (package IDs can't be renamed) — creation NOT yet confirmed (do not record an app ID until verified from a live dashboard URL). First AAB upload for a new app must be MANUAL via UI (Google blocks the Developer API for a new app's first release); CI can publish updates after. CI `packageName` already = `cc.agentlabs.opencode`.
+- **Rebrand (2026-05-30)**: package renamed `ai.opencode.mobile` → `cc.agentlabs.opencode`. A NEW Play Console app is required (package IDs can't be renamed) — **NOT yet created** (app-list shows only legacy ai.opencode.mobile). Do NOT trust any in-session app IDs; verify only by seeing the app in the live app-list. First AAB upload must be MANUAL via UI (Google blocks the Developer API for a new app's first release); CI publishes updates after. CI `packageName` already = `cc.agentlabs.opencode`. NOTE: CI publish build needs the "Purge stale generated sources" step (commit 67e4c1f) or cached old-package autolinking breaks compile. Real AAB ready at /tmp/cc.agentlabs.opencode.aab (61MB, manifest-verified) for manual upload.
 - **Legacy app (orphaned)**: `ai.opencode.mobile`, app ID `4975545755653045321` — published v19 to internal track (run 26662900471), superseded by the rebrand.
 - **Track**: Internal testing (no review required, up to 100 testers)
 - **Service account**: `playstore-deploy@opencode-mobile-deploy.iam.gserviceaccount.com` (account-level API access already granted)
