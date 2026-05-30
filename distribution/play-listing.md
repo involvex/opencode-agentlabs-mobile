@@ -1,7 +1,7 @@
-# Google Play Store Listing — OpenCode
+# Google Play Store Listing — OpenCode Mobile
 
-Copy-paste reference for completing the Play Console store listing for `ai.opencode.mobile`.
-Once identity verification is approved and the app is created, paste these values directly.
+Copy-paste reference for completing the Play Console store listing for `cc.agentlabs.opencode`.
+Paste these values directly into Play Console. Fields are validated against Play limits.
 
 ---
 
@@ -10,57 +10,111 @@ Once identity verification is approved and the app is created, paste these value
 ### App name (max 30 chars)
 
 ```
-OpenCode
+OpenCode: AI Coding Agent
 ```
-(8 chars — well under limit)
+(25/30 chars)
+
+> Supersedes: `OpenCode` (8/30 chars — brand-only title with no keyword value).
 
 ### Short description (max 80 chars)
 
 ```
-Drive your self-hosted AI coding agent from your phone.
+AI coding agent on your phone. Control opencode sessions, free & open source.
 ```
-(55 chars)
+(77/80 chars)
+
+> Note: type a literal `&` in Play Console — not `&amp;`.
+> Supersedes: `Drive your self-hosted AI coding agent from your phone.` (55/80 chars).
 
 ### Full description (max 4000 chars)
 
 ```
-OpenCode is an open-source mobile client for the opencode AI coding agent (sst/opencode). Connect to your self-hosted opencode server and drive AI-powered coding sessions from your phone.
+OpenCode Mobile is the AI coding agent companion for developers who self-host opencode. Connect your Android phone to your opencode server and run AI-powered coding sessions from anywhere — review file diffs, approve tool calls, and guide Claude, GPT, or Gemini in real time.
 
-KEY FEATURES
+<b>WHAT IT DOES</b>
+OpenCode Mobile is a thin client for the opencode CLI (github.com/sst/opencode). It speaks the opencode HTTP + SSE API so every AI coding session running on your workstation or server is accessible from your phone. All AI model calls go through your own server — your API keys, your code, your infrastructure.
 
-• Multiple connection types — local network, secure tunnels (Cloudflare, ngrok), or cloud-hosted opencode instances
-• Biometric unlock — Face ID / Touch ID / fingerprint to keep your sessions private
-• Real-time streaming chat — watch your AI agent think and respond live
-• File diff viewer — see exactly what code changes the agent is making before you accept
+<b>KEY FEATURES</b>
+• Real-time streaming chat — watch your AI coding agent think and respond token by token
+• File diff viewer — see every code change the agent proposes before you approve it
+• Tool call approval — review and approve file writes, shell commands, and other actions
 • Multi-session management — start, resume, and switch between coding sessions
-• Tool call approval — review and approve actions before the agent runs them on your code
+• Multiple connection types — local Wi-Fi, Cloudflare Tunnel, ngrok, Tailscale, or opencode Cloud (coming soon)
+• Biometric unlock — fingerprint / Face ID keeps your sessions private
 
-WHO IT'S FOR
+<b>WHO IT'S FOR</b>
+• Developers running opencode on their workstation who want to check in from their phone
+• Engineers away from their desk who want to review or guide long-running AI coding jobs
+• Teams who self-host AI developer tools and want a polished mobile interface
+• Open-source contributors who want a free, MIT-licensed alternative to proprietary AI coding apps
 
-• Developers who run opencode (sst/opencode) on their workstation or a server
-• Engineers who want to check in on long-running coding sessions away from their desk
-• Teams who self-host AI dev tools and want a polished mobile companion
+<b>WHAT IT IS NOT</b>
+• Not a standalone AI model — you bring your own opencode server (which connects to Claude, GPT-4, Gemini, or local LLMs via your API keys)
+• Not a code editor — it pairs with your existing IDE and terminal workflow
+• Not a subscription app — free, open-source, MIT licensed, no ads, no telemetry you did not opt into
 
-WHAT IT IS NOT
+<b>SELF-HOSTED AI CODING</b>
+Install opencode on any machine: npm install -g opencode-ai, then run opencode serve. Enter the server URL in the app. That's it — your AI coding agent is now on your phone.
 
-• Not an AI model — you bring your own opencode server (which connects to Claude, GPT, Gemini, or local models)
-• Not a code editor — pair with your existing IDE/terminal workflow
-• Not a Google Play exclusive — also available on F-Droid (open source build)
+<b>OPEN SOURCE</b>
+OpenCode Mobile is MIT licensed. Source code, issue tracker, and community discussion at github.com/dzianisv/opencode-mobile. Contributions welcome.
 
-OPEN SOURCE
+<b>PRIVACY</b>
+OpenCode Mobile does not collect your code, prompts, or AI responses. All traffic goes directly from the app to YOUR opencode server — never through our infrastructure. We use Sentry for crash diagnostics only (no PII, no message content, opt-in available).
 
-OpenCode Mobile is MIT licensed. Source code, issue tracker, and community discussion:
-https://github.com/dzianisv/opencode-mobile
-
-PRIVACY
-
-OpenCode Mobile does not collect your code or prompts. All AI traffic goes directly from the app to YOUR opencode server. We use Sentry for crash reporting only (no PII, no message content). See our privacy policy for details.
-
-SUPPORT
-
-Email: support@vibebrowser.app
-Issues: https://github.com/dzianisv/opencode-mobile/issues
+Support: support@vibebrowser.app
+Issues: github.com/dzianisv/opencode-mobile/issues
 ```
+(2600/4000 chars)
+
+---
+
+## Keywords (not a Play Console field — guides copy and ASO)
+
+### Primary keywords (title + short desc + first 3 lines of description)
+
+| Keyword | Priority |
+|---|---|
+| `AI coding agent` | High |
+| `coding assistant` | High |
+| `opencode` | High |
+| `developer tools` | Medium |
+| `self-hosted AI` | High |
+
+### Secondary keywords (weave into description body)
+
+| Keyword | Rationale |
+|---|---|
+| `AI code review` | Maps to the diff viewer feature |
+| `remote development` | Captures devs working off-device |
+| `LLM client` | Early-adopter / technically precise audience |
+| `Claude mobile` | Brand-transfer from Anthropic Claude users |
+| `GPT coding` | Brand-transfer from OpenAI users |
+| `coding on phone` | Low-competition long-tail |
+| `AI terminal` | CLI-oriented devs |
+| `Tailscale` / `Cloudflare Tunnel` | Appears naturally in description; captures tunnel-search users |
+
+### Keywords to avoid
+
+| Keyword | Reason |
+|---|---|
+| `Copilot`, `Cursor` | Competitor brand names — policy violation |
+| `#1 AI coding app` | Superlative claims prohibited by Play policy |
+| `free AI` | "Free" in title/short desc is prohibited; fine in body |
+| `ChatGPT` | OpenAI brand — avoid unless describing a supported model |
+
+---
+
+## Categorization
+
+| Field | Value | Notes |
+|---|---|---|
+| App or game | App | |
+| Category | Tools | 36.8% CVR on Play vs 27.3% average. Productivity rejected — higher competition, less precise. |
+| Tags | developer, ai, coding, open-source, productivity | Submit all five in Play Console. |
+| Email | support@vibebrowser.app | Already verified during signup. |
+| Phone | +1 360-504-8967 | Optional public; matches developer profile. |
+| Website | https://www.vibebrowser.app/ | Already verified. |
 
 ---
 
@@ -70,28 +124,19 @@ Issues: https://github.com/dzianisv/opencode-mobile/issues
 |---|---|---|---|
 | App icon | 512×512 PNG, 32-bit, ≤1 MB | ❌ placeholder | `assets/icon.json` is `{"placeholder":true}` — need real PNG |
 | Adaptive icon (foreground) | 432×432 PNG, transparent bg | ❌ placeholder | `assets/adaptive-icon.json` placeholder |
-| Feature graphic | 1024×500 PNG/JPG | ❌ missing | For Play Store top banner — required for publishing |
-| Phone screenshots | 2–8 images, 16:9 or 9:16, 1080×1920 or similar | ❌ missing | Required min 2 |
+| Feature graphic | 1024×500 PNG/JPG | ❌ missing | Required for editorial featuring placements |
+| Phone screenshots | 2–8 images, 16:9 or 9:16, 1080×1920 or similar | ❌ missing | Required min 2; blocks all tracks beyond Internal |
 | 7-inch tablet screenshots | optional | ❌ missing | Recommended |
 | 10-inch tablet screenshots | optional | ❌ missing | Recommended |
-| Promo video | YouTube URL, optional | ⏸ skip for first release | |
+| Promo video | YouTube URL, optional | ⏸ skip for first release | Low ROI for dev-tool audience |
 
-**Action**: design + generate assets. Suggested tools:
-- Icon: Figma → 1024×1024 → export to `assets/icon.png` + run `npx expo prebuild` to fan out per-density.
-- Screenshots: run app on emulator, capture via Android Studio screenshot, or use Fastlane's snapshot tooling.
-
----
-
-## Categorization
-
-| Field | Value | Notes |
-|---|---|---|
-| App or game | App | |
-| Category | Tools | Best fit. Alternatives: Productivity, Communication. |
-| Tags | productivity, developer, ai, coding | Free tags. |
-| Email | support@vibebrowser.app | Already verified during signup. |
-| Phone | +1 360-504-8967 | Optional public; matches developer profile. |
-| Website | https://www.vibebrowser.app/ | Already verified. |
+**Recommended screenshot order:**
+1. Connection setup — "Connect to your opencode server"
+2. Active streaming chat session — AI agent responding token by token
+3. File diff viewer — code change before approval
+4. Tool call approval dialog
+5. Session list / multi-session view
+6. Biometric unlock screen
 
 ---
 
@@ -101,15 +146,13 @@ Issues: https://github.com/dzianisv/opencode-mobile/issues
 
 Suggested path: `https://opencode.vibebrowser.app/privacy`
 
-Privacy policy must cover (per Google requirements):
-- What data is collected (Sentry crash diagnostics: device model, OS version, stack trace; nothing user-content)
+Privacy policy must cover:
+- What data is collected (Sentry crash diagnostics: device model, OS version, stack trace; no user content)
 - How data is used (debugging crashes only)
 - Third-party SDKs (Sentry — link to https://sentry.io/privacy/)
 - Data retention (Sentry default 90 days)
-- User rights (delete account, contact us)
+- User rights (delete request via email, contact us)
 - Contact: support@vibebrowser.app
-
-**Action**: write a privacy policy at the URL above. Template draft below.
 
 ```
 OpenCode Mobile Privacy Policy
@@ -140,7 +183,7 @@ Contact: support@vibebrowser.app
 
 ## Data safety form
 
-Google requires this before publishing. Answers below for OpenCode Mobile current state.
+Google requires this before publishing. Answers for OpenCode Mobile current state.
 
 | Question | Answer |
 |---|---|
@@ -181,7 +224,7 @@ Run the IARC questionnaire on Play Console. Expected outcome based on app conten
 | USK (Germany) | 0 |
 | Australia | G |
 
-Questionnaire answers (all "No" since no violence / sexual / drugs / gambling / etc. content; app is a dev tool):
+Questionnaire answers (all "No" — no violence / sexual / drugs / gambling content; app is a dev tool):
 - Does it contain violence? No
 - Does it contain sexual content? No
 - Does it contain crude humor? No
@@ -230,7 +273,7 @@ If reviewers cannot self-host, contact support@vibebrowser.app and we will provi
 
 ## Release notes / "What's new" per release
 
-Already wired in CI: `distribution/whatsnew/whatsnew-en-US`.
+Wired in CI: `distribution/whatsnew/whatsnew-en-US`.
 
 Bump this file before tagging a release. Keep it under 500 chars. Per-language variants supported (`whatsnew-fr-FR`, `whatsnew-de-DE`, etc.).
 
@@ -243,18 +286,18 @@ Bump this file before tagging a release. Keep it under 500 chars. Per-language v
 3. **Open testing** — optional intermediate step.
 4. **Production** — only after Closed testing requirements met.
 
-CI currently publishes to `internal` track ✅ correct for first release.
+CI currently publishes to `internal` track. ✅
 
 ---
 
 ## Pending before first publish
 
-- [ ] Identity verification (governor ID upload, Google review days)
+- [ ] Identity verification (government ID upload, Google review)
 - [ ] App icon (real PNG, not placeholder)
 - [ ] Adaptive icon (real PNG)
 - [ ] Feature graphic 1024×500
 - [ ] At least 2 phone screenshots
 - [ ] Privacy policy live at https://opencode.vibebrowser.app/privacy
-- [ ] Decide pricing model (see monetization research)
-- [ ] Run IARC content rating questionnaire (after app created)
-- [ ] Complete Data safety form (after app created)
+- [ ] Decide pricing model
+- [ ] Run IARC content rating questionnaire (after app created in Play Console)
+- [ ] Complete Data safety form (after app created in Play Console)

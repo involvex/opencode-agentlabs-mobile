@@ -1,7 +1,3 @@
-v0.4.1 — Stability and UX improvements.
+v0.4 — streaming chat, diff viewer, tool-call approval, biometric unlock.
 
-- Improved markdown rendering with copy-to-clipboard for code blocks
-- Better session status indicators (idle/busy/retry)
-- Connection management improvements
-- Biometric authentication gate
-- Bug fixes and performance improvements
+Watch your AI coding agent think token by token. Review every file diff before it lands. Approve or reject tool calls (file writes, shell commands) from your phone. Biometric lock keeps sessions private. Connect via local Wi-Fi, Cloudflare Tunnel, ngrok, or Tailscale.

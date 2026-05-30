@@ -1,11 +1,29 @@
 # Mobile App - AGENTS.md
 
+## Agent Operating Rules (read first)
+
+**Failure taxonomy — classify every failure before acting. Escalate cheapest-first; never skip a rung or repeat one:**
+- **transient** (network blip, flaky): retry at most 2×.
+- **code** (your bug, wrong path, bad arg): fix, then retry.
+- **tool-usage-gated** (you called a *working* tool wrong): fix the *call*, not the tool. Cheapest fix — try this before assuming the tool is broken. Example: chrome-devtools `new_page` with `isolatedContext` opens a cookieless context; instead use `list_pages` → `select_page` to drive the existing authenticated tab.
+- **tooling-gated** (the tool's *source* is genuinely broken): **diagnose before fixing** — verify it's actually broken (read the code, reproduce). If broken, spawn a fix-it subagent to patch + rebuild it, then retry. Do NOT stop.
+- **infra** (CI runner, emulator boot timeout): report it; do not try to "fix" someone else's infrastructure.
+- **human-gated** (only when no automated path exists): emit ONE precise instruction for the human, mark the task **BLOCKED**, and continue all other automatable work. Never re-attempt across turns.
+
+**Diagnose before fixing:** Before patching or replacing any tool, confirm it is actually the cause. Copilot burned 39h assuming chrome-devtools-mcp was broken — it wasn't (it already drives the authenticated default context via `browser.defaultBrowserContext()`/`browser.pages()`). A 3-minute diagnostic subagent would have caught this.
+
+**Known gated steps:**
+- Play Console **API-access grant** to the service account — *was* the blocker; now granted (publish run 26662900471 succeeded, AAB on internal track, versionCode 19). One-time path if re-needed: Play Console → Setup → API access → link GCP project `opencode-mobile-deploy` → grant `playstore-deploy@opencode-mobile-deploy.iam.gserviceaccount.com` Admin/Release-manager.
+- **Add internal testers** (Play Console → Internal testing → Testers): the genuinely human-gated residual. Google's anti-automation blocks CDP-controlled Chrome sign-in, so this UI step needs a human (or a real, non-CDP browser session).
+
+**Stop discipline:** If a tool returns the same error 3× (or no new artifact/commit is produced across several turns), STOP. Print a BLOCKED summary with the single human action needed. A vague "please do X and let me know" that leaves you idle is worse than a clean stop — don't do it.
+
 ## Overview
 
 React Native / Expo mobile client for opencode. Connects to an opencode server instance via HTTP + SSE for real-time updates.
 
 **Repo**: `dzianisv/opencode-mobile` (standalone, not part of opencode monorepo)
-**Package name**: `ai.opencode.mobile`
+**Package name**: `cc.agentlabs.opencode`
 
 ## Architecture
 
@@ -62,15 +80,23 @@ Run `opencode serve --hostname 0.0.0.0 --port 4096` on your machine, then add a 
 
 ## Android Emulator (local dev)
 
+**IMPORTANT: Do NOT install SDK/AVD on the system disk. Use the external disk.**
+
 ```bash
-export PATH="/tmp/android-sdk/platform-tools:/tmp/android-sdk/emulator:$PATH"
+export ANDROID_HOME=/Volumes/Dzianis-3/macbook2020/android-sdk
+export ANDROID_AVD_HOME=/Volumes/Dzianis-3/macbook2020/android-avd
+export GRADLE_USER_HOME=/Volumes/Dzianis-3/macbook2020/gradle-cache
+export PATH="$ANDROID_HOME/platform-tools:$ANDROID_HOME/emulator:$PATH"
+
 emulator -avd test -no-window -no-audio -no-boot-anim -gpu swiftshader_indirect -no-snapshot -port 5554
 adb wait-for-device
 # Wait for boot:
 timeout 120 bash -c 'while [ "$(adb shell getprop sys.boot_completed 2>/dev/null)" != "1" ]; do sleep 2; done'
 ```
 
-SDK location: `/tmp/android-sdk/` (API 34, x86_64 system image).
+SDK location: `/Volumes/Dzianis-3/macbook2020/android-sdk` (API 34, arm64-v8a system image).
+AVD location: `/Volumes/Dzianis-3/macbook2020/android-avd`.
+Gradle cache: `/Volumes/Dzianis-3/macbook2020/gradle-cache` (or symlink from `/Volumes/GradleCache/gradle-home`).
 
 ## CUA Smoke Test (E2E via Vision LLM)
 
@@ -150,6 +176,8 @@ The project uses `@vibebrowser/chrome-devtools-mcp` from `github.com/dzianisv/ch
 
 **No `--remote-debugging-port` needed.** The daemon discovers Chrome via `--autoConnect` (reads `DevToolsActivePort` file). Port is discovered automatically.
 
+**Driving an authenticated session:** The daemon connects to your *real* Chrome profile (authenticated). To act on a logged-in page, use `list_pages` → `select_page` on the existing tab. Do **not** pass `isolatedContext` to `new_page` — that opens a cookieless context that cannot see your login. (Verified: the MCP code already uses `browser.defaultBrowserContext()`; logged-out sessions come from misuse, a profile/`--user-data-dir` mismatch, or Google's anti-automation block — not a tool bug.)
+
 **Local Copilot CLI config** (in `.github/copilot-mcp.json` or IDE MCP settings):
 ```json
 {
@@ -172,11 +200,11 @@ For pushes/gh CLI on this repo: `source ~/.env.d/github-dzianisv.env`
 
 ## Google Play Console
 
-- **Developer account**: VIBE TECHNOLOGIES, LLC (ID: `8842655543970815326`)
-- **App**: OpenCode Mobile (package: `ai.opencode.mobile`, app ID: `4975545755653045321`)
-- **Console URL**: https://play.google.com/console/u/6/developers/8842655543970815326/app/4975545755653045321/app-dashboard
+- **Developer account**: VIBE TECHNOLOGIES, LLC (ID: `8842655543970815326`), Google login `vibeteaichnologies@gmail.com`. The `/u/N/` index is NOT stable — if a console URL bounces to accept-terms/create-developer-account you're on the wrong Google account (e.g. `dzianisvv@gmail.com` hits a ToS gate); use the developer-account chooser to reach VIBE.
+- **Rebrand (2026-05-30)**: package renamed `ai.opencode.mobile` → `cc.agentlabs.opencode`. A NEW Play Console app is required (package IDs can't be renamed). New app ID: TBD (creation in progress / teammate-owned). First AAB upload for a new app must be MANUAL via UI (Google blocks the Developer API for a new app's first release); CI can publish updates after.
+- **Legacy app (orphaned)**: `ai.opencode.mobile`, app ID `4975545755653045321` — published v19 to internal track (run 26662900471), superseded by the rebrand.
 - **Track**: Internal testing (no review required, up to 100 testers)
-- **Service account**: `playstore-deploy@opencode-mobile-deploy.iam.gserviceaccount.com`
+- **Service account**: `playstore-deploy@opencode-mobile-deploy.iam.gserviceaccount.com` (account-level API access already granted)
 
 ## Related Issues
 
