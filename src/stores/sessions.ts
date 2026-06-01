@@ -185,11 +185,24 @@ export const useSessions = create<SessionsState>((set, get) => ({
   },
 
   createSession: async (title) => {
-    const client = useConnections.getState().client
-    if (!client) {
+    const connState = useConnections.getState()
+    if (!connState.client) {
       set({ error: "No active connection" })
       return null
     }
+
+    // Create the session in the SAME directory scope that loadSessions reads from.
+    // loadSessions lists home-scoped sessions when the connection has no explicit
+    // directory; creating via the plain connection client targets the server's CWD
+    // instead. When CWD != home the new session was invisible to the list (#10:
+    // "sessions tab empty after connect / create"). Mirror the list's scoping so a
+    // freshly created session reliably shows up.
+    const hasExplicitDirectory = Boolean(connState.activeConnection?.directory)
+    const home = connState.serverHome
+    const client =
+      !hasExplicitDirectory && home
+        ? connState.clientForDirectory(home) || connState.client
+        : connState.client
 
     try {
       const session = await client.session.create({ title })
