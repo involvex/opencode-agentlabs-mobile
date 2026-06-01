@@ -4,10 +4,9 @@
 AI-assisted coding from your phone — iOS, Android, and F-Droid.
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
-[![Play Store](https://img.shields.io/badge/Google_Play-available-green?logo=google-play)](https://play.google.com/store/apps/details?id=ai.opencode.mobile)
-[![App Store](https://img.shields.io/badge/App_Store-available-blue?logo=apple)](https://apps.apple.com/app/opencode-mobile/id0000000000)
-[![F-Droid](https://img.shields.io/badge/F--Droid-available-green?logo=f-droid)](https://f-droid.org/packages/ai.opencode.mobile)
-[![IzzyOnDroid](https://img.shields.io/badge/IzzyOnDroid-available-orange)](https://apt.izzysoft.de/fdroid/index/apk/ai.opencode.mobile)
+[![Download APK](https://img.shields.io/badge/Download-APK-green?logo=android)](https://github.com/dzianisv/opencode-mobile/releases/latest)
+[![Google Play](https://img.shields.io/badge/Google_Play-coming_soon-lightgrey?logo=google-play)](#)
+[![F-Droid](https://img.shields.io/badge/F--Droid-submitted-orange?logo=f-droid)](https://gitlab.com/fdroid/fdroiddata/-/merge_requests/39530)
 
 ---
 
@@ -16,10 +15,10 @@ OpenCode Mobile is a React Native / Expo app that brings the power of the [openc
 ---
 
 <p align="center">
-  <img src="distribution/play-graphics/phone-01.png" width="220" alt="Session list screen" />
-  <img src="distribution/play-graphics/phone-02.png" width="220" alt="Chat screen with diff viewer" />
-  <img src="distribution/play-graphics/phone-03.png" width="220" alt="Connection setup wizard" />
+  <img src="distribution/play-graphics/screenshots/01-no-connection.png" width="220" alt="Sessions tab — no connection yet" />
 </p>
+
+<sub>Real screenshot captured from the app running on an Android emulator (build cc.agentlabs.opencode). More device screenshots (connected session list, streaming chat, diff viewer) are captured by the end-to-end smoke test and added with the store listing.</sub>
 
 ---
 
