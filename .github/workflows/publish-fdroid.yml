@@ -69,11 +69,12 @@ jobs:
         run: ./gradlew assembleRelease
 
       - name: Install fdroidserver
-        # Use latest fdroidserver (+ its tested androguard). Pinning fdroidserver
-        # 2.4.4 hit androguard parse bugs on modern aapt2 APKs: 4.1+ crashes with
-        # "'NoOverwriteDict' object has no attribute 'append'", 4.0.x with
-        # "res1 must be zero!". Latest fdroidserver ships a compatible androguard.
-        run: pip install --upgrade fdroidserver
+        # androguard version matters: 4.0.x crashes parsing our APK resources
+        # ("res1 must be zero!"); 4.1.0/4.1.1 crash on the signature block
+        # ("'NoOverwriteDict' object has no attribute 'append'"). androguard 4.1.4
+        # fixes both — verified locally against the v0.4.2 APK. fdroidserver's own
+        # resolver picks a buggy 4.1.x, so pin androguard explicitly.
+        run: pip install "fdroidserver==2.4.4" "androguard==4.1.4"
 
       - name: Setup F-Droid repo
         id: fdroid-setup
