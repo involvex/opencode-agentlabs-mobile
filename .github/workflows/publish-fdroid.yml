@@ -69,7 +69,10 @@ jobs:
         run: ./gradlew assembleRelease
 
       - name: Install fdroidserver
-        run: pip install "fdroidserver==2.4.4"
+        # Pin androguard < 4.1: 4.1+ regressed APK signature parsing
+        # ('NoOverwriteDict' object has no attribute 'append') and breaks
+        # `fdroid update` with fdroidserver 2.4.4.
+        run: pip install "fdroidserver==2.4.4" "androguard>=4.0,<4.1"
 
       - name: Setup F-Droid repo
         id: fdroid-setup
