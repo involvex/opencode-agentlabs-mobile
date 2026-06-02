@@ -215,7 +215,10 @@ export default function SessionsScreen() {
         setShowNewSession(false)
         setCustomDir("")
         if (session) {
-          router.push({ pathname: `/session/[id]`, params: { id: session.id, directory: dir.trim() } })
+          router.push({
+            pathname: `/session/[id]`,
+            params: { id: session.id, ...(session.directory ? { directory: session.directory } : {}) },
+          })
         }
       } catch (error) {
         console.error("Failed to create session in directory:", error)
