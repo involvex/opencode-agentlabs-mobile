@@ -79,6 +79,23 @@ Full runtime audit (stores + screens + sdk). Outcome:
 - Connections, SSE reconnect/backoff, optimistic cleanup, FlatList keys, effect deps,
   settings persistence, attachment handling: reviewed clean.
 
+## F-DROID + PLAY PUBLISH PUSH (2026-06-02) — agent-controlled paths found
+- DISCOVERY: self-hosted F-Droid repo is ALREADY LIVE at
+  https://dzianisv.github.io/opencode-mobile/fdroid/repo (index 200), but STALE —
+  serving old package ai.opencode.mobile @ v0.4.1. publish-fdroid succeeded for
+  v0.3.2/0.4.0/0.4.1, then FAILED from v0.4.2 on.
+- ROOT CAUSE: androguard (in fdroidserver) crashes on the CI APK's v2+v3 signature
+  block pair: parse_v2_v3_signature -> "'NoOverwriteDict' object has no attribute
+  'append'". Published release asset is v2-only and parses fine.
+- FIX (c66f4fb): force v1+v2-only signing — gradle flags + a deterministic apksigner
+  re-sign step in publish-fdroid.yml (expo prebuild regenerates build.gradle, so the
+  workflow step is the real guarantee). Cut v0.4.3 / versionCode 5.
+- Tag v0.4.3 pushed → triggered: Build, CUA smoke, Publish F-Droid (run 26806570933),
+  Publish Google Play (run 26806570940, uploads to INTERNAL track, status=completed —
+  doesn't need the production App-content console gate). Monitoring.
+- DISCOVERY: a Publish-to-Google-Play workflow runs on tags (r0adkll/upload-google-play,
+  track=internal). This is an agent-reachable Play path for the internal track.
+
 ## SESSION CLOSE (2026-06-02)
 Agent-executable surface EXHAUSTED for this session. Done + verified:
 - Goal #1 (no bugs / E2E): ✅ CUA smoke GREEN (run 26803479355). Fixed 2 scope bugs
