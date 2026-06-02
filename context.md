@@ -33,9 +33,10 @@ Success = published + functional on BOTH stores AND 1k verified downloads.
 - Version mismatch: package.json 0.4.2 vs android/app/build.gradle versionName 0.4.1.
 
 ## PLAN
-- [ ] P1 Verify #10 fix via re-dispatched CUA smoke (E2E green).
-- [ ] P1 Reconcile version (package.json vs gradle) — pick single source of truth.
-- [ ] P2 Scan for other E2E bugs (connect/create/send/abort scopes).
+- [x] P1 Verify #10 fix via CUA smoke (E2E green — run 26803479355).
+- [x] P1 Reconcile version (gradle versionName → 0.4.2).
+- [x] P2 Scan for other E2E bugs — found+fixed 2nd scope bug (open/send path);
+       connect flow reviewed clean (serverHome populated on connect, self-heals).
 - [ ] P3 Play: human completes App-content + production rollout (gated).
 - [ ] P3 F-Droid: track MR #39530 (gated on maintainer review).
 - [ ] P4 ASO: refine listing copy/keywords with ASO skill.
@@ -53,8 +54,10 @@ Success = published + functional on BOTH stores AND 1k verified downloads.
   home-scoped session was opened/sent via default CWD client because nav carried no
   directory param. createSession now stamps scope dir onto session; create-nav passes
   it. Same root cause as #10, open/send path. tsc + tests green.
-- 2026-06-01: Smoke running on 66b89f7 (run 26803479355) — verifies connect→create→
-  list visibility. Awaiting verdict.
+- 2026-06-02: ✅ SMOKE GREEN on 66b89f7 (run 26803479355). CUA vision-LLM scenario
+  connect_and_verify_sessions: "Result: success in 9 steps — connected to server and
+  a session is listed in Sessions." The exact pre-fix failure ("list still empty after
+  create") is gone. #10 verified END-TO-END. Goal #1 core path proven working.
 - ASO/growth assets already authored (distribution/: aso-audit, listings, launch kit,
   graphics). Blocker is EXECUTION (human Play console publish + posting from owner
   accounts), not content.
