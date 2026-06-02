@@ -16,7 +16,7 @@ App facts these answers derive from:
 ---
 
 ## 1. Privacy policy
-- URL: `https://agentlabs.cc/opencode/privacy`
+- URL: `https://opencode.vibebrowser.app/privacy`
 
 ## 2. Data safety
 **Does your app collect or share any required user data types?**
@@ -59,8 +59,9 @@ App facts these answers derive from:
 - **COVID-19 / contact tracing**: No.
 
 ## After App content is complete
-1. Production → Create new release → the v0.4.2 AAB (uploaded via CI) should be
-   available to add; or upload `android/app/build/outputs/bundle/release/app-release.aab`.
+1. Production → Create new release → the v0.4.3 AAB (uploaded via CI to the
+   internal track) should be available to promote/add; or upload
+   `android/app/build/outputs/bundle/release/app-release.aab`.
 2. Select countries/regions (all, unless restricting).
 3. Roll out to Production → Send for review. Google review: hours–days.
 4. Once live, the public listing appears at

@@ -113,7 +113,7 @@ While waiting for Apple's verification call and approval:
 - [ ] Create app icon 1024×1024 PNG
 - [ ] Capture iPhone screenshots (use iOS Simulator in Xcode on any Mac)
 - [ ] Capture iPad screenshots
-- [ ] Write/publish privacy policy at https://agentlabs.cc/opencode/privacy
+- [ ] Write/publish privacy policy at https://opencode.vibebrowser.app/privacy
 - [ ] Set up EAS account at https://expo.dev/ (free tier, log in with Expo account)
 - [ ] Add iOS config patches to `app.json` (done in this PR)
 - [ ] Run `npx expo prebuild --platform ios` on a Mac to validate the Xcode project
