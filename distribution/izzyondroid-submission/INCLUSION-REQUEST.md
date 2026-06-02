@@ -10,7 +10,7 @@ Use the text below (starting from "---") as the issue body. Replace all
 ## App submission: OpenCode Mobile
 
 **App name:** OpenCode Mobile
-**Package / App ID:** `ai.opencode.mobile`
+**Package / App ID:** `cc.agentlabs.opencode`
 **License:** MIT
 **Source code:** https://github.com/dzianisv/opencode-mobile
 **GitHub releases:** https://github.com/dzianisv/opencode-mobile/releases
@@ -27,7 +27,7 @@ https://github.com/dzianisv/opencode-mobile/releases/download/<TAG>/app-release.
 
 Example (first production release):
 ```
-https://github.com/dzianisv/opencode-mobile/releases/download/v0.2.4/app-release.apk
+https://github.com/dzianisv/opencode-mobile/releases/download/v0.4.2/app-release.apk
 ```
 
 Note: IzzyOnDroid should use the GitHub releases tag pattern for auto-update
