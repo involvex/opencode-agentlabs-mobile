@@ -44,4 +44,24 @@ Success = published + functional on BOTH stores AND 1k verified downloads.
 ## PROGRESS LOG
 - 2026-06-01: Resumed under /take-ownership. tsc clean, build green.
   Confirmed #10 is a real reproduced bug; fix logic verified sound (create+list
-  share home scope). Re-dispatching smoke. Spotted version mismatch. Wrote this file.
+  share home scope). Spotted version mismatch. Wrote this file.
+- 2026-06-01: Fixed gradle versionName 0.4.1→0.4.2 (commit 0615ab8).
+- 2026-06-01: Refactored #10 scope rule into one pure helper sessionScopeDirectory()
+  so list/create can't drift; added node:test regression guard (4/4 pass), `npm test`
+  script, excluded tests from app tsc (commit bed0b6f).
+- 2026-06-01: Found + fixed a SECOND scope bug (commit 66b89f7): freshly created
+  home-scoped session was opened/sent via default CWD client because nav carried no
+  directory param. createSession now stamps scope dir onto session; create-nav passes
+  it. Same root cause as #10, open/send path. tsc + tests green.
+- 2026-06-01: Smoke running on 66b89f7 (run 26803479355) — verifies connect→create→
+  list visibility. Awaiting verdict.
+- ASO/growth assets already authored (distribution/: aso-audit, listings, launch kit,
+  graphics). Blocker is EXECUTION (human Play console publish + posting from owner
+  accounts), not content.
+
+## WHAT ONLY THE HUMAN OWNER CAN DO (gated)
+- Play Console: complete App content declarations + production rollout (answers in
+  distribution/PLAY-APP-CONTENT-ANSWERS.md). No admin/API access from here.
+- F-Droid: respond to mainline MR #39530 maintainer review.
+- Growth: post launch content from real accounts (HN/PH/Reddit/X) to drive installs.
+- These are why "published on both stores + 1k downloads" cannot be closed by the agent.
