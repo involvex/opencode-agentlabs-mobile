@@ -188,7 +188,10 @@ export default function SessionsScreen() {
   const onCreateSession = async () => {
     const session = await createSession()
     if (session) {
-      router.push(`/session/${session.id}`)
+      router.push({
+        pathname: `/session/[id]`,
+        params: { id: session.id, ...(session.directory ? { directory: session.directory } : {}) },
+      })
     }
   }
 
@@ -227,7 +230,10 @@ export default function SessionsScreen() {
     setShowNewSession(false)
     setCustomDir("")
     if (session) {
-      router.push(`/session/${session.id}`)
+      router.push({
+        pathname: `/session/[id]`,
+        params: { id: session.id, ...(session.directory ? { directory: session.directory } : {}) },
+      })
     }
   }
 

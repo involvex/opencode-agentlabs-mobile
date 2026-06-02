@@ -197,7 +197,12 @@ export const useSessions = create<SessionsState>((set, get) => ({
     const client = scopeDir ? connState.clientForDirectory(scopeDir) || connState.client : connState.client
 
     try {
-      const session = await client.session.create({ title })
+      const created = await client.session.create({ title })
+      // Stamp the scope we created in onto the session so every downstream path
+      // (navigation params, selectSession, sendMessage's clientFor) addresses it
+      // in the SAME scope. Without this, opening/sending to a freshly created
+      // home-scoped session via the default client would hit the wrong scope (#10).
+      const session = scopeDir && !created.directory ? { ...created, directory: scopeDir } : created
       // Don't optimistically add to sessions list — let loadSessions() handle it
       // to avoid duplicate key errors from race conditions
       set({
