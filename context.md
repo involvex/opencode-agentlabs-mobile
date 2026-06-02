@@ -68,3 +68,15 @@ Success = published + functional on BOTH stores AND 1k verified downloads.
 - F-Droid: respond to mainline MR #39530 maintainer review.
 - Growth: post launch content from real accounts (HN/PH/Reddit/X) to drive installs.
 - These are why "published on both stores + 1k downloads" cannot be closed by the agent.
+
+## SESSION CLOSE (2026-06-02)
+Agent-executable surface EXHAUSTED for this session. Done + verified:
+- Goal #1 (no bugs / E2E): ✅ CUA smoke GREEN (run 26803479355). Fixed 2 scope bugs
+  (#10 list + open/send) and version mismatch. tsc + unit tests green.
+- F-Droid: mainline MR #39530 filed; IzzyOnDroid doc now filing-ready & verified
+  (commit 67773fc).
+- ASO/growth content authored.
+Blocked (need owner identity/creds; shared browser also offline now):
+- IzzyOnDroid: file inclusion issue at codeberg.org/IzzyOnDroid/repodata (Codeberg acct).
+- Play: complete App content + production rollout (Play Console, legal attestation).
+- Growth: post launch kit from owner accounts → drive to 1k installs.
