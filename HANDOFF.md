@@ -56,13 +56,29 @@ Goal: bug-free E2E + published on F-Droid & Play + 1k downloads.
 
 ## OWNER ACTIONS REQUIRED — only these unblock #2/#3/#5 (agent cannot do them)
 
-0. **Push two local commits (push was permission-gated for the agent).**
-   `ee7082a` fix: custom-dir session create scope drift (4th scope bug) and
-   `c8458cd` docs: reconcile privacy URL. Run `git push origin main`. The fix is
-   not yet in any release; to ship it, bump version + `git tag v0.4.4 && git push --tags`.
+0. **Push the three local commits (push was permission-gated for the agent).**
+   Unpushed on `main` (run `git log origin/main..main --oneline` to confirm):
+   `ee7082a` fix: custom-dir session create scope drift (4th scope bug),
+   `c8458cd` docs: reconcile privacy URL, and
+   `c36605e` docs: CEO cycle 3 queue refresh.
+   Step: `source ~/.env.d/github-dzianisv.env && git push origin main`.
+   The session-scope fix is not yet in any release. To ship it, bump the version in
+   BOTH `app.json` (line 5: `"version": "0.4.3"` → `"0.4.4"`) and
+   `android/app/build.gradle` (line 98 `versionName "0.4.3"` → `"0.4.4"`; leave
+   `versionCode` — Play's is auto-set to `github.run_number`, F-Droid reads versionName),
+   commit, then `git tag v0.4.4 && git push origin main --tags`. The `v*` tag fires
+   `publish-fdroid.yml` and `publish-play-store.yml` automatically.
 
-1. **Publish privacy policy live (blocks Play production).** `opencode.vibebrowser.app/privacy`
-   currently returns 000 (not deployed). Deploy `distribution/privacy-policy.html` there.
+1. **Publish privacy policy live (blocks Play production).** `https://opencode.vibebrowser.app/privacy`
+   currently fails to resolve (curl exit 6 / host not found — not deployed). The Play
+   "App content" answers and the IzzyOnDroid request both cite this exact URL, so it
+   must serve `distribution/privacy-policy.html` at the path `/privacy`. Steps:
+   (a) confirm/create DNS for `opencode.vibebrowser.app`; (b) host the file — easiest is
+   any static host (e.g. add a `privacy.html`/`/privacy` route on the existing
+   vibebrowser.app deployment, or a Vercel/Netlify/GitHub Pages site for this subdomain);
+   (c) verify: `curl -sI https://opencode.vibebrowser.app/privacy` returns `200`.
+   Source file: `distribution/privacy-policy.html` (markdown source mirror:
+   `distribution/privacy-policy.md`).
 
 2. **Google Play → production (biggest unlock, ~15 min).**
    Play Console → app → Monitor and improve → Policy → **App content**. Complete the
@@ -76,11 +92,25 @@ Goal: bug-free E2E + published on F-Droid & Play + 1k downloads.
    - **IzzyOnDroid** (fast, popular): file the inclusion issue at
      https://codeberg.org/IzzyOnDroid/repodata/issues using
      `distribution/izzyondroid-submission/INCLUSION-REQUEST.md` (needs a Codeberg account).
-   - **Mainline F-Droid**: respond to maintainer review on MR #39530.
+   - **Mainline F-Droid**: MR #39530 is filed and open at
+     https://gitlab.com/fdroid/fdroiddata/-/merge_requests/39530 (needs a gitlab.com
+     account that is a member of the MR, i.e. the account that filed it). Open the MR,
+     read the maintainer's review comments/CI (fdroid build pipeline) under the
+     "Activity"/"Pipelines" tabs, address any requested metadata changes by editing
+     `metadata/cc.agentlabs.opencode.yml` on the MR's source branch (local source:
+     `distribution/fdroid-submission/metadata.yml`), push, and reply to each reviewer
+     thread. If CI is red, fix per the build log and re-push the source branch.
 
 3. **Growth → 1k downloads:** post the launch kit in `distribution/launch/`
-   (Show HN, Product Hunt, Reddit, X, dev.to) from your accounts; ASO copy in
-   `distribution/play-listing.md` / `app-store-listing.md`.
+   (Show HN, Product Hunt, Reddit, X, dev.to) from your accounts, following the fire
+   sequence in `distribution/launch/LAUNCH-CHECKLIST.md`.
+   **Gate:** every post file contains `{{PLAY_URL}}` / `{{FDROID_URL}}` placeholders —
+   do NOT post any file that still has a `{{...}}` token. Replace:
+   `{{FDROID_URL}}` → `https://dzianisv.github.io/opencode-mobile/fdroid/repo` (live now);
+   `{{PLAY_URL}}` → `https://play.google.com/store/apps/details?id=cc.agentlabs.opencode`
+   (only valid after item 2's production rollout is live — until then, link the F-Droid
+   repo + GitHub releases instead). ASO copy in `distribution/play-listing.md` /
+   `distribution/app-store-listing.md`.
 
 ---
 
