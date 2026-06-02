@@ -69,6 +69,16 @@ Success = published + functional on BOTH stores AND 1k verified downloads.
 - Growth: post launch content from real accounts (HN/PH/Reddit/X) to drive installs.
 - These are why "published on both stores + 1k downloads" cannot be closed by the agent.
 
+## RUNTIME BUG AUDIT (2026-06-02)
+Full runtime audit (stores + screens + sdk). Outcome:
+- FIXED (059b5cc): sendMessage stale-closure — send-failure after a session switch
+  flashed error on / refetched the wrong session. Now scoped to the sent session.
+- DISMISSED w/ evidence: message.removed handler is dead code (events.ts never
+  forwards it); part-without-sessionID guard is adequate (server always sends it;
+  the proposed "require message exists" fix would drop pre-message streamed parts).
+- Connections, SSE reconnect/backoff, optimistic cleanup, FlatList keys, effect deps,
+  settings persistence, attachment handling: reviewed clean.
+
 ## SESSION CLOSE (2026-06-02)
 Agent-executable surface EXHAUSTED for this session. Done + verified:
 - Goal #1 (no bugs / E2E): ✅ CUA smoke GREEN (run 26803479355). Fixed 2 scope bugs
