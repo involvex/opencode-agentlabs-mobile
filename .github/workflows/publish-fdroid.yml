@@ -92,12 +92,13 @@ jobs:
           "$APKSIGNER" verify -v "$APK" | grep -i "Verified using" || true
 
       - name: Install fdroidserver
-        # androguard version matters: 4.0.x crashes parsing our APK resources
-        # ("res1 must be zero!"); 4.1.0/4.1.1 crash on the signature block
-        # ("'NoOverwriteDict' object has no attribute 'append'"). androguard 4.1.4
-        # fixes both — verified locally against the v0.4.2 APK. fdroidserver's own
-        # resolver picks a buggy 4.1.x, so pin androguard explicitly.
-        run: pip install "fdroidserver==2.4.4" "androguard==4.1.4"
+        # androguard version matters. 4.1.4 crashes extracting the signer cert
+        # ("'NoOverwriteDict' object has no attribute 'append'" in
+        # parse_v2_v3_signature) — this is what broke the publish from v0.4.2 on.
+        # 4.1.3 is the version that successfully published v0.3.2–v0.4.1 and parses
+        # our (v1+v2-only, re-signed above) APK cleanly — verified locally against
+        # the release APK via fdroidserver.common.get_first_signer_certificate.
+        run: pip install "fdroidserver==2.4.4" "androguard==4.1.3"
 
       - name: Setup F-Droid repo
         id: fdroid-setup
