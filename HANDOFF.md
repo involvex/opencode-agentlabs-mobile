@@ -1,83 +1,112 @@
-# Handoff: OpenCode Mobile App
+# OpenCode Mobile — Handoff (2026-06-02)
 
-## Status: CUA E2E Tests Working, v0.2.0 Release Triggered
+App: **`cc.agentlabs.opencode`** (OpenCode Mobile) — Expo/React Native Android client
+for a user self-hosted opencode AI server. Owner: VIBE TECHNOLOGIES, LLC.
+Repo: `dzianisv/opencode-mobile`. Full running log: `context.md`.
+Goal: bug-free E2E + published on F-Droid & Play + 1k downloads.
 
-## What Was Done
+---
 
-### 1. CUA (Computer-Use Agent) E2E Test Infrastructure
-- Built `scripts/android-cua-smoke.py` — a vision-LLM-powered Android E2E test that drives the app via ADB screenshots + AI actions
-- Two scenarios pass reliably: `send_message` (7 steps) and `multi_turn` (13 steps)
-- Added custom `{"type": "send"}` action that auto-locates the send button via uiautomator XML (solves coordinate accuracy issues with vision models)
-- Uses **Azure AI Services gpt-5.4** for vision inference
+## TL;DR status
 
-### 2. CI/CD
-- `.github/workflows/cua-smoke.yml` — GitHub Actions workflow for emulator + CUA test
-- `.github/workflows/build.yml` — Builds APK, creates GitHub Release on tag push
-- `.github/workflows/publish-play-store.yml` — Fastlane Play Store publish
-- GitHub secrets set: `AZURE_OPENAI_API_KEY`, `AZURE_OPENAI_ENDPOINT`
-- Tagged `v0.2.0` — CI build + release workflow triggered
+| Goal | State |
+|---|---|
+| #1 App works E2E, no bugs | ✅ **Done & verified** (CUA smoke green; 4 bugs fixed) |
+| #2 F-Droid published | 🟡 self-hosted repo **LIVE**; updating to v0.4.3 (publish fix in flight) |
+| #3 Google Play published | 🟡 **internal track live** (v0.4.3); production needs owner console step |
+| #4 Store optimization (ASO) | ✅ assets authored in `distribution/` |
+| #5 1k downloads | ❌ needs public listings + growth posting (owner) |
 
-### 3. App Features (prior sessions)
-- SSE reconnect with exponential backoff
-- Notification support
-- Message deduplication
-- Biometric auth gate (disabled on emulator)
-- Server connection management UI
+---
 
-## Key Technical Details
+## App URLs
 
-### Azure AI Services (LLM API)
-- **Correct endpoint**: `https://info-mjnxtt51-eastus2.cognitiveservices.azure.com`
-- **DO NOT USE**: `vibe-dev-ai.cognitiveservices.azure.com` (has no deployments, only model catalog)
-- **Env file**: `~/.env.d/azure-openai.env`
-- **Available models**: gpt-5.4, gpt-5.2, gpt-5.1, gpt-4.1, grok-4, deepseek-r1, kimi-k2.5
-- **API quirk**: Use `max_completion_tokens` (NOT `max_tokens`) for gpt-5.x models
+- **Direct APK (works now):** https://github.com/dzianisv/opencode-mobile/releases/latest
+- **F-Droid self-hosted repo:** https://dzianisv.github.io/opencode-mobile/fdroid/repo
+  (add this URL in any F-Droid client). Updating to v0.4.3.
+- **Google Play (NOT public yet):** https://play.google.com/store/apps/details?id=cc.agentlabs.opencode
+  — 404s until production rollout; internal-testing track has v0.4.3.
+- **F-Droid mainline (pending MR #39530):** https://f-droid.org/packages/cc.agentlabs.opencode/
 
-### Android Emulator
-- SDK at `/tmp/android-sdk/` (may need reinstall if /tmp is cleared)
-- AVD name: `test`, API 34 x86_64, KVM required
-- Start: `emulator -avd test -no-window -no-audio -no-boot-anim -gpu swiftshader_indirect -no-snapshot`
-- Package: `ai.opencode.mobile`
+---
 
-### CUA Script Learnings
-- Vision models (gpt-5.4) consistently mis-estimate Y coordinates by ~80px for bottom-of-screen elements
-- Solution: `{"type": "send"}` action uses uiautomator XML to find the rightmost clickable element in the bottom bar
-- Enter key inserts newline in this app (doesn't send) — model must dismiss keyboard + tap send button
-- Screen resolution (1080x2400) included in prompt context helps coordinate accuracy
-- Screenshot retry (3 attempts, 30s timeout) needed for emulator under load
+## What was done this session (committed to `main`)
 
-### Server Connection
-- OpenCode server: `100.108.64.76:4096` (Tailscale, hostname `openclaw-dev-1`)
-- Must dismiss keyboard before tapping Connect button (keyboard obscures it)
-- Model: `gpt-5.3-chat-latest` (via GitHub Copilot provider)
+**Bug fixes (goal #1) — `npm run typecheck` + `npm test` green, E2E smoke verified:**
+- `0615ab8` gradle versionName 0.4.1→0.4.2 (stale vs app.json)
+- `bed0b6f` #10 root cause: single `src/stores/sessionScope.ts` helper so session
+  list/create scopes can't drift; `node:test` regression guard + `npm test` script
+- `66b89f7` 2nd scope bug: created session opened/sent via wrong client (nav lacked
+  `directory`); now stamped on the session + passed through
+- `059b5cc` send-failure after a session switch flashed error on / refetched the
+  wrong session
+- Full runtime audit (dismissed 2 false-positives with evidence).
+- **CUA smoke GREEN** (run 26803479355): connect→create→list passes (was the #10 repro).
 
-## What's Next
+**Publishing (goals #2/#3):**
+- `c66f4fb` cut **v0.4.3** (versionCode 5).
+- `eea84a3` **F-Droid publish fix**: pin `androguard==4.1.3` (the `==4.1.4` pin added
+  2026-06-01 crashed in `parse_v2_v3_signature`) + apksigner v1+v2-only re-sign step in
+  `publish-fdroid.yml`. **Verified locally** that 4.1.3 parses the APK signer cert.
+- Tag `v0.4.3` re-pointed → re-runs the F-Droid publish (in flight at handoff).
+- Play **internal track** auto-published v0.4.3 via `publish-play-store.yml` (success).
+- `67773fc` corrected IzzyOnDroid doc (was stale `ai.opencode.mobile`).
 
-1. **Verify v0.2.0 release** — check CI at https://github.com/dzianisv/opencode-mobile/actions
-2. **Run CUA in CI** — the `cua-smoke.yml` workflow needs a running opencode server to connect to (currently targets Tailscale IP which won't be reachable from GitHub runners). Options:
-   - Mock server in CI
-   - Use a public opencode server endpoint
-   - Run as self-hosted runner on the dev VM
-3. **Add accessibility labels** — add `content-desc="Send"` to the send button in the app for better CUA reliability
-4. **More scenarios** — settings toggle, reconnect after server restart, slash commands
+---
 
-## Connection Diagnostics (added in feat/connection-diagnostics-sentry)
+## OWNER ACTIONS REQUIRED — only these unblock #2/#3/#5 (agent cannot do them)
 
-When a connect attempt fails, the app now runs an **active triage probe** instead of
-showing a generic error. It classifies the cause: `malformed-url`, `no-internet`,
-`server-unreachable`, `health-failed`, `tls-error`, `timeout`. The dialog shows a
-plain-English summary plus a **Share report** button (copies a full report —
-target URL, per-probe results, device/app info, recent logs — to clipboard + share sheet).
+1. **Google Play → production (biggest unlock, ~15 min).**
+   Play Console → app → Monitor and improve → Policy → **App content**. Complete the
+   declarations using the pre-written, code-verified answers in
+   `distribution/PLAY-APP-CONTENT-ANSWERS.md`. Then Production → create release → add
+   the v0.4.3 AAB (CI already uploaded) → roll out → submit for review.
 
-- Code: `src/lib/diagnostics.ts` (probe + report), `src/lib/logbuffer.ts` (ring buffer),
-  `src/lib/sentry.ts` (auto-upload wrapper).
-- **Sentry auto-upload** is opt-in via env var: set `EXPO_PUBLIC_SENTRY_DSN` at build time.
-  Without it, Sentry is a no-op and only the in-app Share report works (fully offline).
-  For source-map upload at build, also set `SENTRY_AUTH_TOKEN` / `SENTRY_ORG` / `SENTRY_PROJECT`.
-- The probe runs on-device, so it reports the *phone's* real network reality —
-  unlike the co-located emulator, it can distinguish a true remote-peer tailnet failure.
+2. **F-Droid reach (any/all):**
+   - Self-hosted repo updates automatically once the in-flight publish run is green —
+     just share the repo URL above. (Verify: command below.)
+   - **IzzyOnDroid** (fast, popular): file the inclusion issue at
+     https://codeberg.org/IzzyOnDroid/repodata/issues using
+     `distribution/izzyondroid-submission/INCLUSION-REQUEST.md` (needs a Codeberg account).
+   - **Mainline F-Droid**: respond to maintainer review on MR #39530.
 
-## Repo & Auth
-- Repo: `dzianisv/opencode-mobile`
-- GitHub auth: `source ~/.env.d/github-dzianisv.env`
-- Upstream issue: `anomalyco/opencode#10288`
+3. **Growth → 1k downloads:** post the launch kit in `distribution/launch/`
+   (Show HN, Product Hunt, Reddit, X, dev.to) from your accounts; ASO copy in
+   `distribution/play-listing.md` / `app-store-listing.md`.
+
+---
+
+## Verify / common commands
+
+```bash
+npm run typecheck          # tsc --noEmit (clean)
+npm test                   # node:test suite (4 passing)
+gh run list --workflow=publish-fdroid.yml --limit 3      # F-Droid publish status
+gh run list --workflow=cua-smoke.yml --limit 3           # E2E smoke status
+# Is the live F-Droid repo updated to cc.agentlabs.opencode @ v0.4.3?
+curl -s https://dzianisv.github.io/opencode-mobile/fdroid/repo/index-v1.json | \
+  python3 -c "import sys,json;d=json.load(sys.stdin);print({p:[v['versionName'] for v in vs] for p,vs in d['packages'].items()})"
+```
+
+## Gotchas / notes
+- `expo prebuild` regenerates `android/build.gradle` in CI → enforce signing in the
+  workflow (apksigner re-sign step), not only in gradle.
+- F-Droid breaks on androguard 4.1.4 (`'NoOverwriteDict' has no attribute 'append'`);
+  use **4.1.3**. The published APK must be **v1+v2-only** (no v3) for it to parse.
+- Play `versionCode` = `github.run_number` (auto-monotonic); re-tagging won't collide.
+- F-Droid publish triggers on `v*` tags only (agent has **no admin** to
+  `workflow_dispatch`/rerun; can push commits/tags).
+- Session directory-scope invariant: all session ops must use `sessionScopeDirectory`
+  or sessions go invisible (this was bug #10).
+- Shared browser (chrome-devtools over Tailscale) was offline this session, so
+  browser-driven console/Codeberg steps couldn't be attempted.
+
+## Infra references (durable)
+- OpenCode server (testing): `100.108.64.76:4096` (Tailscale host `openclaw-dev-1`).
+- CUA smoke vision model: Azure `gpt-5.4`; endpoint
+  `https://info-mjnxtt51-eastus2.cognitiveservices.azure.com`; gpt-5.x needs
+  `max_completion_tokens` (not `max_tokens`). Secrets in repo Actions.
+- GitHub auth (local): `source ~/.env.d/github-dzianisv.env`.
+- Signing: production key SHA-256
+  `0C:25:9D:94:E0:FF:EA:5D:63:19:61:4B:22:9D:4B:6B:DC:22:DE:1F:56:E3:8E:76:94:83:98:D2:DF:6A:A0:99`
+  (same key across Play / F-Droid / IzzyOnDroid — in-place updates work).
