@@ -2,6 +2,7 @@ import { create } from "zustand"
 import type { Session, Message, Part, Event, MessageWithParts, Client } from "../lib/sdk"
 import { useConnections } from "./connections"
 import { useSettings } from "./settings"
+import { sessionScopeDirectory } from "./sessionScope"
 import { addBreadcrumb } from "../lib/sentry"
 
 // Helper to convert API response to our internal format
@@ -100,10 +101,8 @@ export const useSessions = create<SessionsState>((set, get) => ({
         return
       }
 
-      const listClient =
-        !latestConnState.activeConnection?.directory && home
-          ? latestConnState.clientForDirectory(home)
-          : latestConnState.client
+      const scopeDir = sessionScopeDirectory(Boolean(latestConnState.activeConnection?.directory), home)
+      const listClient = scopeDir ? latestConnState.clientForDirectory(scopeDir) : latestConnState.client
 
       const sessions = await (listClient || connState.client).session.list({ roots: true, limit: 50 })
       set({ sessions, isLoading: false })
@@ -191,18 +190,11 @@ export const useSessions = create<SessionsState>((set, get) => ({
       return null
     }
 
-    // Create the session in the SAME directory scope that loadSessions reads from.
-    // loadSessions lists home-scoped sessions when the connection has no explicit
-    // directory; creating via the plain connection client targets the server's CWD
-    // instead. When CWD != home the new session was invisible to the list (#10:
-    // "sessions tab empty after connect / create"). Mirror the list's scoping so a
-    // freshly created session reliably shows up.
-    const hasExplicitDirectory = Boolean(connState.activeConnection?.directory)
-    const home = connState.serverHome
-    const client =
-      !hasExplicitDirectory && home
-        ? connState.clientForDirectory(home) || connState.client
-        : connState.client
+    // Create the session in the SAME directory scope that loadSessions reads from
+    // (see sessionScopeDirectory / bug #10). Both paths derive scope from the one
+    // helper so a freshly created session is always visible to the list.
+    const scopeDir = sessionScopeDirectory(Boolean(connState.activeConnection?.directory), connState.serverHome)
+    const client = scopeDir ? connState.clientForDirectory(scopeDir) || connState.client : connState.client
 
     try {
       const session = await client.session.create({ title })

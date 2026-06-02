@@ -8,7 +8,8 @@
     "start:clear": "expo start --clear",
     "ios": "expo run:ios",
     "android": "expo run:android",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "test": "node --test 'src/**/*.test.ts'"
   },
   "dependencies": {
     "@expo/vector-icons": "^15.0.3",
