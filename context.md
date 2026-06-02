@@ -94,7 +94,15 @@ Full runtime audit (stores + screens + sdk). Outcome:
   Publish Google Play (run 26806570940, uploads to INTERNAL track, status=completed —
   doesn't need the production App-content console gate). Monitoring.
 - DISCOVERY: a Publish-to-Google-Play workflow runs on tags (r0adkll/upload-google-play,
-  track=internal). This is an agent-reachable Play path for the internal track.
+  track=internal, versionCode=github.run_number so always monotonic). Agent-reachable.
+- ✅ PLAY INTERNAL: run 26806570940 SUCCEEDED — v0.4.3 uploaded to Play internal track.
+- F-Droid run 26806570933 FAILED again: SAME androguard error, but in the *v2* block
+  parse (self._v2_blocks.append). Root cause = androguard==4.1.4 pin (added 2026-06-01),
+  NOT v3. Last working publish (v0.4.1, May) used androguard 4.1.3.
+- VERIFIED LOCALLY: androguard 4.1.3 + fdroidserver 2.4.4 parse the v2-only APK and
+  get_first_signer_certificate succeeds (the call that crashed under 4.1.4).
+- FIX (eea84a3): pin androguard==4.1.3. Re-pointed tag v0.4.3 → re-run F-Droid
+  (run 26808062042). Play uses run_number so re-tag doesn't collide.
 
 ## SESSION CLOSE (2026-06-02)
 Agent-executable surface EXHAUSTED for this session. Done + verified:
