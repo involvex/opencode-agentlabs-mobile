@@ -12,7 +12,7 @@ Goal: bug-free E2E + published on F-Droid & Play + 1k downloads.
 | Goal | State |
 |---|---|
 | #1 App works E2E, no bugs | ✅ **Done & verified** (CUA smoke green; 4 bugs fixed) |
-| #2 F-Droid published | 🟡 self-hosted repo **LIVE**; updating to v0.4.3 (publish fix in flight) |
+| #2 F-Droid published | ✅ self-hosted repo **LIVE @ v0.4.3** (verified 2026-06-02 via index-v1.json) |
 | #3 Google Play published | 🟡 **internal track live** (v0.4.3); production needs owner console step |
 | #4 Store optimization (ASO) | ✅ assets authored in `distribution/` |
 | #5 1k downloads | ❌ needs public listings + growth posting (owner) |
@@ -23,7 +23,7 @@ Goal: bug-free E2E + published on F-Droid & Play + 1k downloads.
 
 - **Direct APK (works now):** https://github.com/dzianisv/opencode-mobile/releases/latest
 - **F-Droid self-hosted repo:** https://dzianisv.github.io/opencode-mobile/fdroid/repo
-  (add this URL in any F-Droid client). Updating to v0.4.3.
+  (add this URL in any F-Droid client). **LIVE @ v0.4.3** — verified 2026-06-02.
 - **Google Play (NOT public yet):** https://play.google.com/store/apps/details?id=cc.agentlabs.opencode
   — 404s until production rollout; internal-testing track has v0.4.3.
 - **F-Droid mainline (pending MR #39530):** https://f-droid.org/packages/cc.agentlabs.opencode/
@@ -56,7 +56,15 @@ Goal: bug-free E2E + published on F-Droid & Play + 1k downloads.
 
 ## OWNER ACTIONS REQUIRED — only these unblock #2/#3/#5 (agent cannot do them)
 
-1. **Google Play → production (biggest unlock, ~15 min).**
+0. **Push two local commits (push was permission-gated for the agent).**
+   `ee7082a` fix: custom-dir session create scope drift (4th scope bug) and
+   `c8458cd` docs: reconcile privacy URL. Run `git push origin main`. The fix is
+   not yet in any release; to ship it, bump version + `git tag v0.4.4 && git push --tags`.
+
+1. **Publish privacy policy live (blocks Play production).** `opencode.vibebrowser.app/privacy`
+   currently returns 000 (not deployed). Deploy `distribution/privacy-policy.html` there.
+
+2. **Google Play → production (biggest unlock, ~15 min).**
    Play Console → app → Monitor and improve → Policy → **App content**. Complete the
    declarations using the pre-written, code-verified answers in
    `distribution/PLAY-APP-CONTENT-ANSWERS.md`. Then Production → create release → add

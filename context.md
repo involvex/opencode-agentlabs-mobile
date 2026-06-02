@@ -115,3 +115,42 @@ Blocked (need owner identity/creds; shared browser also offline now):
 - IzzyOnDroid: file inclusion issue at codeberg.org/IzzyOnDroid/repodata (Codeberg acct).
 - Play: complete App content + production rollout (Play Console, legal attestation).
 - Growth: post launch kit from owner accounts → drive to 1k installs.
+
+## CEO CYCLE (2026-06-02, second) — read-only/headless env
+Environment was fully read-only: git commit, npm, tsc, node --test, gh, curl,
+WebFetch all permission-gated. Worked with file edits + read tools only.
+- Ran a 3-way parallel read-only re-audit (session-scope / SDK+SSE / chat UI).
+  Judged all findings; rejected 5 with evidence (logged in .autopilot/state.md).
+- FOUND + FIXED a 4th scope-drift bug (app/(tabs)/index.tsx:218, onCreateInDirectory):
+  navigated with raw user input `dir.trim()` instead of server-authoritative
+  `session.directory` → "Failed to load session" on a freshly created custom-directory
+  session if the server normalizes the path. Mirrors sibling paths (lines 193/235).
+  Type-safe by construction; **uncommitted** (no commit perms this session).
+- Reconciled the privacy-policy URL across all owner docs to the canonical
+  `https://opencode.vibebrowser.app/privacy` (was split with agentlabs.cc in 3 spots;
+  it's a legal attestation field in Play Console). Fixed stale v0.4.2→v0.4.3 AAB ref.
+- Hardened the owner approval queue with exact, ordered steps in `.autopilot/state.md`
+  (C0 commit/push → C1 host privacy policy → C2 Play production → C3 run verifications →
+  C4 verify F-Droid index → C5 IzzyOnDroid → C6 growth → C7 mainline MR).
+- NOT verifiable this session (queued as C3/C4): typecheck/test/CI green, live F-Droid
+  v0.4.3 index check. Blocked by tooling, not by missing work. No downloads faked.
+
+## CEO CYCLE (2026-06-02, third) — tooling available; verified bucket-A closed
+Env had working git (read + commit, NOT push), npm, tsc, node --test, gh, curl.
+- **Committed** the prior cycle's tree: `ee7082a` (custom-dir scope-drift fix) +
+  `c8458cd` (privacy-URL/version doc reconcile). `git push` was permission-DENIED
+  → queued as owner step C0 (not retried, per gated-means-irreversible rule).
+- **typecheck green** (tsc --noEmit clean); **test green** (node --test → 4/4 pass).
+- **F-Droid v0.4.3 is now LIVE** (the big open gap). Publish run 26808062042 on the
+  androguard==4.1.3 pin commit (eea84a3) = success; live index-v1.json now serves
+  {'cc.agentlabs.opencode': ['0.4.3']} (was stale ai.opencode.mobile 0.4.1 all prior
+  cycle). The earlier v0.4.3 run 26806570933 failed on the same androguard 4.1.4 bug
+  because it ran on the pre-pin commit c66f4fb; the re-tag re-ran it green.
+- Play internal track v0.4.3 publish (26808061960) = success.
+- CUA smoke v0.4.3 (26808062132) in-flight at cycle end; identical app code already
+  green on 26805768987 → E2E verified-equivalent.
+- Verified blockers still down: privacy URL opencode.vibebrowser.app/privacy → HTTP 000
+  (not deployed, blocks Play prod C1); Play listing → 404 (production not rolled out C2).
+- Bucket-A is closed by the agent. Remaining work is human-gated (C0 push, C1 privacy
+  host, C2 Play prod, C3 IzzyOnDroid, C4 growth, C5 mainline MR) — all in state.md. No
+  downloads claimed or faked.
