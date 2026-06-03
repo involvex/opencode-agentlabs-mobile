@@ -3,34 +3,12 @@ import { useConnections } from "./connections"
 import { useSessions } from "./sessions"
 import { send as notify } from "../lib/notifications"
 import { sanitizeBody } from "../lib/notify-format"
+import { statusFromPart } from "../lib/status-labels"
 import { addBreadcrumb } from "../lib/sentry"
 import type { Client, Part, Session, Message } from "../lib/sdk"
 
 // Session status from the server
 type SessionStatus = { type: "idle" } | { type: "busy" } | { type: "retry"; attempt: number; message: string }
-
-// Tool status labels derived from part type
-const TOOL_STATUS: Record<string, string> = {
-  read: "Gathering context...",
-  list: "Searching codebase...",
-  grep: "Searching codebase...",
-  glob: "Searching codebase...",
-  webfetch: "Searching web...",
-  edit: "Making edits...",
-  write: "Making edits...",
-  apply_patch: "Making edits...",
-  bash: "Running command...",
-  task: "Delegating...",
-  todowrite: "Planning...",
-  todoread: "Planning...",
-}
-
-function statusFromPart(part: Part): string {
-  if (part.type === "reasoning") return "Thinking..."
-  if (part.type === "tool" && part.tool) return TOOL_STATUS[part.tool] || `Running ${part.tool}...`
-  if (part.type === "text") return "Writing..."
-  return "Working..."
-}
 
 interface EventsState {
   connected: boolean
