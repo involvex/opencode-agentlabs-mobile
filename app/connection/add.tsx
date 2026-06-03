@@ -165,7 +165,7 @@ export default function AddConnectionScreen() {
         <View style={styles.ipRow}>
           <TextInput
             style={[styles.input, styles.ipInput, isDark && styles.inputDark]}
-            placeholder="192.168.1.100 or my-mac.ts.net"
+            placeholder="192.168.1.100"
             placeholderTextColor={isDark ? "#666666" : "#999999"}
             value={ip}
             onChangeText={setIp}

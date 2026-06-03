@@ -516,14 +516,16 @@ export default function SessionScreen() {
                   </View>
                 ) : null
               }
-              ListEmptyComponent={
-                <View style={s.emptyInverted}>
-                  <Ionicons name="chatbubble-outline" size={48} color={isDark ? "#444444" : "#cccccc"} />
-                  <Text style={[s.emptyText, isDark && s.metaDark]}>Start a conversation</Text>
-                  <Text style={[s.emptyHint, isDark && s.metaDark]}>Type / for commands</Text>
-                </View>
-              }
             />
+            {/* Empty state rendered OUTSIDE the inverted list to avoid the
+                inverted transform mirroring its text/icon (see #ui-mirror). */}
+            {messageData.length === 0 && (
+              <View style={s.emptyOverlay} pointerEvents="none">
+                <Ionicons name="chatbubble-outline" size={48} color={isDark ? "#444444" : "#cccccc"} />
+                <Text style={[s.emptyText, isDark && s.metaDark]}>Start a conversation</Text>
+                <Text style={[s.emptyHint, isDark && s.metaDark]}>Type / for commands</Text>
+              </View>
+            )}
             {showScrollButton && (
               <TouchableOpacity style={[s.scrollBtn, isDark && s.scrollBtnDark]} onPress={() => scrollToBottom(true)}>
                 <Ionicons name="chevron-down" size={24} color={isDark ? "#ffffff" : "#0a0a0a"} />
@@ -690,13 +692,13 @@ const s = StyleSheet.create({
   },
   loadingMoreText: { fontSize: 13, color: "#999999" },
 
-  // Empty (inverted list flips content, so use transform to un-flip)
-  emptyInverted: {
-    flex: 1,
+  // Empty state overlay — sits on top of the (empty) inverted list, untransformed,
+  // so its text/icon render upright and un-mirrored on Android.
+  emptyOverlay: {
+    ...StyleSheet.absoluteFillObject,
     justifyContent: "center",
     alignItems: "center",
     paddingVertical: 64,
-    transform: [{ scaleY: -1 }],
   },
 
   // Empty
