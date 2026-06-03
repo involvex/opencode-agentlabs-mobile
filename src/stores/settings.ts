@@ -1,6 +1,7 @@
 import { create } from "zustand"
 import * as SecureStore from "expo-secure-store"
 import { type Category, defaultPreferences } from "../lib/notifications"
+import { clampPageSize, mergeStoredSettings } from "../lib/settings-merge"
 
 const SETTINGS_KEY = "opencode_settings"
 
@@ -37,16 +38,15 @@ export const useSettings = create<SettingsState>((set, get) => ({
     const raw = await SecureStore.getItemAsync(SETTINGS_KEY)
     if (raw) {
       const parsed = JSON.parse(raw) as Partial<Settings>
-      // Merge stored notifications with defaults so new categories get their default
-      const notifications = { ...DEFAULTS.notifications, ...parsed.notifications }
-      set({ ...DEFAULTS, ...parsed, notifications, loaded: true })
+      // Merge stored settings with defaults so new fields/categories get their default
+      set({ ...mergeStoredSettings(DEFAULTS, parsed), loaded: true })
       return
     }
     set({ loaded: true })
   },
 
   setPageSize: async (size) => {
-    const clamped = Math.max(10, Math.min(200, size))
+    const clamped = clampPageSize(size)
     set({ pageSize: clamped })
     await persist({ ...snapshot(get), pageSize: clamped })
   },

@@ -2,10 +2,7 @@ import { create } from "zustand"
 import { useConnections } from "./connections"
 import { useSessions } from "./sessions"
 import { send as notify } from "../lib/notifications"
-
-const MAX_NOTIF_BODY = 200
-const sanitizeBody = (s: string | undefined, fallback: string): string =>
-  (s ? s.replace(/[\x00-\x1f\x7f]/g, " ").trim().slice(0, MAX_NOTIF_BODY) : "") || fallback
+import { sanitizeBody } from "../lib/notify-format"
 import { addBreadcrumb } from "../lib/sentry"
 import type { Client, Part, Session, Message } from "../lib/sdk"
 
