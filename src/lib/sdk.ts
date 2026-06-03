@@ -3,6 +3,7 @@
 // but works in React Native environment
 // expo/fetch provides WinterCG-compliant fetch with ReadableStream support for SSE
 import { fetch as expoFetch } from "expo/fetch"
+import { buildRequestHeaders } from "./headers"
 
 export interface ClientConfig {
   baseUrl: string
@@ -154,21 +155,7 @@ export interface HealthResponse {
 const REQUEST_TIMEOUT_MS = 30_000
 
 function createHeaders(config: ClientConfig): HeadersInit {
-  const headers: HeadersInit = {
-    "Content-Type": "application/json",
-  }
-
-  if (config.directory) {
-    const encoded = /[^\x00-\x7F]/.test(config.directory) ? encodeURIComponent(config.directory) : config.directory
-    headers["x-opencode-directory"] = encoded
-  }
-
-  if (config.auth) {
-    const credentials = btoa(`${config.auth.username}:${config.auth.password}`)
-    headers["Authorization"] = `Basic ${credentials}`
-  }
-
-  return headers
+  return buildRequestHeaders(config)
 }
 
 async function request<T>(config: ClientConfig, path: string, options: RequestInit = {}): Promise<T> {
