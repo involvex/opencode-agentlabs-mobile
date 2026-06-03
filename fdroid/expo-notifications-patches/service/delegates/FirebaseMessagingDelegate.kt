@@ -10,9 +10,10 @@ import java.util.*
 /**
  * Stub implementation (Firebase-free) for F-Droid builds.
  * This app only uses local notifications - no FCM push tokens or remote messages.
+ * Does NOT implement the interfaces.FirebaseMessagingDelegate interface to avoid
+ * unresolved reference errors (the interface stub is only needed for FirebaseTokenListener).
  */
-open class FirebaseMessagingDelegate(protected val context: Context) :
-    expo.modules.notifications.service.interfaces.FirebaseMessagingDelegate {
+open class FirebaseMessagingDelegate(protected val context: Context) {
 
   companion object {
     protected var sLastToken: String? = null
@@ -41,14 +42,14 @@ open class FirebaseMessagingDelegate(protected val context: Context) :
     }
   }
 
-  override fun onNewToken(token: String) {
+  fun onNewToken(token: String) {
     for (listenerReference in sTokenListenersReferences.values) {
       listenerReference?.get()?.onNewToken(token)
     }
     sLastToken = token
   }
 
-  override fun onDeletedMessages() {
+  fun onDeletedMessages() {
     // no-op
   }
 }
