@@ -4,6 +4,7 @@
 // expo/fetch provides WinterCG-compliant fetch with ReadableStream support for SSE
 import { fetch as expoFetch } from "expo/fetch"
 import { buildRequestHeaders } from "./headers"
+import { SSEParser } from "./sse"
 
 export interface ClientConfig {
   baseUrl: string
@@ -220,27 +221,18 @@ export function createClient(config: ClientConfig) {
 
         const reader = response.body.getReader()
         const decoder = new TextDecoder()
-        let buffer = ""
+        const parser = new SSEParser()
 
         try {
           while (true) {
             const { done, value } = await reader.read()
             if (done) break
 
-            buffer += decoder.decode(value, { stream: true })
-            const lines = buffer.split("\n")
-            buffer = lines.pop() || ""
-
-            for (const line of lines) {
-              if (line.startsWith("data: ")) {
-                const data = line.slice(6)
-                if (data && data !== "[DONE]") {
-                  try {
-                    yield JSON.parse(data)
-                  } catch (err) {
-                    console.warn("[SSE] Failed to parse event:", data.slice(0, 200), err)
-                  }
-                }
+            for (const data of parser.push(decoder.decode(value, { stream: true }))) {
+              try {
+                yield JSON.parse(data)
+              } catch (err) {
+                console.warn("[SSE] Failed to parse event:", data.slice(0, 200), err)
               }
             }
           }
