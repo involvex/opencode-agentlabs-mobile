@@ -148,6 +148,12 @@ android {
     androidResources {
         ignoreAssetsPattern '!.svn:!.git:!.ds_store:!*.scc:!CVS:!thumbs.db:!picasa.ini:!*~'
     }
+    dependenciesInfo {
+        // Disable encrypted dependency metadata signing block (0x504B4453).
+        // Required for F-Droid compliance — fdroid scanner rejects APKs containing this block.
+        includeInApk false
+        includeInBundle false
+    }
 }
 
 // Apply static values from `gradle.properties` to the `android.packagingOptions`
