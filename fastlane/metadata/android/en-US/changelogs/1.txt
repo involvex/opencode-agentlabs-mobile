@@ -1,7 +1,0 @@
-Initial release.
-
-- Connect to your self-hosted opencode server over local network or tunnel
-- Drive AI coding sessions from your phone: streaming chat, diff viewer, file tree
-- Multi-session management and tool call approval
-- Biometric unlock (fingerprint / PIN)
-- Crash reporting via Sentry (opt-in, default OFF)

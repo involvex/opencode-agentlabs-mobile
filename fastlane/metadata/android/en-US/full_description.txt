@@ -1,39 +1,41 @@
-OpenCode Mobile is a free, open-source (MIT) client for the opencode AI coding agent (sst/opencode). Connect to your self-hosted opencode server and drive AI-powered coding sessions from your phone — no proprietary backend, no mandatory accounts, no tracking by default.
-
-Available on F-Droid and IzzyOnDroid for privacy-conscious users who prefer OSS-only distribution channels. Also available on Google Play with the identical MIT-licensed binary.
+OpenCode Mobile is a free, open-source (MIT) Android client for the opencode AI coding agent (sst/opencode). Connect to your own self-hosted opencode server and drive AI-powered coding sessions from your phone — no proprietary backend, no mandatory accounts, no tracking by default.
 
 KEY FEATURES
 
-• Multiple connection types — local network, secure tunnels (Cloudflare, ngrok), or any self-hosted opencode instance
-• Biometric unlock — fingerprint / Face ID / PIN to keep your sessions private
+• Multiple connection types — local network, Cloudflare Tunnel, ngrok, or Tailscale to reach any self-hosted opencode instance
 • Real-time streaming chat — watch your AI agent think and respond live
-• File diff viewer — see exactly what code changes the agent proposes before you accept
-• Multi-session management — start, resume, and switch between coding sessions
-• Tool call approval — review and approve agent actions before they run on your code
+• Inline diff viewer — see exactly what code changes the agent proposes before you accept
+• Tool-call approval — review and approve agent actions before they run on your code
+• Session management — browse, create, and resume coding sessions
+• Biometric unlock — OS-level fingerprint / PIN to keep your sessions private
+• Secure on-device credential storage — connection secrets are kept in the Android Keystore via expo-secure-store
 
 WHO IT'S FOR
 
 • Developers who run opencode (sst/opencode) on their workstation or a server
 • Engineers who want to check in on long-running coding sessions away from their desk
-• Teams who self-host AI dev tools and need a polished mobile companion
-• Privacy-conscious developers who want a mobile coding assistant with zero vendor lock-in
+• Privacy-conscious developers who want a mobile coding companion with zero vendor lock-in
+
+REQUIREMENTS
+
+• Your own opencode server, started with `opencode serve`
+• A way to reach it from your phone — local network, or a tunnel such as Tailscale, Cloudflare Tunnel, or ngrok
+• Your own AI provider keys, configured on your server — they stay on your server and never touch this app
 
 OPEN SOURCE + PRIVACY BY DEFAULT
 
 OpenCode Mobile is MIT licensed. Source code, issue tracker, and community discussion live at:
 https://github.com/dzianisv/opencode-mobile
 
-Crash reporting (Sentry) is opt-in with default OFF. Your code, prompts, and AI responses never leave your own server. The app sends nothing to VIBE TECHNOLOGIES, LLC unless you explicitly enable crash reporting in Settings → Privacy.
+There are no ads. Crash reporting (Sentry) is opt-in and OFF by default. Your code, prompts, and AI responses go directly between your phone and your own server — the app sends nothing elsewhere unless you explicitly enable crash reporting in Settings → Privacy.
 
 SELF-HOSTED FIRST
 
-The app requires you to bring your own opencode server. This is a feature, not a limitation — your AI traffic goes directly to your backend (which can connect to Claude, GPT, Gemini, local models, or any opencode-compatible endpoint). No middleman, no subscription required for core functionality.
+The app requires you to bring your own opencode server. This is a feature, not a limitation — your AI traffic goes directly to your backend, which can connect to Claude, GPT, Gemini, local models, or any opencode-compatible endpoint. No middleman, no required subscription.
 
-An optional opencode Cloud hosted backend is planned as a future paid service for users who prefer not to self-host — but the client will always be free, open, and fully functional without it.
+ANTI-FEATURES DISCLOSURE
 
-ANTI-FEATURES DISCLOSURE (F-Droid)
-
-NonFreeNet: The opencode server you connect to may in turn connect to proprietary AI services (OpenAI, Anthropic, Google). The app itself contains no proprietary network code and does not require any specific provider.
+NonFreeNet: The opencode server you connect to may in turn connect to proprietary AI services (for example OpenAI, Anthropic, or Google). The app itself contains no proprietary network code and does not require any specific provider.
 
 SUPPORT
 
