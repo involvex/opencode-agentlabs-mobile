@@ -69,15 +69,13 @@ Goal: bug-free E2E + published on F-Droid & Play + 1k downloads.
    commit, then `git tag v0.4.4 && git push origin main --tags`. The `v*` tag fires
    `publish-fdroid.yml` and `publish-play-store.yml` automatically.
 
-1. **Publish privacy policy live (blocks Play production).** `https://opencode.vibebrowser.app/privacy`
-   currently fails to resolve (curl exit 6 / host not found — not deployed). The Play
-   "App content" answers and the IzzyOnDroid request both cite this exact URL, so it
-   must serve `distribution/privacy-policy.html` at the path `/privacy`. Steps:
-   (a) confirm/create DNS for `opencode.vibebrowser.app`; (b) host the file — easiest is
-   any static host (e.g. add a `privacy.html`/`/privacy` route on the existing
-   vibebrowser.app deployment, or a Vercel/Netlify/GitHub Pages site for this subdomain);
-   (c) verify: `curl -sI https://opencode.vibebrowser.app/privacy` returns `200`.
-   Source file: `distribution/privacy-policy.html` (markdown source mirror:
+1. **Privacy policy is live (Play-production blocker cleared).** Canonical privacy URL is
+   now `https://dzianisv.github.io/opencode-mobile/privacy/` — live & verified (HTTP 200) on
+   the gh-pages branch, serving `distribution/privacy-policy.html`. This GitHub Pages URL is
+   the canonical privacy URL cited across all store-submission docs (Play "App content"
+   answers, IzzyOnDroid request). If the owner later deploys the branded
+   `opencode.vibebrowser.app/privacy`, it can replace the GitHub Pages URL — this change is
+   reversible. Source file: `distribution/privacy-policy.html` (markdown mirror:
    `distribution/privacy-policy.md`).
 
 2. **Google Play → production (biggest unlock, ~15 min).**

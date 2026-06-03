@@ -103,7 +103,7 @@ Alternative / supplemental terms to rotate in A/B: `code review`, `AI assistant`
 |---|---|
 | Support URL | https://agentlabs.cc/opencode |
 | Marketing URL | https://github.com/dzianisv/opencode-mobile |
-| Privacy Policy URL | https://opencode.vibebrowser.app/privacy |
+| Privacy Policy URL | https://dzianisv.github.io/opencode-mobile/privacy/ |
 
 ---
 
@@ -339,7 +339,7 @@ To use: you need opencode running somewhere accessible (local Wi-Fi, Tailscale, 
 - [ ] App icon 1024×1024 PNG (no alpha, no rounded corners)
 - [ ] iPhone screenshots (6.7" minimum; 6.5" strongly recommended)
 - [ ] iPad screenshots (12.9" minimum)
-- [ ] Privacy policy live at https://opencode.vibebrowser.app/privacy
+- [ ] Privacy policy live at https://dzianisv.github.io/opencode-mobile/privacy/
 - [ ] App Store Connect API key created (for CI — Key ID, Issuer ID, .p8 file)
 - [ ] Apple Distribution certificate + provisioning profile (or use EAS managed signing)
 - [ ] Export compliance answered (No to custom encryption)

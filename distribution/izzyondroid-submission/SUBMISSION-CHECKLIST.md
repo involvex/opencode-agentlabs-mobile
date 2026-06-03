@@ -17,7 +17,7 @@ IzzyOnDroid is the fastest OSS distribution channel — typical inclusion is
 - [ ] APK is signed with `keystores/production-release.jks`
 - [ ] SHA-256 fingerprint confirmed: see `distribution/SIGNING-KEY-FINGERPRINTS.md`
 - [ ] Sentry opt-in gate is in production (avoids `Tracking` anti-feature escalation)
-- [ ] Privacy policy is live at `https://opencode.vibebrowser.app/privacy`
+- [ ] Privacy policy is live at `https://dzianisv.github.io/opencode-mobile/privacy/`
 - [ ] `app.json` `version` and `android.versionCode` are set correctly in the tagged commit
 
 ---

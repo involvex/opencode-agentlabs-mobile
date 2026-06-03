@@ -56,5 +56,5 @@ When the privacy policy changes, re-deploy the site to pick up the new version.
 ## Verification command
 
 ```bash
-curl -sI https://opencode.vibebrowser.app/privacy | head -3
+curl -sI https://dzianisv.github.io/opencode-mobile/privacy/ | head -3
 ```

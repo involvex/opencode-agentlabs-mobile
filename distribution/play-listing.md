@@ -144,7 +144,7 @@ Issues: github.com/dzianisv/opencode-mobile/issues
 
 **Required.** Must be a public URL.
 
-Suggested path: `https://opencode.vibebrowser.app/privacy`
+Suggested path: `https://dzianisv.github.io/opencode-mobile/privacy/`
 
 Privacy policy must cover:
 - What data is collected (Sentry crash diagnostics: device model, OS version, stack trace; no user content)
@@ -297,7 +297,7 @@ CI currently publishes to `internal` track. ✅
 - [ ] Adaptive icon (real PNG)
 - [ ] Feature graphic 1024×500
 - [ ] At least 2 phone screenshots
-- [ ] Privacy policy live at https://opencode.vibebrowser.app/privacy
+- [ ] Privacy policy live at https://dzianisv.github.io/opencode-mobile/privacy/
 - [ ] Decide pricing model
 - [ ] Run IARC content rating questionnaire (after app created in Play Console)
 - [ ] Complete Data safety form (after app created in Play Console)

@@ -16,7 +16,7 @@ App facts these answers derive from:
 ---
 
 ## 1. Privacy policy
-- URL: `https://opencode.vibebrowser.app/privacy`
+- URL: `https://dzianisv.github.io/opencode-mobile/privacy/`
 
 ## 2. Data safety
 **Does your app collect or share any required user data types?**

@@ -163,7 +163,7 @@ We welcome bug reports, feature requests, and pull requests. See [CONTRIBUTING.m
 
 OpenCode Mobile does not collect personal data. Optional Sentry crash reporting (opt-in, off by default) sends anonymised crash traces to Sentry. No analytics SDKs are bundled. Credentials are stored exclusively on-device in the OS keystore.
 
-Full privacy policy: [opencode.vibebrowser.app/privacy](https://opencode.vibebrowser.app/privacy)
+Full privacy policy: [dzianisv.github.io/opencode-mobile/privacy](https://dzianisv.github.io/opencode-mobile/privacy/)
 
 ---
 

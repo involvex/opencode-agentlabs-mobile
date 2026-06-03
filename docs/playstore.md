@@ -64,7 +64,7 @@ For full company facts (D-U-N-S, address, governor, etc.) see `~/.agents/skills/
 | 3 | Adaptive icon — 432×432 foreground PNG | Agent | ✅ done — `assets/adaptive-icon.png` (432×432, transparent bg) |
 | 4 | Feature graphic — 1024×500 PNG | Agent | ✅ done — `distribution/play-graphics/feature-graphic.png` |
 | 5 | At least 2 phone screenshots (1080×1920 or similar) | Agent | ✅ done — `distribution/play-graphics/phone-{01,02,03}.png` (1080×2400 each; 3 screens: connection, chat, diff viewer) |
-| 6 | Privacy policy — live at https://opencode.vibebrowser.app/privacy | Agent | ✅ done — `distribution/privacy-policy.html` (deployed to opencode.vibebrowser.app/privacy), `distribution/privacy-policy.md` (source) |
+| 6 | Privacy policy — live at https://dzianisv.github.io/opencode-mobile/privacy/ | Agent | ✅ done — live & verified (HTTP 200) on gh-pages; `distribution/privacy-policy.html` (source), `distribution/privacy-policy.md` (markdown mirror) |
 | 7 | Data safety form answers (drafted in `distribution/play-listing.md`) | User (in Console after app created) | ✅ verified — no analytics/ad SDKs found; crash logs updated to "Optional (opt-in, default OFF)" per new consent gate |
 | 8 | Content rating questionnaire (IARC, drafted) | User (in Console after app created) | ✅ verified — no violence/sexual/gambling/UGC; "interact with other users" = No (user talks to own AI agent) |
 | 9 | App access — reviewer instructions for self-hosted opencode (drafted) | User | ✅ verified — instructions accurate; `npm install -g opencode-ai && opencode serve` flow confirmed in `play-listing.md` |

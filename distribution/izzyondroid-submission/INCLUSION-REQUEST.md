@@ -107,4 +107,4 @@ We will notify the IzzyOnDroid team via this issue when that happens.
 Developer: VIBE TECHNOLOGIES, LLC
 Email: support@vibebrowser.app
 Website: https://agentlabs.cc/opencode
-Privacy policy: https://opencode.vibebrowser.app/privacy
+Privacy policy: https://dzianisv.github.io/opencode-mobile/privacy/
