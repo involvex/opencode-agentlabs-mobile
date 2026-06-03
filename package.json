@@ -48,6 +48,11 @@
   "expo": {
     "install": {
       "exclude": []
+    },
+    "autolinking": {
+      "buildFromSource": [
+        ".*"
+      ]
     }
   }
 }
