@@ -2,7 +2,7 @@
 name: readiness-check
 description: Verify OpenCode Mobile is PRODUCTION READY end-to-end. Triggers like "check production readiness", "are we ready to ship", "readiness check", "is opencode-mobile live", "is the app published". Runs a script that confirms both Google Play and F-Droid (self-hosted + mainline) are PUBLISHED and the app/site are healthy.
 category: release
-version: 1.0.0
+version: 1.1.0
 ---
 
 # OpenCode Mobile — Readiness Check
@@ -21,21 +21,23 @@ If, and only if, every REQUIRED gate passes, the verdict is `PRODUCTION READY`.
 
 ## How to run
 
-From the repo root:
+From the repo root (the check is a TypeScript file run directly by Node — no build, no deps):
 
 ```bash
-bash .agents/skills/readiness-check/check.sh
+node .agents/skills/readiness-check/check.ts
 ```
 
 Fast mode — skip the slow npm app-health gates, only check live published-status URLs:
 
 ```bash
-bash .agents/skills/readiness-check/check.sh --quick
+node .agents/skills/readiness-check/check.ts --quick
 ```
 
-The script needs only `curl` and `git`. It opportunistically uses `python3` or `jq`
-to parse the F-Droid index, and `gh` for the optional repo-discoverability gate.
-Missing optional tools degrade gracefully (gate reports `WARN` or `UNKNOWN`, never crashes).
+Requires **Node ≥ 23.6** (this repo runs Node 26), which executes `.ts` files natively via
+type-stripping — no transpile or extra dependencies. HTTP checks use the built-in `fetch`
+and JSON parsing is native, so there is no `curl`/`jq`/`python3` dependency. `git` is used to
+locate the repo root and `gh` for the optional repo-discoverability gate; both degrade
+gracefully if missing (gate reports `WARN`/`UNKNOWN`, never crashes).
 
 ## What it checks
 
