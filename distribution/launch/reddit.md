@@ -30,8 +30,8 @@ The interesting engineering bits:
 
 MIT licensed, source at https://github.com/dzianisv/opencode-mobile.
 
-Play Store: {{PLAY_URL}}
-Landing page: https://agentlabs.cc/opencode
+Get it (F-Droid repo or direct APK): https://dzianisv.github.io/opencode-mobile/
+Google Play: coming soon (internal testing for now)
 
 Happy to get into any of the implementation details — the SSE + approval flow coordination was the trickiest part.
 
@@ -66,9 +66,9 @@ Not a standalone AI model. You need opencode running: `npm install -g opencode-a
 
 No accounts, no analytics, no proprietary backend. Sentry crash reporting is opt-in and off by default.
 
-Play Store: {{PLAY_URL}}
-F-Droid: {{FDROID_URL}} (submission in progress)
-Landing page: https://agentlabs.cc/opencode
+Install (add this repo URL in your F-Droid client): https://dzianisv.github.io/opencode-mobile/fdroid/repo
+Direct APK / all options: https://dzianisv.github.io/opencode-mobile/
+Google Play: coming soon (internal testing for now)
 
 ---
 
@@ -95,7 +95,7 @@ opencode supports any OpenAI-compatible API via its provider config. Point it at
 
 **Source / license:** MIT, https://github.com/dzianisv/opencode-mobile
 
-Play Store: {{PLAY_URL}}
-Landing page: https://agentlabs.cc/opencode
+Get it (F-Droid repo or direct APK): https://dzianisv.github.io/opencode-mobile/
+Google Play: coming soon (internal testing for now)
 
 I'm interested in feedback from anyone running local models — particularly around latency on the SSE stream when the model is slow. Does the streaming UI feel OK when tokens come in at 3–5/sec?

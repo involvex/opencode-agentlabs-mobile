@@ -82,10 +82,9 @@ F-Droid submission in progress.
 ```
 Now on Android.
 
-Play Store: {{PLAY_URL}}
+Get it (F-Droid repo + direct APK): https://dzianisv.github.io/opencode-mobile/
 Source + docs: github.com/dzianisv/opencode-mobile
-Landing page: https://agentlabs.cc/opencode
 
-If you run opencode, give it a try. Issues and PRs welcome.
+Google Play coming soon. If you run opencode, give it a try — issues and PRs welcome.
 ```
-(196 chars — adjust after filling {{PLAY_URL}})
+(238 chars)

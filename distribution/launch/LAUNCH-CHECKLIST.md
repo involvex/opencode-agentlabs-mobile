@@ -1,6 +1,6 @@
 # Launch Checklist
 
-> BEFORE POSTING: Replace every `{{PLAY_URL}}` and `{{FDROID_URL}}` placeholder with the real store URLs. Do not post any file that still contains a `{{...}}` token.
+> READY TO POST: All drafts now contain the live, verified install URLs — no `{{...}}` placeholders remain. Primary CTA is the landing page (https://dzianisv.github.io/opencode-mobile/), which lists the self-hosted F-Droid repo and direct APK. Google Play is still in internal testing (not public), so every draft frames it as "coming soon" — do not add a play.google.com link until the production track is live.
 
 ---
 
@@ -8,8 +8,8 @@
 
 | # | Action | File | Day / Time | Notes |
 |---|---|---|---|---|
-| 1 | Merge final Play Store listing copy to console | — | T-3 days | Prerequisite; listing must be live before linking |
-| 2 | Promote Play track to Production (or Open Testing) | — | T-1 day | App must be installable before any post |
+| 1 | Confirm landing page + F-Droid repo + latest APK release are reachable | — | T-1 day | These are the live install paths used in every draft |
+| 2 | (Optional, when ready) Promote Play track to Production / Open Testing, then add the link to drafts | — | When approved | Play is internal-only today; drafts say "coming soon" until this lands |
 | 3 | Post to **Hacker News** (Show HN) | `show-hn.md` | Tuesday–Thursday, 8–10am US Eastern | HN front page peaks mid-morning weekdays; one shot |
 | 4 | Post to **r/selfhosted** | `reddit.md` | Same day as HN, ~1hr after | Cross-traffic from HN helps early upvotes |
 | 5 | Post to **r/androiddev** | `reddit.md` | Same day, ~2hrs after HN | Tech audience; upvote momentum from HN useful |
@@ -25,4 +25,4 @@
 - Reply to all HN comments within 6 hours of posting
 - Reply to all Reddit comments within 24 hours
 - Monitor Play Console reviews; respond to 1–3 stars within 48 hours
-- File F-Droid MR (`{{FDROID_URL}}` placeholder) once Sentry opt-in gate is merged
+- Self-hosted F-Droid repo is live at https://dzianisv.github.io/opencode-mobile/fdroid/repo (used in all drafts). Optional: file an upstream fdroiddata MR for inclusion in the main F-Droid catalog once the Sentry opt-in gate is merged

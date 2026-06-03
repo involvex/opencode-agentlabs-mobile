@@ -20,10 +20,11 @@ You get token-by-token streaming output, a full inline diff viewer for every fil
 Free and MIT licensed. No subscription, no ads, no telemetry you didn't opt into.
 
 **Links:**
-- Play Store: {{PLAY_URL}}
-- F-Droid: {{FDROID_URL}}
+- Get it (all install options): https://dzianisv.github.io/opencode-mobile/
+- F-Droid repo (add in your F-Droid client): https://dzianisv.github.io/opencode-mobile/fdroid/repo
+- Direct APK: https://github.com/dzianisv/opencode-mobile/releases/latest
 - Source: https://github.com/dzianisv/opencode-mobile
-- Landing page: https://agentlabs.cc/opencode
+- Google Play: coming soon (currently in internal testing)
 
 ---
 
