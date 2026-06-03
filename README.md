@@ -1,16 +1,33 @@
 # OpenCode Mobile
 
-**The open-source mobile client for the [opencode](https://github.com/sst/opencode) AI coding agent.**
-AI-assisted coding from your phone — iOS, Android, and F-Droid.
+**The open-source Android client for the [opencode](https://github.com/sst/opencode) AI coding agent.**
+AI-assisted coding from your phone — Android, via F-Droid or a direct APK.
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
+[![F-Droid repo](https://img.shields.io/badge/F--Droid-add_our_repo-1976D2?logo=f-droid)](https://dzianisv.github.io/opencode-mobile/fdroid/repo)
 [![Download APK](https://img.shields.io/badge/Download-APK-green?logo=android)](https://github.com/dzianisv/opencode-mobile/releases/latest)
 [![Google Play](https://img.shields.io/badge/Google_Play-coming_soon-lightgrey?logo=google-play)](#)
-[![F-Droid](https://img.shields.io/badge/F--Droid-submitted-orange?logo=f-droid)](https://gitlab.com/fdroid/fdroiddata/-/merge_requests/39530)
 
 ---
 
-OpenCode Mobile is a React Native / Expo app that brings the power of the [opencode](https://github.com/sst/opencode) AI coding agent to your phone. Connect to your own self-hosted opencode server over your local network, a Cloudflare Tunnel, ngrok, Tailscale, or the upcoming opencode Cloud — and write, review, and ship code from anywhere. The mobile client is **free and open-source** under the MIT license. There is no feature gate, no telemetry you did not opt into, and no ad network.
+## Install (Android)
+
+There are **two working ways** to install OpenCode Mobile today, both for Android:
+
+1. **F-Droid (recommended)** — add our self-hosted repo to any F-Droid client, then install/update from there:
+   ```
+   https://dzianisv.github.io/opencode-mobile/fdroid/repo
+   ```
+   In the F-Droid app: **Settings → Repositories → + (add)** and paste the URL above. Current version: **v0.4.3**.
+
+2. **Direct signed APK** — download the latest release and install it manually:
+   **https://github.com/dzianisv/opencode-mobile/releases/latest**
+
+> iOS is not available (see [Roadmap](#roadmap)). Google Play is in internal testing only (no public listing yet). IzzyOnDroid submission is pending.
+
+---
+
+OpenCode Mobile is a React Native / Expo app that brings the power of the [opencode](https://github.com/sst/opencode) AI coding agent to your phone. Connect to your own self-hosted opencode server over your local network, a Cloudflare Tunnel, ngrok, or Tailscale — and write, review, and ship code from anywhere. The mobile client is **free and open-source** under the MIT license. There is no feature gate, no telemetry you did not opt into, and no ad network.
 
 ---
 
@@ -24,26 +41,29 @@ OpenCode Mobile is a React Native / Expo app that brings the power of the [openc
 
 ## Features
 
-- **Multi-connection** — manage multiple opencode servers (local network, Cloudflare Tunnel, ngrok, Tailscale, or opencode Cloud)
+- **Multi-connection** — manage multiple opencode servers (local network, Cloudflare Tunnel, ngrok, or Tailscale)
 - **Biometric unlock** — Face ID, Touch ID, or Android fingerprint protects the app and individual message sends
 - **Streaming chat** — token-by-token streaming responses directly from your opencode server
 - **Diff viewer** — inline side-by-side diffs of every file change the agent makes
 - **Tool call approval** — review and approve (or reject) tool calls before the agent executes them
-- **Secure credential storage** — server credentials stored in iOS Keychain / Android Keystore via `expo-secure-store`
+- **Secure credential storage** — server credentials stored in the Android Keystore via `expo-secure-store`
 - **Session management** — browse, create, and resume coding sessions
 
 ---
 
 ## Get OpenCode Mobile
 
-| Platform | Link |
-|---|---|
-| Google Play | [play.google.com — ai.opencode.mobile](https://play.google.com/store/apps/details?id=ai.opencode.mobile) |
-| Apple App Store | [apps.apple.com — OpenCode Mobile](https://apps.apple.com/app/opencode-mobile/id0000000000) |
-| F-Droid | [f-droid.org/packages/ai.opencode.mobile](https://f-droid.org/packages/ai.opencode.mobile) |
-| IzzyOnDroid | [apt.izzysoft.de — ai.opencode.mobile](https://apt.izzysoft.de/fdroid/index/apk/ai.opencode.mobile) |
+Package: `cc.agentlabs.opencode` · Android only · current version v0.4.3
 
-> **Note**: App Store and F-Droid listings are pending final review. Play Store internal testing is live.
+| Channel | Status | How |
+|---|---|---|
+| **F-Droid (self-hosted repo)** | **Live** | Add [`https://dzianisv.github.io/opencode-mobile/fdroid/repo`](https://dzianisv.github.io/opencode-mobile/fdroid/repo) in your F-Droid client |
+| **Direct APK** | **Live** | [github.com/dzianisv/opencode-mobile/releases/latest](https://github.com/dzianisv/opencode-mobile/releases/latest) |
+| Google Play | Internal testing / coming soon | No public listing yet |
+| IzzyOnDroid | Submission pending | Not live yet |
+| Apple App Store / iOS | Not available | See [Roadmap](#roadmap) |
+
+> The two live, supported install channels are the **F-Droid self-hosted repo** and the **direct signed APK**, both Android. Google Play is internal-testing only, IzzyOnDroid is pending, and there is no iOS build.
 
 ---
 
@@ -59,7 +79,7 @@ npm install -g opencode
 OPENCODE_SERVER_PASSWORD=yourpassword opencode serve --hostname 0.0.0.0 --port 4096
 ```
 
-**Step 2 — Install OpenCode Mobile** from any store above (or build from source — see [CONTRIBUTING.md](CONTRIBUTING.md)).
+**Step 2 — Install OpenCode Mobile** via the [F-Droid self-hosted repo or direct APK](#install-android) (or build from source — see [CONTRIBUTING.md](CONTRIBUTING.md)).
 
 **Step 3 — Add a connection in the app**
 
@@ -68,7 +88,7 @@ Open the app, tap **Add Connection**, and choose your connection type:
 - **Local network** — your machine's LAN IP, e.g. `http://192.168.1.100:4096`
 - **Tunnel** — a Cloudflare Tunnel or ngrok URL, e.g. `https://my-opencode.trycloudflare.com`
 - **Tailscale** — your machine's Tailscale IP, e.g. `http://100.x.x.x:4096`
-- **opencode Cloud** *(coming soon)* — one-tap managed hosting, no server to run
+- **opencode Cloud** *(planned — not yet shipped)* — one-tap managed hosting, no server to run
 
 Enter the password you set in Step 1, tap **Connect**, and you're in.
 
@@ -84,7 +104,7 @@ OpenCode Mobile is a thin client. It speaks the opencode HTTP + SSE API: listing
 │  (React Native / Expo, this repo)   │
 └──────────────┬──────────────────────┘
                │  HTTP + SSE
-               │  (local network / tunnel / cloud)
+               │  (local network / tunnel)
                ▼
 ┌─────────────────────────────────────┐
 │       opencode server               │
@@ -104,7 +124,7 @@ OpenCode Mobile is a thin client. It speaks the opencode HTTP + SSE API: listing
 
 ## Project Status
 
-**Current version: v0.2.3**
+**Current version: v0.4.3**
 
 | Feature | Status |
 |---|---|
