@@ -8,6 +8,10 @@ AI-assisted coding from your phone — Android, via F-Droid or a direct APK.
 [![Download APK](https://img.shields.io/badge/Download-APK-green?logo=android)](https://github.com/dzianisv/opencode-mobile/releases/latest)
 [![Google Play](https://img.shields.io/badge/Google_Play-coming_soon-lightgrey?logo=google-play)](#)
 
+> **Not affiliated with opencode.** OpenCode Mobile is an independent, community-built client and is
+> not made by, endorsed by, or affiliated with the opencode / Anomaly team. It talks to an opencode
+> server you run yourself, using opencode's open HTTP API.
+
 ---
 
 ## Install (Android)
