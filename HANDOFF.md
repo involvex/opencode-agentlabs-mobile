@@ -56,14 +56,28 @@ Goal: bug-free E2E + published on F-Droid & Play + 1k downloads.
 
 ## OWNER ACTIONS REQUIRED — only these unblock #2/#3/#5 (agent cannot do them)
 
-0. **Push the local commits (push is permission-gated for the agent).**
-   **13 commits unpushed on `main`** as of 2026-06-08 (run `git log origin/main..main --oneline`
+0. **Push the local commits (push is permission-gated for the agent — harness blocks `git push`).**
+   **17 commits unpushed on `main`** as of 2026-06-08 (run `git log origin/main..main --oneline`
    to confirm). All reach ZERO users until pushed — this is the dominant growth bottleneck.
+   Owner approved "push + tag v0.4.4" but the harness denies the agent's `git push`; owner must run it.
    Highlights: SEO pages `/features/`, `/download/`, `/troubleshooting/`, `/comparison/`,
-   `/vs-termux/`, `/claude-code-android/`; landing screenshot strip; README non-affiliation note;
-   CI typecheck+tests; test coverage 4→65; session-scope fix `ee7082a`.
-   Step: `source ~/.env.d/github-dzianisv.env && git push origin main`.
-   Pushing `main` (no tag) only redeploys GitHub Pages + runs CI — safe, no release fired.
+   `/vs-termux/`, `/claude-code-android/`, `/opencode-on-phone/` (targets proven "setup opencode on
+   phone" query); landing screenshot strip; ASO copy (keyword title + fixed dead privacy URL);
+   README non-affiliation note; CI typecheck+tests; test coverage 4→65; version bump 0.4.3→0.4.4.
+   Run (owner):
+   ```
+   cd /Users/engineer/workspace/opencode-mobile && source ~/.env.d/github-dzianisv.env
+   git push origin main                       # deploys site (safe, no release)
+   git tag v0.4.4 && git push origin main --tags   # fires F-Droid + Play publish
+   ```
+
+0b. **HARD GATE — test a real public release before ANY public/community posting (owner directive
+    2026-06-08).** Automated unit tests are NOT sufficient (no 100% coverage). Before posting to
+    HN / Reddit / PH / socials, a built release APK must be manually exercised across all core flows
+    (add-connection, session list, streaming chat, tool-call approve/reject, diff viewer, biometric
+    unlock) on a real device/emulator and confirmed free of bugs and UI/UX defects. The CUA smoke
+    currently runs `--only-connect-scenario` only — EXPAND it to all scenarios + human-review the
+    captured screenshots/video before greenlighting any public launch post.
    The session-scope fix is not yet in any release. To ship it, bump the version in
    BOTH `app.json` (line 5: `"version": "0.4.3"` → `"0.4.4"`) and
    `android/app/build.gradle` (line 98 `versionName "0.4.3"` → `"0.4.4"`; leave
