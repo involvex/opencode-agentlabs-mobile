@@ -122,33 +122,53 @@ jobs:
 
       - name: Probe opencode model capability (can it reply?)
         id: probe
+        env:
+          AZURE_OPENAI_MODEL: "gpt-5.4"
         run: |
           # Deterministic check that the server can actually produce an assistant
           # reply BEFORE we spend ~30min driving the UI. Creates a session, sends a
           # prompt via REST, and checks for an assistant message. Non-fatal: records
           # MODEL_CAPABLE=true/false so the scenario set can be chosen accordingly.
           set +e
-          SID=$(curl -sf -X POST http://127.0.0.1:4096/session -H 'content-type: application/json' -d '{}' | python3 -c "import sys,json;print(json.load(sys.stdin).get('id',''))" 2>/dev/null)
+          # Use -s (not -sf): we WANT the body even on non-2xx so failures are visible.
+          SID=$(curl -s -X POST http://127.0.0.1:4096/session -H 'content-type: application/json' -d '{}' | python3 -c "import sys,json;print(json.load(sys.stdin).get('id',''))" 2>/dev/null)
           echo "session id: ${SID:-<none>}"
           CAPABLE=false
           if [ -n "$SID" ]; then
-            curl -sf -X POST "http://127.0.0.1:4096/session/$SID/message" \
+            # The /session/{id}/message endpoint (what the app SDK's session.prompt
+            # hits) REQUIRES an explicit model {providerID, modelID}; without it opencode
+            # has nothing to run. Mirror exactly what the app sends: azure/gpt-5.4.
+            HTTP=$(curl -s -o /tmp/probe_reply.json -w '%{http_code}' \
+              -X POST "http://127.0.0.1:4096/session/$SID/message" \
               -H 'content-type: application/json' \
-              -d '{"parts":[{"type":"text","text":"reply with the single word: pong"}]}' \
-              > /tmp/probe_reply.json 2>/tmp/probe_err.txt
-            echo "--- probe reply (truncated) ---"; head -c 2000 /tmp/probe_reply.json; echo
+              -d "{\"model\":{\"providerID\":\"azure\",\"modelID\":\"$AZURE_OPENAI_MODEL\"},\"parts\":[{\"type\":\"text\",\"text\":\"reply with the single word: pong\"}]}" \
+              2>/tmp/probe_err.txt)
+            echo "probe HTTP status: ${HTTP:-<none>}"
+            echo "--- probe reply (truncated) ---"; head -c 3000 /tmp/probe_reply.json; echo
             echo "--- probe err (truncated) ---"; head -c 1000 /tmp/probe_err.txt; echo
-            if grep -qi 'assistant' /tmp/probe_reply.json && grep -qi 'pong\|text' /tmp/probe_reply.json; then
+            # Success = an assistant message part with non-empty text came back.
+            if [ "$HTTP" = "200" ] && grep -qi 'assistant' /tmp/probe_reply.json && grep -qi 'pong\|"text"' /tmp/probe_reply.json; then
               CAPABLE=true
             fi
           fi
           echo "MODEL_CAPABLE=$CAPABLE" >> "$GITHUB_OUTPUT"
           echo "opencode model-capable in CI: $CAPABLE"
+          # Choose the scenario set HERE (bash) and export it, so the emulator step's
+          # script (run by dash, which mangles multi-line if/fi blocks) stays single-line.
+          if [ "$CAPABLE" = "true" ]; then
+            SCENARIOS="connect_and_verify_sessions,send_message,verify_session_list"
+          else
+            SCENARIOS="connect_and_verify_sessions,verify_session_list"
+            echo "WARN: opencode not model-capable in CI; excluding send_message/multi_turn (environmental, not an app bug)."
+          fi
+          echo "SCENARIOS=$SCENARIOS" >> "$GITHUB_OUTPUT"
+          echo "chosen scenarios: $SCENARIOS"
 
       - name: Run CUA smoke test with emulator
         uses: reactivecircus/android-emulator-runner@v2
         env:
           MODEL_CAPABLE: ${{ steps.probe.outputs.MODEL_CAPABLE }}
+          SCENARIOS: ${{ steps.probe.outputs.SCENARIOS }}
         with:
           api-level: 30
           arch: x86_64
@@ -162,19 +182,14 @@ jobs:
             adb install android/app/build/outputs/apk/release/app-release.apk
             adb shell am start -n cc.agentlabs.opencode/.MainActivity
             sleep 5
-            # Scenario set widened to the real core journey. send_message requires the
-            # opencode server to actually reply (Azure provider wired in earlier step);
-            # if the model probe failed we drop it to the UI-only journey so the gate
-            # stays green and meaningful rather than red for an environmental reason.
-            if [ "${MODEL_CAPABLE}" = "true" ]; then
-              SCENARIOS="connect_and_verify_sessions,send_message,verify_session_list"
-            else
-              SCENARIOS="connect_and_verify_sessions,verify_session_list"
-              echo "WARN: opencode not model-capable in CI; excluding send_message/multi_turn (environmental, not an app bug)."
-            fi
-            echo "Running scenarios: $SCENARIOS"
+            # SCENARIOS is computed in the probe step (bash) and passed in via env, so
+            # this script stays single-line — dash (used by android-emulator-runner)
+            # mangles multi-line if/fi blocks. The widened core journey is
+            # connect -> create session -> send -> reply -> list; send_message is only
+            # included when the model probe confirmed opencode can reply.
+            echo "Running scenarios: ${SCENARIOS}"
             # --max-steps raised so multiple scenarios fit; each scenario gets its own budget.
-            python3 scripts/android-cua-smoke.py --model gpt-5.4 --include-xml --max-steps 40 --scenarios "$SCENARIOS"
+            python3 scripts/android-cua-smoke.py --model gpt-5.4 --include-xml --max-steps 40 --scenarios "${SCENARIOS}"
 
       - name: opencode server log
         if: always()
