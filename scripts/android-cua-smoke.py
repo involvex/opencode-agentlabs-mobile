@@ -634,6 +634,13 @@ def main():
         help="Run ONLY the connect-and-verify-sessions scenario. Use in CI with a "
              "local opencode server for a deterministic true-E2E (no model backend needed).",
     )
+    parser.add_argument(
+        "--scenarios",
+        help="Comma-separated explicit scenario set to run, e.g. "
+             "'connect_and_verify_sessions,send_message,verify_session_list'. "
+             "Valid names: connect_and_verify_sessions, send_message, multi_turn, "
+             "verify_session_list. Overrides --only-connect-scenario and the default set.",
+    )
     args = parser.parse_args()
 
     # Verify ADB
@@ -650,7 +657,18 @@ def main():
         "goal": _connect_and_verify_sessions_goal(connect_url),
     }
 
-    if args.only_connect_scenario:
+    if args.scenarios:
+        # Explicit named set (CI widened gate). Look up by name across the full catalog.
+        catalog = {connect_scenario["name"]: connect_scenario}
+        for s in SMOKE_SCENARIOS:
+            catalog[s["name"]] = s
+        requested = [n.strip() for n in args.scenarios.split(",") if n.strip()]
+        unknown = [n for n in requested if n not in catalog]
+        if unknown:
+            sys.exit(f"Unknown scenario(s): {', '.join(unknown)}. "
+                     f"Valid: {', '.join(catalog.keys())}")
+        scenarios = [catalog[n] for n in requested]
+    elif args.only_connect_scenario:
         # CI true-E2E: just connect to the local opencode server and verify the list.
         scenarios = [connect_scenario]
     else:
