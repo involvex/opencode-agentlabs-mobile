@@ -4,6 +4,7 @@ import * as Crypto from "expo-crypto"
 import type { ServerConnection, ConnectionType } from "../lib/types"
 import { createClient, type Client, type Project } from "../lib/sdk"
 import { addBreadcrumb } from "../lib/sentry"
+import { buildAuth } from "../lib/auth"
 
 const CONNECTIONS_KEY = "opencode_connections"
 const PASSWORDS_PREFIX = "opencode_password_"
@@ -88,7 +89,7 @@ export const useConnections = create<ConnectionsState>((set, get) => ({
       let home: string | null = null
       if (active) {
         const password = await SecureStore.getItemAsync(`${PASSWORDS_PREFIX}${active.id}`)
-        const auth = active.username && password ? { username: active.username, password } : undefined
+        const auth = buildAuth(active.username, password)
         const built = buildClient(active.url, active.directory, auth)
         client = built.client
         base = built.base
@@ -147,7 +148,7 @@ export const useConnections = create<ConnectionsState>((set, get) => ({
 
     if (newConnection.active) {
       activeConnection = newConnection
-      const auth = newConnection.username && password ? { username: newConnection.username, password } : undefined
+      const auth = buildAuth(newConnection.username, password)
       const built = buildClient(newConnection.url, newConnection.directory, auth)
       client = built.client
       base = built.base
@@ -185,7 +186,7 @@ export const useConnections = create<ConnectionsState>((set, get) => ({
         newActive.active = true
         await SecureStore.setItemAsync(CONNECTIONS_KEY, JSON.stringify(connections))
         const password = await SecureStore.getItemAsync(`${PASSWORDS_PREFIX}${newActive.id}`)
-        const auth = newActive.username && password ? { username: newActive.username, password } : undefined
+        const auth = buildAuth(newActive.username, password)
         const built = buildClient(newActive.url, newActive.directory, auth)
         set({ connections, activeConnection: newActive, client: built.client, clientBase: built.base })
       } else {
@@ -212,7 +213,7 @@ export const useConnections = create<ConnectionsState>((set, get) => ({
 
     if (active) {
       const password = await SecureStore.getItemAsync(`${PASSWORDS_PREFIX}${active.id}`)
-      const auth = active.username && password ? { username: active.username, password } : undefined
+      const auth = buildAuth(active.username, password)
       const built = buildClient(active.url, active.directory, auth)
       client = built.client
       base = built.base
@@ -246,7 +247,7 @@ export const useConnections = create<ConnectionsState>((set, get) => ({
       const client = createClient({
         baseUrl: connection.url,
         directory: connection.directory,
-        auth: connection.username && password ? { username: connection.username, password } : undefined,
+        auth: buildAuth(connection.username, password),
       })
 
       await client.global.health()
@@ -265,7 +266,7 @@ export const useConnections = create<ConnectionsState>((set, get) => ({
     if (get().activeConnection?.id === id) {
       const active = connections.find((c) => c.id === id)!
       const password = await SecureStore.getItemAsync(`${PASSWORDS_PREFIX}${id}`)
-      const auth = active.username && password ? { username: active.username, password } : undefined
+      const auth = buildAuth(active.username, password)
       const built = buildClient(active.url, active.directory, auth)
       try {
         const [project, paths] = await Promise.all([
