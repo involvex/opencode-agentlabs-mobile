@@ -16,6 +16,7 @@ import { useConnections } from "../../src/stores/connections"
 import type { ConnectionType } from "../../src/lib/types"
 import { probeConnection, shareReport } from "../../src/lib/diagnostics"
 import { captureDiagnostic } from "../../src/lib/sentry"
+import { parseUrl } from "../../src/lib/diagnostics-classify"
 
 const CONNECTION_TYPES: Array<{
   type: ConnectionType
@@ -68,6 +69,10 @@ export default function EditConnectionScreen() {
       Alert.alert("Error", "Please enter a server URL")
       return
     }
+    if (!parseUrl(url).valid) {
+      Alert.alert("Invalid URL", "Enter a full URL including http:// or https://, e.g. http://192.168.1.100:4096")
+      return
+    }
 
     setIsTesting(true)
     const result = await testConnection(
@@ -109,6 +114,10 @@ export default function EditConnectionScreen() {
     }
     if (!url.trim()) {
       Alert.alert("Error", "Please enter a server URL")
+      return
+    }
+    if (!parseUrl(url).valid) {
+      Alert.alert("Invalid URL", "Enter a full URL including http:// or https://, e.g. http://192.168.1.100:4096")
       return
     }
 

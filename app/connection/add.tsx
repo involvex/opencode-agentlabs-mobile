@@ -17,6 +17,7 @@ import { useConnections } from "../../src/stores/connections"
 import type { ConnectionType } from "../../src/lib/types"
 import { probeConnection, shareReport } from "../../src/lib/diagnostics"
 import { captureDiagnostic } from "../../src/lib/sentry"
+import { parseUrl } from "../../src/lib/diagnostics-classify"
 
 export default function AddConnectionScreen() {
   const colorScheme = useColorScheme()
@@ -119,6 +120,10 @@ export default function AddConnectionScreen() {
     }
     if (!url.trim()) {
       Alert.alert("Error", "Please enter a server URL")
+      return
+    }
+    if (!parseUrl(url).valid) {
+      Alert.alert("Invalid URL", "Enter a full URL including http:// or https://, e.g. http://192.168.1.100:4096")
       return
     }
 

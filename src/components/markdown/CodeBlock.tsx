@@ -1,5 +1,5 @@
 import { useState } from "react"
-import { View, Text, TouchableOpacity, StyleSheet, useColorScheme, Platform } from "react-native"
+import { View, Text, TouchableOpacity, StyleSheet, useColorScheme, Platform, ScrollView } from "react-native"
 import * as Clipboard from "expo-clipboard"
 
 interface Props {
@@ -27,9 +27,11 @@ export function CodeBlock({ code, language }: Props) {
           <Text style={[styles.copyBtn, isDark && styles.copyBtnDark]}>{copied ? "Copied!" : "Copy"}</Text>
         </TouchableOpacity>
       </View>
-      <Text style={[styles.code, isDark && styles.codeDark]} selectable>
-        {code}
-      </Text>
+      <ScrollView horizontal showsHorizontalScrollIndicator contentContainerStyle={styles.codeScroll}>
+        <Text style={[styles.code, isDark && styles.codeDark]} selectable>
+          {code}
+        </Text>
+      </ScrollView>
     </View>
   )
 }
@@ -72,12 +74,14 @@ const styles = StyleSheet.create({
   copyBtnDark: {
     color: "#a78bfa",
   },
+  codeScroll: {
+    padding: 12,
+  },
   code: {
     fontFamily: Platform.OS === "ios" ? "Menlo" : "monospace",
     fontSize: 13,
     lineHeight: 20,
     color: "#1a1a1a",
-    padding: 12,
   },
   codeDark: {
     color: "#e5e5e5",

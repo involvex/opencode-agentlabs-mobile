@@ -61,14 +61,6 @@ const BUILTIN_COMMANDS: SlashCommand[] = [
     icon: "person-outline",
     type: "builtin",
   },
-  {
-    trigger: "compact",
-    title: "Compact",
-    description: "Summarize conversation",
-    icon: "contract-outline",
-    type: "builtin",
-  },
-  { trigger: "clear", title: "Clear", description: "Clear the session", icon: "trash-outline", type: "builtin" },
 ]
 
 function getShortDir(dir?: string): string | null {
@@ -214,12 +206,6 @@ export default function SessionScreen() {
             setInput("")
             cycleAgent()
             return
-          case "compact":
-            setInput("")
-            return
-          case "clear":
-            setInput("")
-            return
         }
       }
       setInput(`/${cmd.trigger} `)
@@ -316,7 +302,10 @@ export default function SessionScreen() {
   const handleSend = async () => {
     if (!input.trim() && attachments.length === 0) return
     const authenticated = await authenticateForMessage()
-    if (!authenticated) return
+    if (!authenticated) {
+      Alert.alert("Authentication required", "Biometric authentication is required to send. Please try again.")
+      return
+    }
 
     const text = input.trim()
     const files = [...attachments]
@@ -343,7 +332,15 @@ export default function SessionScreen() {
 
     // Messages are queued server-side when the session is busy.
     // No need to abort - just send and it will be processed after current response.
-    await sendMessage(text, model || undefined, agent || undefined, files)
+    try {
+      await sendMessage(text, model || undefined, agent || undefined, files)
+    } catch (err) {
+      console.error("Send failed:", err)
+      // Restore the user's text and attachments so their input isn't lost.
+      setInput((prev) => (prev ? prev : text))
+      setAttachments((prev) => (prev.length ? prev : files))
+      Alert.alert("Message not sent", "Could not send your message. Check your connection and try again.")
+    }
   }
 
   // In inverted mode, offset 0 = bottom. Show scroll button when scrolled away from bottom.

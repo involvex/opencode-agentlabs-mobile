@@ -1,4 +1,4 @@
-import { View, Text, StyleSheet, Platform } from "react-native"
+import { View, Text, StyleSheet, Platform, ScrollView } from "react-native"
 
 const mono = Platform.OS === "ios" ? "Menlo" : "monospace"
 
@@ -76,32 +76,35 @@ export function DiffView({ before, after, isDark }: Props) {
 
   return (
     <View style={[s.container, isDark && s.containerDark]}>
-      {lines.map((line, idx) => (
-        <View
-          key={idx}
-          style={[
-            s.line,
-            line.type === "add" && (isDark ? s.addDark : s.add),
-            line.type === "remove" && (isDark ? s.removeDark : s.remove),
-          ]}
-        >
-          <Text style={[s.prefix, isDark && s.prefixDark]}>
-            {line.type === "add" ? "+" : line.type === "remove" ? "-" : " "}
-          </Text>
-          <Text
-            style={[
-              s.text,
-              isDark && s.textDark,
-              line.type === "add" && s.addText,
-              line.type === "remove" && s.removeText,
-            ]}
-            selectable
-            numberOfLines={1}
-          >
-            {line.text}
-          </Text>
+      <ScrollView horizontal showsHorizontalScrollIndicator>
+        <View>
+          {lines.map((line, idx) => (
+            <View
+              key={idx}
+              style={[
+                s.line,
+                line.type === "add" && (isDark ? s.addDark : s.add),
+                line.type === "remove" && (isDark ? s.removeDark : s.remove),
+              ]}
+            >
+              <Text style={[s.prefix, isDark && s.prefixDark]}>
+                {line.type === "add" ? "+" : line.type === "remove" ? "-" : " "}
+              </Text>
+              <Text
+                style={[
+                  s.text,
+                  isDark && s.textDark,
+                  line.type === "add" && s.addText,
+                  line.type === "remove" && s.removeText,
+                ]}
+                selectable
+              >
+                {line.text}
+              </Text>
+            </View>
+          ))}
         </View>
-      ))}
+      </ScrollView>
     </View>
   )
 }
@@ -135,7 +138,6 @@ const s = StyleSheet.create({
   prefixDark: { color: "#666666" },
 
   text: {
-    flex: 1,
     fontSize: 12,
     fontFamily: mono,
     color: "#0a0a0a",

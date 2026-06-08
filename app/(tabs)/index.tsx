@@ -111,6 +111,7 @@ export default function SessionsScreen() {
   const [isCreating, setIsCreating] = useState(false)
   const [renaming, setRenaming] = useState<Session | null>(null)
   const [renameText, setRenameText] = useState("")
+  const renamingInFlight = useRef(false)
 
   const { sessions, isLoading, error, loadSessions, createSession, deleteSession } = useSessions()
   const {
@@ -149,9 +150,14 @@ export default function SessionsScreen() {
 
   const onRefresh = useCallback(async () => {
     setRefreshing(true)
-    await Promise.all([loadSessions(), refreshProject()])
-    setRefreshing(false)
-  }, [])
+    try {
+      await Promise.all([loadSessions(), refreshProject()])
+    } catch (err) {
+      console.error("Refresh failed:", err)
+    } finally {
+      setRefreshing(false)
+    }
+  }, [loadSessions, refreshProject])
 
   const handleRename = useCallback((session: Session) => {
     setRenameText(session.title || "")
@@ -160,13 +166,21 @@ export default function SessionsScreen() {
 
   const submitRename = useCallback(async () => {
     const title = renameText.trim()
-    if (!title || !renaming) return
+    if (!title || !renaming || renamingInFlight.current) return
     const renameClient = renaming.directory ? (clientForDirectory(renaming.directory) ?? client) : client
     if (!renameClient) return
-    await renameClient.session.update(renaming.id, { title })
-    setRenaming(null)
-    setRenameText("")
-    loadSessions()
+    renamingInFlight.current = true
+    try {
+      await renameClient.session.update(renaming.id, { title })
+      setRenaming(null)
+      setRenameText("")
+      loadSessions()
+    } catch (err) {
+      console.error("Rename failed:", err)
+      Alert.alert("Rename failed", "Could not rename the session. Please try again.")
+    } finally {
+      renamingInFlight.current = false
+    }
   }, [renaming, renameText, client, clientForDirectory, loadSessions])
 
   const handleDelete = useCallback(
@@ -177,7 +191,12 @@ export default function SessionsScreen() {
           text: "Delete",
           style: "destructive",
           onPress: async () => {
-            await deleteSession(session.id)
+            try {
+              await deleteSession(session.id)
+            } catch (err) {
+              console.error("Delete failed:", err)
+              Alert.alert("Delete failed", "Could not delete the session. Please try again.")
+            }
           },
         },
       ])
