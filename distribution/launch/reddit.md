@@ -20,11 +20,11 @@ opencode is a CLI tool that runs an AI coding agent (Claude, GPT-4, Gemini — y
 
 The interesting engineering bits:
 - SSE streaming over `EventSource` polyfill (React Native has no native EventSource — the web polyfill works but needs patching for Android's OkHttp redirect behavior)
-- Diff viewer is a custom line-level parser rendering into a FlatList, not a WebView — keeps it snappy and allows proper dark-mode theming
+- Diff viewer is a custom line-level parser rendering into native views, not a WebView — keeps it snappy and allows proper dark-mode theming
 - Tool call approval is a bottom sheet that interrupts the stream and waits for user input before the agent proceeds
 - Biometric auth (`expo-local-authentication`) gates both app open and individual message sends
 - Credentials in Android Keystore via `expo-secure-store`
-- Built with Expo SDK 54, TypeScript, signed AAB on every tag via GitHub Actions + EAS
+- Built with Expo SDK 54, TypeScript, signed APK + AAB on every tag via GitHub Actions (Gradle)
 
 **Stack:** React Native / Expo, TypeScript, React Query for server state, Zustand for local state, Sentry for crash reporting (opt-in, off by default).
 

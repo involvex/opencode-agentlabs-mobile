@@ -28,8 +28,8 @@ I run long opencode sessions that outlast my desk time. I wanted to check in fro
 - SSE streaming via `EventSource` polyfill (React Native lacks a native one)
 - Diff rendering with a custom line-level parser; no WebView
 - Biometric auth via `expo-local-authentication` gates the app and individual sends
-- Credentials in iOS Keychain / Android Keystore via `expo-secure-store`
-- CI builds a signed AAB on every tag via GitHub Actions + EAS
+- Credentials in the Android Keystore via `expo-secure-store`
+- CI builds a signed APK + AAB on every tag via GitHub Actions (Gradle)
 
 **What it is not**
 
