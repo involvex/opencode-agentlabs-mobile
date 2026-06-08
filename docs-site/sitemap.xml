@@ -26,6 +26,24 @@
     <priority>0.7</priority>
   </url>
   <url>
+    <loc>https://dzianisv.github.io/opencode-mobile/comparison/</loc>
+    <changefreq>monthly</changefreq>
+    <priority>0.7</priority>
+    <lastmod>2026-06-05</lastmod>
+  </url>
+  <url>
+    <loc>https://dzianisv.github.io/opencode-mobile/vs-termux/</loc>
+    <changefreq>monthly</changefreq>
+    <priority>0.7</priority>
+    <lastmod>2026-06-05</lastmod>
+  </url>
+  <url>
+    <loc>https://dzianisv.github.io/opencode-mobile/claude-code-android/</loc>
+    <changefreq>monthly</changefreq>
+    <priority>0.8</priority>
+    <lastmod>2026-06-05</lastmod>
+  </url>
+  <url>
     <loc>https://dzianisv.github.io/opencode-mobile/privacy/</loc>
     <changefreq>yearly</changefreq>
     <priority>0.3</priority>
