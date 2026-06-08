@@ -31,3 +31,17 @@ the fix (username defaulting) is confirmed by the Advanced-mode success path + u
 build (not this CI APK); their rendering paths were code-audited. Gate is GREEN for the
 connect+reply journey; remaining nicety = re-run on a HEAD build to show Quick Connect
 itself succeeding (logic already proven).
+
+## UPDATE — HEAD release build verified on-device (definitive)
+Built the actual release APK from HEAD (with the auth + UI fixes) — `BUILD SUCCESSFUL in
+11m48s`, JDK 17, newArch — and installed it on the same emulator.
+
+**Before/after, same Quick Connect path (IP + password, NO username field):**
+- CI APK (pre-fix): "Connection Failed … API Error: 401 - Unauthorized" (screenshot 02).
+- HEAD APK (fix):  **Connected** — "My Server" shows green/connected, Sessions list loads
+  (screenshots 07 filled, 08 SUCCESS).
+
+This is the actual public-release build, tested on a real device: the default Quick
+Connect flow now authenticates (buildAuth defaults username to "opencode"). Test gate is
+GREEN on the shipping build for connect → session list, plus the earlier live send→reply
+verification. No UI/UX bugs observed in the flow.
