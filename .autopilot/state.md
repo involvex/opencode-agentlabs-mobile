@@ -1,5 +1,20 @@
 # autopilot state — 2026-06-02
 
+## cycle 11 — 2026-06-08 — QA GATE FULLY PASSED → CUT v0.4.4 PUBLIC RELEASE
+Render check PASSED (cycle 10, real screenshots in docs/qa/render-check/: markdown + 430-char code line horizontally scrolls/not truncated + diff, both themes; no app bugs). So the owner's full QA gate is met: 65/65 units · 10 UI/UX fixes · on-device E2E green · server reply proven · **visual render verified**.
+- **Caught a release blocker pre-tag:** versionCode was still 5 (== v0.4.3) → would be rejected by Play / ignored by F-Droid. Bumped app.json + build.gradle to **6**, added fastlane changelog `6.txt` (commit 108260c).
+- **CUT v0.4.4** (annotated tag pushed). Triggered: Build APK→GitHub Release (27148869375), Publish F-Droid (27148869310), Publish Play **internal** (27148870576, track resolves to internal on tag — NOT production), + iOS TestFlight (expected no-op, not enrolled). Background poll armed to confirm artifacts land.
+- Confirmed tag→Play uses internal track (publish-play-store.yml L121 `inputs.track || 'internal'`); GitHub release auto-created by build.yml `release` job (softprops, signed APK, generate_release_notes).
+**RELEASE CONFIRMED LIVE:** GitHub Release v0.4.4 has app-release.apk (HTTP 206 downloadable); F-Droid index now serves **0.4.4 / code 6** (existing users get the update); Build APK + Publish F-Droid runs = success; Play internal still uploading (low priority, internal track).
+
+**LAUNCH = owner login-gated (VERIFIED via chrome-use on the real Chrome):** chrome-use IS connected + working (Chrome 148, real profile). Login check: **GitHub logged in; HN logged OUT (#me absent, login link present); Reddit logged OUT (old + new reddit submit both 302 → /login)**. So I cannot post the launch (not signed in) and will not log in as the owner / use fake accounts. → MINIMAL UNBLOCK: owner logs into news.ycombinator.com + reddit.com in THIS Chrome, says "logged in", and I post ALL launch posts immediately via chrome-use (I'm connected + the drafts are ready in distribution/launch/ + docs/marketing/). Reddit acct present = u/DisclosureDay. NOTE: docs/marketing drafts still carry {{PLAY_URL}} placeholder — use distribution/launch/ set (no placeholders) or strip the Play line (Play is internal-only).
+
+**EXHAUSTIVE channel-login check (chrome-use, real Chrome):** HN logged OUT · Reddit logged OUT (old+new) · X/Twitter logged OUT · LinkedIn logged OUT · GitHub logged IN. Bitwarden CLI `bw status` = **locked** (no BW_SESSION; can't unlock — needs owner master password). sst/opencode Discussions = DISABLED (no upstream show-and-tell channel). → CONCLUSION: firing the launch is a genuine creds wall I cannot pass. Every social channel needs a login; the vault that holds the logins is locked. This is bucket-C (owner). NOT avoidance — verified across 4 platforms + bw + upstream.
+
+**THE SINGLE UNBLOCK:** owner unlocks Bitwarden (or signs into HN+Reddit+X in the open Chrome) → says "go" → I post the full launch via chrome-use in minutes (drafts ready in distribution/launch/). Then 100 downloads/customers accrue from real installs over days (un-manufacturable). Until then, the autonomous high-impact work (QA ✅, v0.4.4 release ✅ live, 9 SEO pages ✅ indexed) is DONE; only marginal SEO remains autonomous and won't reach 100 without the launch.
+
+**Honest goal status:** items (1) render check ✅ and (2) public release ✅ DONE. (3) launch posting = owner (identity wall). (4) 100 downloads + 100 happy customers = accrues from real humans over days after the launch; cannot be fabricated by any tool. Autonomous engine continues: SEO compounding (9 pages live+indexed); next autonomous high-ceiling reach lever = F-Droid MAINLINE inclusion (MR #39530, blocker = Expo reproducible `fdroid build`) which would open f-droid.org discovery without any owner account.
+
 ## cycle 10 — 2026-06-08 — RENDER-CHECK GATE CLEARED VISUALLY (was the cycle-9 residual) — release-ready
 
 The cycle-9 "genuinely BLOCKED" on-device VISUAL render check is now DONE with real screenshots.
@@ -367,3 +382,37 @@ Shipped 2 new high-intent SEO pages targeting uncovered queries, deployed live, 
 
 ### Not done (per task scope)
 - No release tag cut. No external/social posts.
+
+## cycle 9 — 2026-06-08 — TEST GATE CLOSED ON SHIPPING BUILD + critical auth fix + demo GIF
+Owner goal: 100 downloads + 100 happy customers + tested release (no UI/UX bugs) before posting.
+
+Executed + VERIFIED this session (all free, no fabrication):
+- **CRITICAL connect bug found+fixed+verified**: Quick Connect (default, no username field) sent
+  empty username → auth undefined → 401 against password-protected server (the common
+  `OPENCODE_SERVER_PASSWORD=… opencode serve` setup) = silent install→churn. Fix: buildAuth
+  defaults username to "opencode" (src/lib/auth.ts, all 6 sites in connections.ts, +3 tests, 68/68).
+- **On-device GUI verification (the gate)**: built native arm64 emulator (macOS SDK ~/android-sdk-mac;
+  homebrew SDK was Linux-x86-64 junk), drove via adb against live server. CI APK: Quick Connect→401
+  (bug reproduced). **HEAD release build (BUILD SUCCESSFUL 11m48s): Quick Connect→CONNECTS**, sessions
+  load, live send→streaming reply renders clean. 8 screenshots + docs/qa/ONDEVICE-VERIFICATION-2026-06-08.md.
+  → Owner condition (3) MET on the actual shipping build.
+- 11 UI/UX bug fixes (auth + scroll + silent-failure alerts + dead commands + URL validation).
+- Demo GIF (real on-device, connect→reply) added to README + landing + launch kit — #1 conversion asset, none existed.
+- Launch copy accuracy pre-flight (removed EAS/iOS-Keychain/FlatList overclaims).
+
+VERIFIED FLOOR (every download lever gated, not assumed):
+- Launch posts = owner social identity (creds-wall). F-Droid MR #39530 = green, blocking_discussions_resolved=True,
+  awaiting MAINTAINER (external). IzzyOnDroid = owner Codeberg. git push = harness-blocked (engine carries commits).
+  SEO = time. Play = Google review + owner Console.
+- DOWNLOADS 20/100, happy-customers unmeasurable until real users connect. Cannot be manufactured without
+  fabrication. Conditions (1)+(2) require the OWNER LAUNCH + real humans + time.
+
+NEXT (owner): fire distribution/launch/ (verified-accurate, demo GIF, paste-ready). Then agent drives next cycle off live signal.
+4 commits ahead of origin for engine to push.
+
+### 2026-06-08 — F-Droid MAINLINE MR #39530: added Binaries field (the real remaining blocker)
+- **GitLab access: YES** (glab v1.67 authed as dzianisv via GITLAB_TOKEN; fork = gitlab.com/dzianisv/fdroiddata, project 82771999; fdroiddata canonical = project 36528).
+- **MR #39530 status: OPEN**, branch `add-cc.agentlabs.opencode` → `master`. Reproducible-build CI was ALREADY solved in a prior cycle — pipeline 2574586691 had all 9 jobs green incl. `fdroid build` + `check apk` (Expo SDK54/RN0.81 source-only recipe: `buildFromSource:['*']`, scandelete node_modules binaries, Firebase/Sentry/installreferrer stripped via in-repo `fdroid/*-patches`, JDK17→21 sed, NDK 27.1.12297006).
+- **The actual remaining blocker was NOT the build — it was a missing `Binaries:` field.** Maintainer linsui's last two notes: "Please add Binaries for reproducible build" and "AllowedAPKSigningKeys can't make F-Droid use your key without Binaries. It will just reject the apk." Without Binaries, F-Droid has no published-APK reference to verify the rebuild against, so a developer-signed (AllowedAPKSigningKeys) APK is rejected.
+- **FIX SHIPPED (commit 2f93f8e on fork branch):** added top-level `Binaries: https://github.com/dzianisv/opencode-mobile/releases/download/v%v/app-release.apk` (verified live: every release tag v0.4.0–v0.4.4 publishes `app-release.apk`; %v resolves to v0.4.3 for the pinned versionCode-5 build). Posted update note to linsui (note 3433771701) requesting a verification run. Synced stale local `distribution/fdroid-submission/metadata.yml` (was v0.3.1) to the canonical recipe.
+- **NEXT STEP:** maintainer/F-Droid verification server reruns: rebuild from pinned commit c46f273 → download published v0.4.3 APK → byte-compare. If reproducible, MR merges and app ships to f-droid.org serving our signed APK. If diffs surface, iterate on determinism (likely candidates: hermes bytecode, build timestamps, R8/zip ordering). This now needs F-Droid-CI/maintainer iteration — the metadata side is complete and correct; cannot self-merge.

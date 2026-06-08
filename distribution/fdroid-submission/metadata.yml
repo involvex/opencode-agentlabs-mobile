@@ -1,108 +1,68 @@
-# F-Droid metadata for cc.agentlabs.opencode
-# Target file path in fdroiddata: metadata/cc.agentlabs.opencode.yml
-#
-# BLOCKER (do NOT file the fdroiddata MR until all true):
-#   1. A release tag built AFTER the ai.opencode.mobile -> cc.agentlabs.opencode
-#      rename exists, with a cc.agentlabs.opencode APK attached, signed by the
-#      release key. v0.4.1 and earlier APKs are the OLD package id and cannot be
-#      used. Cut a new tag (e.g. v0.4.2+) post-rename, then set the Builds entry
-#      below (versionName / versionCode / commit) to that tag.
-#   2. First Google Play production release is live (required by F-Droid policy).
-#   3. Reproducible build verified locally (see REPRODUCIBLE-BUILD-NOTES.md). Expo
-#      RN builds are not reproducible by default; expect reviewer back-and-forth.
-#
-# Signing key SHA-256 (AllowedAPKSigningKeys, lowercase no colons) is confirmed in
-# distribution/SIGNING-KEY-FINGERPRINTS.md and is unchanged across the rename.
-
+AntiFeatures:
+  NonFreeNet:
+    en-US: The app connects to a user-self-hosted opencode server which may in turn
+      connect to proprietary AI services (OpenAI API, Anthropic API, Google Gemini).
+      The app itself is fully open source and does not require any specific provider.
 Categories:
   - Development
-
 License: MIT
-
 AuthorName: VIBE TECHNOLOGIES, LLC
 AuthorEmail: support@vibebrowser.app
-
 WebSite: https://agentlabs.cc/opencode
 SourceCode: https://github.com/dzianisv/opencode-mobile
 IssueTracker: https://github.com/dzianisv/opencode-mobile/issues
 Changelog: https://github.com/dzianisv/opencode-mobile/releases
 
-Summary: Drive your self-hosted AI coding agent from your phone
-
-Description: |-
-    OpenCode Mobile is a free, open-source (MIT) client for the opencode AI coding
-    agent (sst/opencode). Connect to your self-hosted opencode server and drive
-    AI-powered coding sessions from your phone — no proprietary backend, no mandatory
-    accounts, no tracking by default.
-
-    '''Key features'''
-
-    * Multiple connection types — local network, secure tunnels (Cloudflare, ngrok),
-      or any self-hosted opencode instance
-    * Biometric unlock — fingerprint / PIN to keep your sessions private
-    * Real-time streaming chat — watch your AI agent think and respond live
-    * File diff viewer — see exactly what code changes the agent proposes
-    * Multi-session management — start, resume, and switch between coding sessions
-    * Tool call approval — review and approve agent actions before they run
-
-    '''Self-hosted first'''
-
-    The app requires your own opencode server. Your AI traffic goes directly to your
-    backend (Claude, GPT, Gemini, local models — your choice). No middleman required.
-
-    An optional hosted backend ("opencode Cloud") is planned as a future paid service,
-    but the client is always free and fully functional without it.
-
-    '''Crash reporting'''
-
-    Sentry crash reporting is opt-in with default OFF. Code, prompts, and AI responses
-    never leave your own server.
-
-    '''Anti-features'''
-
-    NonFreeNet: the opencode server you connect to may connect to proprietary AI
-    services (OpenAI, Anthropic, Google). The app itself contains no proprietary
-    network code.
-
-AntiFeatures:
-  NonFreeNet:
-    en-US: >-
-      The app connects to a user-self-hosted opencode server which may in turn
-      connect to proprietary AI services (OpenAI API, Anthropic API, Google Gemini).
-      The app itself is fully open source and does not require any specific provider.
+AutoName: OpenCode
 
 RepoType: git
 Repo: https://github.com/dzianisv/opencode-mobile
 
+Binaries: https://github.com/dzianisv/opencode-mobile/releases/download/v%v/app-release.apk
+
 Builds:
-  - versionName: '0.3.1'
-    versionCode: 2
-    commit: v0.3.1
-    subdir: android
+  - versionName: 0.4.3
+    versionCode: 5
+    commit: c46f273ecda0269ba2dc165053096e63d2bf5160
+    subdir: android/app
     sudo:
       - apt-get update
-      - apt-get install -y nodejs npm
+      - apt-get install npm
     init:
-      - npm install --prefix .. --legacy-peer-deps
-      - npx --prefix .. expo prebuild --platform android --non-interactive
+      - cd ../..
+      - npm install --legacy-peer-deps
     gradle:
-      - release
-    ndk: 26.1.10909125
-    # Node 20+ required for Expo SDK 52+
-    # prebuild regenerates android/ from app.json + package.json
-    # The signed AAB/APK is then compared against AllowedAPKSigningKeys
+      - yes
     prebuild:
-      - cd .. && npm install --legacy-peer-deps
-      - cd .. && npx expo prebuild --platform android --non-interactive
+      - cd ../..
+      - sed -i '/apply from.*sentry.gradle/d' android/app/build.gradle
+      - sed -i '/jvmToolchain\|JavaVersion/s/17/21/' node_modules/@react-native/gradle-plugin/*/build.gradle.kts
+        node_modules/@react-native/gradle-plugin/react-native-gradle-plugin/src/main/kotlin/com/facebook/react/utils/JdkConfiguratorUtils.kt
+        node_modules/expo-modules-core/android/ExpoModulesCorePlugin.gradle
+      - printf '\nkotlin.jvm.target.validation.mode=warning\n' >> android/gradle.properties
+      - sed -i '/firebase/d' node_modules/expo-notifications/android/build.gradle
+      - cp -a fdroid/expo-notifications-patches/.
+        node_modules/expo-notifications/android/src/main/java/expo/modules/notifications/
+      - rm -f
+        node_modules/expo-notifications/android/src/main/java/expo/modules/notifications/notifications/RemoteMessageSerializer.java
+        node_modules/expo-notifications/android/src/main/java/expo/modules/notifications/notifications/model/triggers/FirebaseNotificationTrigger.kt
+      - sed -i '/installreferrer/d' node_modules/expo-application/android/build.gradle
+      - cp -a fdroid/expo-application-patches/. node_modules/expo-application/android/src/main/java/expo/modules/application/
+    scanignore:
+      - node_modules/expo-modules-autolinking/scripts/android/autolinking_implementation.gradle
+      - node_modules/expo-modules-core/android/ExpoModulesCorePlugin.gradle
+      - node_modules/react-native-safe-area-context/android/build.gradle
+      - node_modules/react-native-screens/android/build.gradle
+      - node_modules/react-native-svg/android/build.gradle
+      - node_modules/react-native/ReactAndroid/publish.gradle
+      - node_modules/react-native/sdks/hermesc/linux64-bin
+    scandelete:
+      - node_modules
+    ndk: 27.1.12297006
 
-# AllowedAPKSigningKeys pins our release signing key.
-# F-Droid will serve our pre-signed APK rather than re-signing with their key.
-# This requires reproducible builds (identical output across machines).
 AllowedAPKSigningKeys: 0c259d94e0ffea5d6319614b229d4b6bdc22de1f56e38e76948398d2df6aa099
 
-AutoUpdateMode: Version v%v
+AutoUpdateMode: Version
 UpdateCheckMode: Tags
-UpdateCheckData: https://raw.githubusercontent.com/dzianisv/opencode-mobile/main/app.json|"version":\s*"([^"]+)"|.|.
-
-CurrentVersion: '0.3.1'
-CurrentVersionCode: 2
+CurrentVersion: 0.4.3
+CurrentVersionCode: 5
