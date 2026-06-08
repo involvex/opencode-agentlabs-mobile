@@ -128,6 +128,57 @@ Goal: bug-free E2E + published on F-Droid & Play + 1k downloads.
 
 ---
 
+## RENDER-CHECK — 5-min manual gate (the ONE path CI can't test)
+
+CI's opencode has no model provider, so it can't verify send→reply→**render**. This machine
+CAN serve a model-capable opencode (proven 2026-06-08: Gemini replies via opencode). What's
+missing is a bootable device to view the reply in the app. Once a device exists, do this:
+
+```bash
+# 1. Model-capable opencode server (Gemini). Use an ISOLATED config dir — do NOT edit
+#    the global ~/.config/opencode/opencode.json.
+mkdir -p /tmp/oc-gemini && cd /tmp/oc-gemini
+cat > opencode.json <<'JSON'
+{ "$schema":"https://opencode.ai/config.json",
+  "provider": { "google": { "npm":"@ai-sdk/google" } },
+  "model": "google/gemini-2.5-flash" }
+JSON
+GOOGLE_GENERATIVE_AI_API_KEY="$GEMINI_API_KEY" opencode serve --hostname 0.0.0.0 --port 4096
+# sanity (note: model is NESTED, and use a REAL catalog id like gemini-2.5-flash,
+# NOT gemini-2.0-flash — wrong shape/id returns an empty 200 with no reply):
+#   SID=$(curl -s -X POST localhost:4096/session -d '{}' | jq -r .id)
+#   curl -s -X POST localhost:4096/session/$SID/message -H 'content-type: application/json' \
+#     -d '{"model":{"providerID":"google","modelID":"gemini-2.5-flash"},
+#          "parts":[{"type":"text","text":"hi in one word"}]}' | jq '.parts[]|select(.type=="text").text'
+
+# 2. Boot a device. PREFER the external Android disk (AGENTS.md: do NOT use system disk):
+#    plug in the disk, then:
+export ANDROID_HOME=/Volumes/Dzianis-3/macbook2020/android-sdk
+export ANDROID_AVD_HOME=/Volumes/Dzianis-3/macbook2020/android-avd
+export PATH="$ANDROID_HOME/platform-tools:$ANDROID_HOME/emulator:$PATH"
+emulator -avd test -no-audio -no-boot-anim -gpu swiftshader_indirect -no-snapshot -port 5554 &
+adb wait-for-device
+until [ "$(adb shell getprop sys.boot_completed 2>/dev/null)" = "1" ]; do sleep 2; done
+
+# 3. Install + launch the prebuilt release APK (already built, valid):
+adb install -r ~/workspace/opencode-mobile/android/app/build/outputs/apk/release/app-release.apk
+adb shell am start -n cc.agentlabs.opencode/.MainActivity
+```
+
+4. In the app: Add Connection (quick mode) → IP `10.0.2.2`, port `4096` → connect →
+   New Session → send: **"write a Python function that reverses a string, then show it as a diff"**.
+5. Wait for the Gemini reply, then EYEBALL the three surfaces and screenshot each
+   (`adb exec-out screencap -p > ~/render-<surface>.png`):
+   - **markdown**: heading/bold/bullets render as formatting, not raw `#`/`*`.
+   - **fenced code block**: monospace, has a language header + Copy button, and a LONG line
+     scrolls HORIZONTALLY (not cut off / not wrapped to mush). To force a long line, also try:
+     "show a python function call with 30 arguments named arg1..arg30 on one line".
+   - **diff**: a literal "show as a diff" prompt usually yields a ```diff fenced block → renders
+     via CodeBlock (fine). The dedicated DiffView (green/red +/- lines) only appears when the
+     agent uses the `edit`/`apply_patch` TOOL; to exercise it, ask the agent (in a real project
+     dir) to actually edit a file.
+   If all three look right with no truncation/overflow/cutoff → the core path is release-ready.
+
 ## Verify / common commands
 
 ```bash
