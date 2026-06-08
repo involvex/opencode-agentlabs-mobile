@@ -24,7 +24,7 @@ The interesting engineering bits:
 - Tool call approval is a bottom sheet that interrupts the stream and waits for user input before the agent proceeds
 - Biometric auth (`expo-local-authentication`) gates both app open and individual message sends
 - Credentials in Android Keystore via `expo-secure-store`
-- Built with Expo SDK 52, TypeScript, signed AAB on every tag via GitHub Actions + EAS
+- Built with Expo SDK 54, TypeScript, signed AAB on every tag via GitHub Actions + EAS
 
 **Stack:** React Native / Expo, TypeScript, React Query for server state, Zustand for local state, Sentry for crash reporting (opt-in, off by default).
 

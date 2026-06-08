@@ -24,7 +24,7 @@ I run long opencode sessions that outlast my desk time. I wanted to check in fro
 
 **How it's built**
 
-- React Native + Expo SDK 52, TypeScript throughout
+- React Native + Expo SDK 54, TypeScript throughout
 - SSE streaming via `EventSource` polyfill (React Native lacks a native one)
 - Diff rendering with a custom line-level parser; no WebView
 - Biometric auth via `expo-local-authentication` gates the app and individual sends
