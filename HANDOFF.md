@@ -56,12 +56,14 @@ Goal: bug-free E2E + published on F-Droid & Play + 1k downloads.
 
 ## OWNER ACTIONS REQUIRED — only these unblock #2/#3/#5 (agent cannot do them)
 
-0. **Push the three local commits (push was permission-gated for the agent).**
-   Unpushed on `main` (run `git log origin/main..main --oneline` to confirm):
-   `ee7082a` fix: custom-dir session create scope drift (4th scope bug),
-   `c8458cd` docs: reconcile privacy URL, and
-   `c36605e` docs: CEO cycle 3 queue refresh.
+0. **Push the local commits (push is permission-gated for the agent).**
+   **13 commits unpushed on `main`** as of 2026-06-08 (run `git log origin/main..main --oneline`
+   to confirm). All reach ZERO users until pushed — this is the dominant growth bottleneck.
+   Highlights: SEO pages `/features/`, `/download/`, `/troubleshooting/`, `/comparison/`,
+   `/vs-termux/`, `/claude-code-android/`; landing screenshot strip; README non-affiliation note;
+   CI typecheck+tests; test coverage 4→65; session-scope fix `ee7082a`.
    Step: `source ~/.env.d/github-dzianisv.env && git push origin main`.
+   Pushing `main` (no tag) only redeploys GitHub Pages + runs CI — safe, no release fired.
    The session-scope fix is not yet in any release. To ship it, bump the version in
    BOTH `app.json` (line 5: `"version": "0.4.3"` → `"0.4.4"`) and
    `android/app/build.gradle` (line 98 `versionName "0.4.3"` → `"0.4.4"`; leave
