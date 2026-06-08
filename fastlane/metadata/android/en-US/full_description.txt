@@ -41,4 +41,4 @@ SUPPORT
 
 Email: support@vibebrowser.app
 Issues: https://github.com/dzianisv/opencode-mobile/issues
-Privacy policy: https://opencode.vibebrowser.app/privacy
+Privacy policy: https://dzianisv.github.io/opencode-mobile/privacy/

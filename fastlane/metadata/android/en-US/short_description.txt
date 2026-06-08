@@ -1,1 +1,1 @@
-Drive your self-hosted AI coding agent from your phone. MIT. No tracking.
+AI coding agent for Android — drive your self-hosted opencode server.
