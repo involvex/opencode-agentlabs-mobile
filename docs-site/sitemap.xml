@@ -50,6 +50,18 @@
     <lastmod>2026-06-08</lastmod>
   </url>
   <url>
+    <loc>https://dzianisv.github.io/opencode-mobile/remote-access/</loc>
+    <changefreq>monthly</changefreq>
+    <priority>0.8</priority>
+    <lastmod>2026-06-08</lastmod>
+  </url>
+  <url>
+    <loc>https://dzianisv.github.io/opencode-mobile/ios/</loc>
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+    <lastmod>2026-06-08</lastmod>
+  </url>
+  <url>
     <loc>https://dzianisv.github.io/opencode-mobile/privacy/</loc>
     <changefreq>yearly</changefreq>
     <priority>0.3</priority>
