@@ -52,6 +52,7 @@ import time
 import threading
 import re
 import xml.etree.ElementTree as ET
+from functools import lru_cache
 from pathlib import Path
 
 try:
@@ -361,20 +362,20 @@ def execute_action(action: dict) -> str:
         # Threshold is screen-relative (bottom 25%) so it works on any emulator
         # resolution — API 30 default profile is 1080x1920, not the 2400-tall pixel
         # we previously hardcoded against.
-        screen_w, screen_h = get_screen_size()
+        _, screen_h = get_screen_size()
         bottom_threshold = int(screen_h * 0.75)
         xml = ui_dump()
         matches = re.findall(r'clickable="true"[^>]*bounds="\[(\d+),(\d+)\]\[(\d+),(\d+)\]"', xml)
-        if matches:
-            bottom_buttons = [(int(x1), int(y1), int(x2), int(y2)) for x1, y1, x2, y2 in matches if int(y1) > bottom_threshold]
-            if bottom_buttons:
-                # Rightmost = highest x1
-                send_btn = max(bottom_buttons, key=lambda b: b[0])
-                cx = (send_btn[0] + send_btn[2]) // 2
-                cy = (send_btn[1] + send_btn[3]) // 2
-                adb("shell", "input", "tap", str(cx), str(cy))
-                return f"send button tapped ({cx}, {cy})"
+        bottom_buttons = [(int(x1), int(y1), int(x2), int(y2)) for x1, y1, x2, y2 in matches if int(y1) > bottom_threshold]
+        if bottom_buttons:
+            # Rightmost = highest center-x (not left-edge x1, which misidentifies wide buttons)
+            send_btn = max(bottom_buttons, key=lambda b: (b[0] + b[2]) // 2)
+            cx = (send_btn[0] + send_btn[2]) // 2
+            cy = (send_btn[1] + send_btn[3]) // 2
+            adb("shell", "input", "tap", str(cx), str(cy))
+            return f"send button tapped ({cx}, {cy})"
         # Fallback: tap bottom-right corner of the screen, offset slightly inward
+        screen_w, _ = get_screen_size()
         fx = screen_w - 80
         fy = screen_h - 120
         adb("shell", "input", "tap", str(fx), str(fy))
@@ -476,8 +477,14 @@ def make_client(model: str):
     sys.exit("Set AZURE_OPENAI_API_KEY, AZURE_DEV_AI_API_KEY, OPENAI_API_KEY, XAI_API_KEY, or GEMINI_API_KEY")
 
 
+@lru_cache(maxsize=1)
 def get_screen_size() -> tuple[int, int]:
-    """Return (width, height) of the connected device screen."""
+    """Return (width, height) of the connected device screen.
+
+    Cached after the first call — screen dimensions are stable for the
+    lifetime of a test run, and caching avoids a redundant ADB round-trip
+    on every `send` action.
+    """
     try:
         out = adb("shell", "wm", "size")
         # "Physical size: 1080x1920" or "Override size: 1080x1920"
@@ -528,8 +535,7 @@ def run_cua(goal: str, max_steps: int = 30, model: str = "gpt-4o",
             if clean.startswith("```"):
                 clean = clean.split("\n", 1)[1].rsplit("```", 1)[0].strip()
             # If model returned multiple JSON objects, take the first
-            import re as _re
-            m = _re.search(r'\{[^{}]*\}', clean)
+            m = re.search(r'\{[^{}]*\}', clean)
             if m:
                 action = json.loads(m.group(0))
             else:
