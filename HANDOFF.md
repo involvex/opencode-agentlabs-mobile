@@ -1,4 +1,4 @@
-# OpenCode Mobile — Handoff (2026-06-02)
+# OpenCode Mobile — Handoff (2026-06-21)
 
 App: **`cc.agentlabs.opencode`** (OpenCode Mobile) — Expo/React Native Android client
 for a user self-hosted opencode AI server. Owner: VIBE TECHNOLOGIES, LLC.
@@ -11,11 +11,78 @@ Goal: bug-free E2E + published on F-Droid & Play + 1k downloads.
 
 | Goal | State |
 |---|---|
-| #1 App works E2E, no bugs | ✅ **Done & verified** (CUA smoke green; 4 bugs fixed) |
-| #2 F-Droid published | ✅ self-hosted repo **LIVE @ v0.4.3** (verified 2026-06-02 via index-v1.json) |
-| #3 Google Play published | 🟡 **internal track live** (v0.4.3); production needs owner console step |
-| #4 Store optimization (ASO) | ✅ assets authored in `distribution/` |
-| #5 1k downloads | ❌ needs public listings + growth posting (owner) |
+| #1 App works E2E, no bugs | ✅ Done & verified (CUA smoke green; 4 bugs fixed) |
+| #2 F-Droid published | ✅ self-hosted repo LIVE @ v0.4.3 |
+| #3 Google Play published | 🟡 **"Changes in review"** — v0.4.5 (VC32) submitted 2026-06-21, awaiting Google approval (up to 7 days) |
+| #4 Store optimization (ASO) | ✅ YouTube video + 4 CUA screenshots + ASO copy live in listing |
+| #5 Website live | ✅ `https://opencode.agentlabs.cc` live (Vercel, SSL) |
+| #6 1k downloads | ❌ needs Google approval → announce |
+
+---
+
+## Session 2026-06-21: what was done
+
+### Play Store — submitted to production
+- Built AAB v0.4.5 (versionCode=32) locally, signed with Bitwarden keys
+- Uploaded to internal track via Play Developer API
+- Promoted to production: 100% rollout to 177 countries
+- Resolved "Missing sign-in details" blocker — added demo server `http://100.108.64.76:4096` + reviewer instructions
+- **Status: "Changes in review" as of 2026-06-21**
+
+### Play Store listing
+- YouTube demo video: `https://www.youtube.com/watch?v=ckAHcfZKuUY` (Unlisted Short, Vibe Technologies channel `UCyq0vIekTqyLDFakzHxkJtA`)
+- 4 CUA screenshots uploaded (1080×2160): empty state, add connection, AI chat, session list
+
+### Website
+- `https://opencode.agentlabs.cc` live — Vercel project `opencode-mobile-site`
+- DNS: A + TXT records added in Spaceship for `agentlabs.cc`
+- Vercel domain verified via API, SSL cert auto-provisioned
+
+### CUA test rewritten
+- `scripts/android-cua-smoke.py` — full onboarding showcase (6 phases)
+- Phases: connect → session_list → new_session → typescript task → verify → settings
+- `--speed-multiplier` flag for fast video recording
+- Committed: `3c49897`
+
+### versionCode bumped
+- `app.json` + `android/app/build.gradle` both set to 32, versionName `0.4.5`
+- Committed: `db75606`
+
+---
+
+## NEXT ACTIONS (priority order)
+
+---
+
+### 1. Wait for Google review (ETA: up to 7 days)
+Check: Play Console → Publishing overview
+URL: `https://play.google.com/console/u/1/developers/8842655543970815326/app/4973009715197528834/publishing`
+If rejected: read exact rejection reason, fix, resubmit.
+Account: `vibeteaichnologies@gmail.com`
+
+### 2. Keep demo server alive during review
+Google reviewers use `http://100.108.64.76:4096` (Tailscale host `openclaw-dev-1`).
+**Keep this server running until review completes** — if reviewers can't connect, app gets rejected.
+
+### 3. Announce once approved (in this order)
+1. **HN Show HN** — Tuesday–Thursday 8–10am ET. Template in `opencode-mobile-demo-to-store` skill.
+2. **Twitter/X thread** — 30 min after HN
+3. **Reddit** — r/androiddev, r/selfhosted, r/artificial (Day 2)
+4. **Product Hunt** — Day 3
+
+### 4. Re-record demo video (post-review)
+Current video (`ckAHcfZKuUY`) is slow, shows old flow.
+```bash
+source ~/.env.d/azure-openai.env
+adb shell screenrecord --time-limit 180 /sdcard/demo.mp4 &
+python3 scripts/android-cua-smoke.py --model gpt-4o --speed-multiplier 0.5
+adb pull /sdcard/demo.mp4 /tmp/demo.mp4
+```
+Upload to Vibe Technologies YouTube channel via VBC DataTransfer injection (see `android-cua-demo-recording` skill).
+Then update Play Store listing video URL via Play Developer API.
+
+### 5. More screenshots (optional, improves conversion)
+Add diff viewer + tool-call approval screenshots. Upload via Play Developer API (see `opencode-mobile-demo-to-store` skill Phase 3).
 
 ---
 
