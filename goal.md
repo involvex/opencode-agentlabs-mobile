@@ -82,3 +82,38 @@ discovery and distribution can grow downloads right now regardless of the store 
 Real, verifiable downloads and active users, growing over time. Track the tactics that drive them.
 There is no finish line — keep compounding.
 </north_star>
+
+<current_mission>
+## Immediate Goal: First Successful Play Store Publication
+
+**Deadline mindset**: every action that isn't unblocking Play Store publication is waste.
+
+### Blocking checklist (must clear in order)
+
+1. **AAB uploaded to Play Console** ← CURRENT BLOCKER
+   - Build: `ANDROID_HOME=/home/azureuser/android-sdk cd android && ./gradlew bundleRelease --no-daemon`
+   - Signing credentials: in Bitwarden (KEYSTORE_BASE64, KEY_ALIAS, KEY_PASSWORD, KEYSTORE_PASSWORD)
+   - Upload: Play Console → `cc.agentlabs.opencode` → Internal testing → Upload AAB
+   - Account: **`vibeteaichnologies@gmail.com`** (VIBE TECHNOLOGIES, LLC, ID: `8842655543970815326`)
+   - Service account CANNOT do first upload; must be done via web UI
+
+2. **Store listing committed** (unblocks after step 1)
+   - API: `gcloud auth print-access-token --scopes=https://www.googleapis.com/auth/androidpublisher --account=playstore-deploy@...`
+   - PATCH `/listings/en-US` with video URL `https://www.youtube.com/watch?v=ckAHcfZKuUY`
+   - Commit the edit — will work once a release track exists
+
+3. **App published to internal track** — submit for review
+
+### Secondary (do in parallel, not instead of above)
+
+- **CUA test**: rewrite `scripts/android-cua-smoke.py` for full onboarding flow (connect → TypeScript task → verify → settings). Current test shows `ping` — not compelling.
+- **Demo video**: re-record after CUA test improved. Current video at `https://youtube.com/shorts/ckAHcfZKuUY` is too slow.
+- **Website DNS**: add A record `opencode → 76.76.21.21` and TXT `_vercel → vc-domain-verify=opencode.agentlabs.cc,c9a0888fc28dbb59551f` in Spaceship for `agentlabs.cc`. Vercel project `opencode-mobile-site` is ready.
+
+### Key facts
+- Package: `cc.agentlabs.opencode`
+- Legacy/orphaned app: `ai.opencode.mobile` — ignore it
+- YouTube demo: `https://youtube.com/shorts/ckAHcfZKuUY` (Unlisted, Vibe Technologies channel)
+- Dev server for CUA: `100.108.64.76:4096` (Tailscale)
+- Google account for ALL operations: `vibeteaichnologies@gmail.com` — never `dzianisvv@gmail.com`
+</current_mission>

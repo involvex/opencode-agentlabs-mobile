@@ -204,6 +204,10 @@ chrome-devtools start --autoConnect --port 9333
 
 For pushes/gh CLI on this repo: `source ~/.env.d/github-dzianisv.env`
 
+## Google Account
+
+**ALL Google operations** (Play Console, GCP Console, YouTube, Firebase, etc.) use **`vibeteaichnologies@gmail.com`** — the VIBE TECHNOLOGIES, LLC account. `dzianisvv@gmail.com` is the personal account and does NOT have access to the project GCP resources, Play Console, or YouTube channel. Always verify the active account in the top-right corner before making changes. If GCP console shows `dzianisvv@gmail.com`, switch accounts via the avatar menu.
+
 ## Google Play Console
 
 - **Developer account**: VIBE TECHNOLOGIES, LLC (ID: `8842655543970815326`), Google login `vibeteaichnologies@gmail.com`. The `/u/N/` index is NOT stable — if a console URL bounces to accept-terms/create-developer-account you're on the wrong Google account (e.g. `dzianisvv@gmail.com` hits a ToS gate); use the developer-account chooser to reach VIBE.
