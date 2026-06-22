@@ -602,13 +602,41 @@ def run_cua_step(goal: str, max_steps: int = 30, model: str = "gpt-4o",
 
 # Banner printed before each named phase so the video is narrated by log output
 PHASE_BANNERS = {
-    "connect":      "STEP 1-2: Opening app — configuring server connection",
-    "session_list": "STEP 3:   Connected — viewing session list",
-    "new_session":  "STEP 4:   Creating a new AI coding session",
-    "typescript":   "STEP 5-6: Submitting TypeScript task — watching opencode work",
-    "verify":       "STEP 7:   Verifying task output / success response",
-    "settings":     "STEP 8-9: Navigating to Settings — showing model selection",
+    "connect":          "STEP 1-2: Opening app — configuring server connection",
+    "session_list":     "STEP 3:   Connected — session list MUST show pre-created session",
+    "new_session":      "STEP 4:   Creating a new AI coding session",
+    "typescript":       "STEP 5-6: Submitting TypeScript task — watching opencode work",
+    "verify":           "STEP 7:   Verifying task output / success response",
+    "sessions_reload":  "STEP 7b:  Navigating back to sessions tab — verifying sessions still load",
+    "settings":         "STEP 8-9: Navigating to Settings — showing model selection",
 }
+
+
+def _precreate_test_session(opencode_url: str, title: str = "cua-smoke-sessions-check") -> str | None:
+    """Create a session directly via the opencode HTTP API (bypasses the CUA).
+
+    Returns the session title on success, None if the server is unreachable.
+    The returned title is injected into the session_list phase goal so the CUA
+    must confirm this specific session is visible — proving the app loads
+    pre-existing sessions from the server on connect (not just an empty screen).
+    """
+    import urllib.request
+    url = f"{opencode_url.rstrip('/')}/session"
+    data = json.dumps({"title": title}).encode()
+    req = urllib.request.Request(
+        url, data=data, method="POST",
+        headers={"Content-Type": "application/json"},
+    )
+    try:
+        with urllib.request.urlopen(req, timeout=10) as resp:
+            body = json.loads(resp.read())
+            session_id = body.get("id", "unknown")
+            print(f"  [pre-create] session created via API: id={session_id!r}, title={title!r}")
+            return title
+    except Exception as exc:
+        print(f"  [pre-create] WARNING: could not pre-create session: {exc}")
+        print(f"  [pre-create] session_list phase will skip the 'must show sessions' assertion")
+        return None
 
 
 def _banner(key: str) -> None:
@@ -657,6 +685,11 @@ def run_onboarding_showcase(
             print(f"         reason: {r['reason']}")
         return ok
 
+    # Pre-create a known session via API so phase 3 can assert it is visible.
+    # This is the core regression guard: if the app doesn't load pre-existing
+    # sessions from the server on connect, the session_list phase will fail.
+    precreated_title = _precreate_test_session(opencode_url)
+
     # -----------------------------------------------------------------------
     # Phase 1-2: Open app, configure server connection
     # -----------------------------------------------------------------------
@@ -680,19 +713,28 @@ def run_onboarding_showcase(
     _sleep(2.0)
 
     # -----------------------------------------------------------------------
-    # Phase 3: Connect to server — view session list
+    # Phase 3: Connect to server — session list MUST load pre-existing sessions
     # -----------------------------------------------------------------------
-    ok = _run(
-        "session_list",
-        goal=(
+    if precreated_title:
+        session_list_goal = (
             "The connection has been saved. "
             "Now tap on the saved connection entry to connect to the server. "
             "Wait up to 10 seconds for the session list screen to appear. "
-            "The session list may be empty (no sessions yet) — that is fine. "
-            "Report done when you can see the session list screen (even if empty)."
-        ),
-        max_steps=15,
-    )
+            f"IMPORTANT: A session titled '{precreated_title}' was already created on the server "
+            "before this test started — it MUST appear in the list after connecting. "
+            "Report SUCCESS only if you can see at least one session entry in the list. "
+            "Report FAIL if the session list is empty or shows 'No sessions yet' — "
+            "that means the app failed to load existing sessions from the server."
+        )
+    else:
+        # Server offline at pre-create time; fall back to just checking screen appears.
+        session_list_goal = (
+            "The connection has been saved. "
+            "Now tap on the saved connection entry to connect to the server. "
+            "Wait up to 10 seconds for the session list screen to appear. "
+            "Report done when you can see the session list screen."
+        )
+    ok = _run("session_list", goal=session_list_goal, max_steps=15)
     if not ok:
         return {"status": "fail", "phase": "session_list", "results": results}
 
@@ -761,6 +803,33 @@ def run_onboarding_showcase(
     _sleep(1.5)
 
     # -----------------------------------------------------------------------
+    # Phase 7b: Navigate BACK to sessions tab — verify sessions still load
+    # -----------------------------------------------------------------------
+    # This catches the regression where navigating away from a session causes
+    # the sessions list to appear empty on the next visit.
+    sessions_reload_goal = (
+        "You are inside an OpenCode session chat view. "
+        "Navigate BACK to the Sessions tab by tapping the 'Sessions' tab in the bottom navigation bar. "
+        "Wait up to 5 seconds for the sessions list to fully load. "
+        "Report SUCCESS if you can see at least one session entry in the list. "
+        "Report FAIL if the sessions list is empty or shows 'No sessions yet' — "
+        "that means the app failed to reload sessions after navigating back from a session."
+    )
+    if precreated_title:
+        sessions_reload_goal = (
+            "You are inside an OpenCode session chat view. "
+            "Navigate BACK to the Sessions tab by tapping the 'Sessions' tab in the bottom navigation bar. "
+            "Wait up to 5 seconds for the sessions list to fully load. "
+            f"You should see at least the session titled '{precreated_title}' that existed before this test. "
+            "Report SUCCESS if you can see at least one session entry in the list. "
+            "Report FAIL if the sessions list is empty or shows 'No sessions yet' — "
+            "that means the app failed to reload sessions after navigating back from a session."
+        )
+    ok = _run("sessions_reload", goal=sessions_reload_goal, max_steps=12)
+
+    _sleep(1.0)
+
+    # -----------------------------------------------------------------------
     # Phase 8-9: Navigate to Settings, show model selection
     # -----------------------------------------------------------------------
     _run(
@@ -778,8 +847,8 @@ def run_onboarding_showcase(
         max_steps=15,
     )
 
-    # Overall status: success if connect + session + typescript all succeeded
-    critical = ["connect", "session_list", "new_session", "typescript"]
+    # Overall status: success if connect + session + sessions_reload + typescript all succeeded
+    critical = ["connect", "session_list", "new_session", "sessions_reload", "typescript"]
     failed_critical = [k for k in critical if results.get(k, {}).get("status") != "success"]
     overall = "success" if not failed_critical else "partial"
     return {"status": overall, "phase_results": results}
