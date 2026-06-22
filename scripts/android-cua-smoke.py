@@ -378,9 +378,12 @@ def execute_action(action: dict) -> str:
         return f"swiped ({x1},{y1})->({x2},{y2})"
 
     elif act == "send":
+        # First dismiss keyboard if visible (ESCAPE=111 is safe, unlike BACK which navigates)
+        adb("shell", "input", "keyevent", "111")
+        time.sleep(0.5)
         # Auto-locate send button: rightmost clickable button in the bottom input bar.
         _, screen_h = get_screen_size()
-        bottom_threshold = int(screen_h * 0.75)
+        bottom_threshold = int(screen_h * 0.60)
         xml = ui_dump()
         matches = re.findall(r'clickable="true"[^>]*bounds="\[(\d+),(\d+)\]\[(\d+),(\d+)\]"', xml)
         bottom_buttons = [(int(x1), int(y1), int(x2), int(y2)) for x1, y1, x2, y2 in matches if int(y1) > bottom_threshold]
@@ -390,9 +393,10 @@ def execute_action(action: dict) -> str:
             cy = (send_btn[1] + send_btn[3]) // 2
             adb("shell", "input", "tap", str(cx), str(cy))
             return f"send button tapped ({cx}, {cy})"
+        # Fallback: tap bottom-right area
         screen_w, _ = get_screen_size()
-        fx = screen_w - 80
-        fy = screen_h - 120
+        fx = screen_w - 32
+        fy = screen_h - 48
         adb("shell", "input", "tap", str(fx), str(fy))
         return f"send button tapped (fallback {fx}, {fy})"
 
@@ -443,9 +447,10 @@ Rules:
 - Coordinates are in pixels relative to the screenshot dimensions.
 - IMPORTANT: In this app, pressing "enter" inserts a newline — it does NOT send the message.
   To send a message use {"type": "send"} which auto-locates and taps the send/arrow button.
-  IMPORTANT: ADB's "input text" command does NOT show the on-screen keyboard.
-  Do NOT press "back" after typing — it will navigate away from the session instead of dismissing the keyboard.
-  Just type your message, then use {"type": "send"} directly.
+  Do NOT press "back" after typing — it will navigate away.
+  The "send" action handles keyboard dismissal internally, so you don't need to dismiss it manually.
+  If the text input is already focused (cursor visible), type directly without tapping it first.
+  Only tap the input if you see no cursor/blinking indicator.
 - Be efficient: skip unnecessary waits, tap directly on visible targets.
 - When the goal is fully achieved respond with {"type": "done", "summary": "..."}.
 - If genuinely stuck after 5+ attempts on the same element respond with {"type": "fail", ...}.
