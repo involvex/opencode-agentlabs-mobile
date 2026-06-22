@@ -1,5 +1,9 @@
 # Mobile App - AGENTS.md
 
+## Retrospectives (read before related work)
+
+See [`.agents/retro.md`](.agents/retro.md) for lessons from past tasks. Read entries related to your current work before starting — they document mistakes that cost hours and how to avoid them.
+
 ## Agent Operating Rules (read first)
 
 **Failure taxonomy — classify every failure before acting. Escalate cheapest-first; never skip a rung or repeat one:**
