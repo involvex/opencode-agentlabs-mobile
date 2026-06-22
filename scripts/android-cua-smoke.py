@@ -378,27 +378,7 @@ def execute_action(action: dict) -> str:
         return f"swiped ({x1},{y1})->({x2},{y2})"
 
     elif act == "send":
-        # First dismiss keyboard if visible (ESCAPE=111 is safe, unlike BACK which navigates)
-        adb("shell", "input", "keyevent", "111")
-        time.sleep(0.5)
-        # Auto-locate send button: rightmost clickable button in the bottom input bar.
-        _, screen_h = get_screen_size()
-        bottom_threshold = int(screen_h * 0.60)
-        xml = ui_dump()
-        matches = re.findall(r'clickable="true"[^>]*bounds="\[(\d+),(\d+)\]\[(\d+),(\d+)\]"', xml)
-        bottom_buttons = [(int(x1), int(y1), int(x2), int(y2)) for x1, y1, x2, y2 in matches if int(y1) > bottom_threshold]
-        if bottom_buttons:
-            send_btn = max(bottom_buttons, key=lambda b: (b[0] + b[2]) // 2)
-            cx = (send_btn[0] + send_btn[2]) // 2
-            cy = (send_btn[1] + send_btn[3]) // 2
-            adb("shell", "input", "tap", str(cx), str(cy))
-            return f"send button tapped ({cx}, {cy})"
-        # Fallback: tap bottom-right area
-        screen_w, _ = get_screen_size()
-        fx = screen_w - 32
-        fy = screen_h - 48
-        adb("shell", "input", "tap", str(fx), str(fy))
-        return f"send button tapped (fallback {fx}, {fy})"
+        return "`send` action is deprecated — use tap with coordinates instead"
 
     elif act == "wait":
         secs = float(action.get("seconds", 2))
@@ -436,7 +416,6 @@ Available actions:
   {"type": "type", "text": "<string>"}
   {"type": "key", "key": "enter|back|home|delete|tab"}
   {"type": "swipe", "x1": <int>, "y1": <int>, "x2": <int>, "y2": <int>, "duration": <ms>}
-  {"type": "send"}  -- tap the send/submit button (auto-locates via UI hierarchy)
   {"type": "wait", "seconds": <float>}
   {"type": "screenshot", "label": "<tag>"}  -- observe current state without acting
   {"type": "done", "summary": "<what was accomplished>"}
@@ -444,13 +423,15 @@ Available actions:
 
 Rules:
 - Issue exactly ONE action per turn as a JSON object. No markdown, no explanation outside JSON.
-- Coordinates are in pixels relative to the screenshot dimensions.
+- Coordinates are in pixels relative to the screenshot dimensions. YOU provide the coordinates.
 - IMPORTANT: In this app, pressing "enter" inserts a newline — it does NOT send the message.
-  To send a message use {"type": "send"} which auto-locates and taps the send/arrow button.
-  Do NOT press "back" after typing — it will navigate away.
-  The "send" action handles keyboard dismissal internally, so you don't need to dismiss it manually.
-  If the text input is already focused (cursor visible), type directly without tapping it first.
-  Only tap the input if you see no cursor/blinking indicator.
+  There is NO "send" action. To send a message, use {"type": "tap", "x": ..., "y": ...}
+  with coordinates from the screenshot pointing at the send/submit button (usually bottom-right).
+- Do NOT press "back" after typing — it will navigate away from the session.
+- If the keyboard appears after tapping the text input and blocks the send button,
+  first tap a blank area above the keyboard (not on the keyboard) to dismiss it,
+  THEN tap the send button. Or: tap the send button from memory if it was visible before the keyboard appeared.
+- If the text input is already focused (cursor visible), type directly without tapping it first.
 - Be efficient: skip unnecessary waits, tap directly on visible targets.
 - When the goal is fully achieved respond with {"type": "done", "summary": "..."}.
 - If genuinely stuck after 5+ attempts on the same element respond with {"type": "fail", ...}.
@@ -727,7 +708,7 @@ def run_onboarding_showcase(
             f"Tap the text input field. "
             f"Type this exact message: {TYPESCRIPT_TASK!r} "
             "Do NOT press back (it navigates away). "
-            "Use the send action to submit. "
+            "Tap the send/arrow button (bottom-right) to submit. "
             "After sending, wait and watch — opencode will show tool calls and file writes as it works. "
             "Wait up to 90 seconds total for the session to go idle/complete "
             "(no new activity for at least 5 seconds, or a completion indicator appears). "
@@ -794,10 +775,11 @@ SMOKE_SCENARIOS = [
         "name": "coding_task",
         "goal": (
             "You see the OpenCode mobile app. Tap the '+' button (top-right) to create a new session. "
+            "Wait 3 seconds for the new session/chat screen to fully load. "
             "Tap the text input at the bottom. "
              f"Type this exact task: {PYTHON_CODING_TASK!r} "
             "Do NOT press back (it navigates away). "
-            "Use the send action to submit the task. "
+            "Tap the send/arrow button (bottom-right) to submit the task. "
             "After sending, wait and watch — opencode will think and then produce code. "
             "Wait up to 120 seconds total for the session to complete "
             "(look for file creation messages, a summary from assistant, or 'idle' status). "
