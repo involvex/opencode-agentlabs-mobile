@@ -227,10 +227,10 @@ jobs:
           # Choose the scenario set HERE (bash) and export it, so the emulator step's
           # script (run by dash, which mangles multi-line if/fi blocks) stays single-line.
           if [ "$CAPABLE" = "true" ]; then
-            SCENARIOS="connect_and_verify_sessions,send_message,verify_session_list"
+            SCENARIOS="connect_and_verify_sessions,coding_task,verify_session_list"
           else
             SCENARIOS="connect_and_verify_sessions,verify_session_list"
-            echo "WARN: opencode not model-capable in CI; excluding send_message/multi_turn (environmental, not an app bug)."
+            echo "WARN: opencode not model-capable in CI; excluding coding_task (environmental, not an app bug)."
           fi
           echo "SCENARIOS=$SCENARIOS" >> "$GITHUB_OUTPUT"
           echo "chosen scenarios: $SCENARIOS"
@@ -256,11 +256,12 @@ jobs:
             # SCENARIOS is computed in the probe step (bash) and passed in via env, so
             # this script stays single-line — dash (used by android-emulator-runner)
             # mangles multi-line if/fi blocks. The widened core journey is
-            # connect -> create session -> send -> reply -> list; send_message is only
+            # connect -> create session -> code -> verify -> list; coding_task is only
             # included when the model probe confirmed opencode can reply.
             echo "Running scenarios: ${SCENARIOS}"
-            # --max-steps raised so multiple scenarios fit; each scenario gets its own budget.
-            python3 scripts/android-cua-smoke.py --model gpt-5.4 --include-xml --max-steps 40 --scenarios "${SCENARIOS}"
+            # --max-steps raised so each scenario (especially coding_task with its
+            # long wait-for-completion loop) has enough budget.
+            python3 scripts/android-cua-smoke.py --model gpt-5.4 --include-xml --max-steps 60 --scenarios "${SCENARIOS}"
 
       - name: opencode server log
         if: always()

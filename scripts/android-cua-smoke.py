@@ -6,15 +6,15 @@ Full onboarding showcase — drives an Android emulator via ADB using an LLM vis
   screenshot → vision model → action → repeat
 
 Demonstrates the complete first-run journey:
-  1. App opens on connection screen (no saved connections)
-  2. Configure opencode server URL
-  3. Connect — session list loads
-  4. Create new AI coding session
-  5. Submit a TypeScript "hello world" task
-  6. Watch opencode work (tool calls, file writes), wait for idle
-  7. Verify output / success response
-  8. Navigate to Settings — show model selection
-  9. Screenshot settings screen
+   1. App opens on connection screen (no saved connections)
+   2. Configure opencode server URL
+   3. Connect — session list loads
+   4. Create new AI coding session
+   5. Submit a real Python coding task (helloworld.py + helloworld_test.py)
+   6. Watch opencode work (tool calls, file writes), wait for idle
+   7. Verify output / success response
+   8. Navigate to Settings — show model selection
+   9. Screenshot settings screen
 
 Requirements:
   pip install openai
@@ -68,10 +68,17 @@ APP_PACKAGE = "cc.agentlabs.opencode"
 # Default opencode Tailscale dev server
 DEFAULT_OPENCODE_URL = "http://100.108.64.76:4096"
 
-# TypeScript task prompt sent to the AI coding session
+# Coding task prompts sent to the AI coding session
 TYPESCRIPT_TASK = (
     "Write a TypeScript hello world app. "
     "Create a file hello.ts that prints 'Hello, World!' to the console."
+)
+
+PYTHON_CODING_TASK = (
+    "Write a Python hello world program. "
+    "Create helloworld.py that prints 'Hello, World!' and a function greet(name) that returns a greeting string. "
+    "Also create helloworld_test.py with pytest tests covering both print output and greet(). "
+    "Make sure both files are well-formed and the tests pass."
 )
 
 # ---------------------------------------------------------------------------
@@ -777,26 +784,20 @@ def run_onboarding_showcase(
 
 SMOKE_SCENARIOS = [
     {
-        "name": "send_message",
+        "name": "coding_task",
         "goal": (
             "You see the OpenCode mobile app. Tap the '+' button (top-right) to create a new session. "
-            "Tap the text input at the bottom. Type 'ping'. Press back to dismiss keyboard. "
-            "Use the send action. Wait 5 seconds, then take another screenshot. "
-            "If you don't yet see an assistant reply, wait another 10 seconds and re-check. "
-            "If still no assistant bubble, wait another 15 seconds and re-check one more time. "
-            "Report success if you see both a 'You' bubble and an 'Assistant' bubble. "
-            "Report failure only after at least 30 seconds of total waiting with no assistant bubble."
-        ),
-    },
-    {
-        "name": "multi_turn",
-        "goal": (
-            "You see the OpenCode mobile app. Tap '+' (top-right) to create a new session. "
-            "Tap the text input. Type 'what is 2+2'. Press back. Use send action. "
-            "Wait up to 30 seconds for an assistant reply (re-check every 10 seconds). "
-            "Then tap the text input again, type 'and 3+3?'. Press back. Use send action. "
-            "Wait up to 30 seconds for the second assistant reply (re-check every 10 seconds). "
-            "Report success if you see two assistant reply bubbles."
+            "Tap the text input at the bottom. "
+            f"Type this exact task: {PYTHON_CODING_TASK!r} "
+            "Press back to dismiss the keyboard. "
+            "Use the send action to submit the task. "
+            "After sending, wait and watch — opencode will think and then produce code. "
+            "Wait up to 120 seconds total for the session to complete "
+            "(look for file creation messages, a summary from assistant, or 'idle' status). "
+            "Re-check every 15 seconds by looking at the screen. "
+            "Take a screenshot showing the final result (the completed code or success summary). "
+            "Report success if you see evidence of both helloworld.py and helloworld_test.py being created. "
+            "Report failure only if the screen clearly shows an error with no recovery."
         ),
     },
     {
