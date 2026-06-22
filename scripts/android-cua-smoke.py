@@ -443,7 +443,9 @@ Rules:
 - Coordinates are in pixels relative to the screenshot dimensions.
 - IMPORTANT: In this app, pressing "enter" inserts a newline — it does NOT send the message.
   To send a message use {"type": "send"} which auto-locates and taps the send/arrow button.
-  After typing your message, press "back" to dismiss the keyboard, then use {"type": "send"}.
+  IMPORTANT: ADB's "input text" command does NOT show the on-screen keyboard.
+  Do NOT press "back" after typing — it will navigate away from the session instead of dismissing the keyboard.
+  Just type your message, then use {"type": "send"} directly.
 - Be efficient: skip unnecessary waits, tap directly on visible targets.
 - When the goal is fully achieved respond with {"type": "done", "summary": "..."}.
 - If genuinely stuck after 5+ attempts on the same element respond with {"type": "fail", ...}.
@@ -719,7 +721,7 @@ def run_onboarding_showcase(
             f"You are inside a new OpenCode session (chat view with a text input at the bottom). "
             f"Tap the text input field. "
             f"Type this exact message: {TYPESCRIPT_TASK!r} "
-            "Press back to dismiss the keyboard. "
+            "Do NOT press back (it navigates away). "
             "Use the send action to submit. "
             "After sending, wait and watch — opencode will show tool calls and file writes as it works. "
             "Wait up to 90 seconds total for the session to go idle/complete "
@@ -788,8 +790,8 @@ SMOKE_SCENARIOS = [
         "goal": (
             "You see the OpenCode mobile app. Tap the '+' button (top-right) to create a new session. "
             "Tap the text input at the bottom. "
-            f"Type this exact task: {PYTHON_CODING_TASK!r} "
-            "Press back to dismiss the keyboard. "
+             f"Type this exact task: {PYTHON_CODING_TASK!r} "
+            "Do NOT press back (it navigates away). "
             "Use the send action to submit the task. "
             "After sending, wait and watch — opencode will think and then produce code. "
             "Wait up to 120 seconds total for the session to complete "
