@@ -129,7 +129,7 @@ jobs:
         run: |
           set -x
           # Bind all interfaces so the emulator can reach it via 10.0.2.2.
-          nohup opencode serve --hostname 0.0.0.0 --port 4096 > /tmp/opencode-server.log 2>&1 &
+          nohup opencode serve --hostname 0.0.0.0 --port 4096 --verbose > /tmp/opencode-server.log 2>&1 &
           SRV_PID=$!
           echo "opencode pid=$SRV_PID"
           echo "Waiting for opencode server /global/health ..."
@@ -191,6 +191,35 @@ jobs:
             # Success = an assistant message part with non-empty text came back.
             if [ "$HTTP" = "200" ] && grep -qi 'assistant' /tmp/probe_reply.json && grep -qi 'pong\|"text"' /tmp/probe_reply.json; then
               CAPABLE=true
+            fi
+
+            # Also test prompt_async (the endpoint the app actually uses).
+            # Fire-and-forget, then poll /session/$SID/message for the response.
+            if [ "$CAPABLE" = "true" ]; then
+              echo "--- testing prompt_async endpoint (app's actual code path) ---"
+              ASYNC_HTTP=$(curl -s -o /tmp/async_resp.txt -w '%{http_code}' \
+                -X POST "http://127.0.0.1:4096/session/$SID/prompt_async" \
+                -H 'content-type: application/json' \
+                -d "{\"model\":{\"providerID\":\"azure\",\"modelID\":\"$AZURE_OPENAI_MODEL\"},\"parts\":[{\"type\":\"text\",\"text\":\"reply with the single word: async_pong\"}]}" \
+                2>/dev/null)
+              echo "prompt_async HTTP: $ASYNC_HTTP"
+              echo "prompt_async body: $(cat /tmp/async_resp.txt)"
+              # Poll for response (up to 15s)
+              ASYNC_OK=false
+              for i in $(seq 1 15); do
+                sleep 1
+                MSGS=$(curl -sf "http://127.0.0.1:4096/session/$SID/message" 2>/dev/null)
+                if echo "$MSGS" | grep -qi 'async_pong'; then
+                  echo "prompt_async reply confirmed after ${i}s"
+                  ASYNC_OK=true
+                  break
+                fi
+              done
+              if [ "$ASYNC_OK" = "false" ]; then
+                echo "::warning::prompt_async did NOT produce a reply within 15s (sync probe worked). This may explain CUA send_message failures."
+                echo "--- messages after async probe ---"
+                curl -sf "http://127.0.0.1:4096/session/$SID/message" 2>/dev/null | python3 -c "import sys,json; msgs=json.load(sys.stdin); [print(f'{m[\"role\"]}: {[p.get(\"text\",\"\")[:80] for p in m.get(\"parts\",[])]}') for m in msgs[-4:]]" 2>/dev/null || true
+              fi
             fi
           fi
           echo "MODEL_CAPABLE=$CAPABLE" >> "$GITHUB_OUTPUT"
