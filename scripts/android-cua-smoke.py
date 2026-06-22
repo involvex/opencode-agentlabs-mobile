@@ -356,11 +356,27 @@ def execute_action(action: dict) -> str:
 
     elif act == "type":
         text = action.get("text", "")
-        # Escape for Android's input text: %s = space
-        escaped = text.replace(" ", "%s")
-        # Wrap in shell single quotes to protect against metacharacters
-        # (single quotes inside the text would break this, but we avoid those in prompts)
-        adb("shell", "input", "text", f"'{escaped}'")
+        # Write text to device file, then use `input text` with shell
+        # command-substitution quoting to avoid %s and quote issues.
+        # This ensures spaces and special chars are passed correctly
+        # to the `input` command while triggering React Native's onChangeText.
+        import tempfile, os as _os
+        _tmp = tempfile.NamedTemporaryFile(mode="w", suffix=".txt", delete=False)
+        _tmp.write(text)
+        _tmp_path = _tmp.name
+        _tmp.close()
+        try:
+            subprocess.run(["adb", "push", _tmp_path, "/sdcard/_cua_type.txt"],
+                           capture_output=True, timeout=10)
+            # Pass text via shell command substitution with double quotes
+            subprocess.run(
+                ["adb", "shell",
+                 f"input text \"$(cat /sdcard/_cua_type.txt)\""],
+                capture_output=True, timeout=30,
+            )
+            _sleep(0.3)
+        finally:
+            _os.unlink(_tmp_path)
         return f"typed '{text}'"
 
     elif act == "key":
