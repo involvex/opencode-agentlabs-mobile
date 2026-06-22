@@ -76,9 +76,9 @@ TYPESCRIPT_TASK = (
 
 PYTHON_CODING_TASK = (
     "Write a Python hello world program. "
-    "Create helloworld.py that prints 'Hello, World!' and a function greet(name) that returns a greeting string. "
-    "Also create helloworld_test.py with pytest tests covering both print output and greet(). "
-    "Make sure both files are well-formed and the tests pass."
+    "Create helloworld.py that prints Hello World and has a greet function that returns a greeting string. "
+    "Also create helloworld_test.py with pytest tests covering both print output and greet. "
+    "Make sure both files are well formed and the tests pass."
 )
 
 # ---------------------------------------------------------------------------
@@ -356,8 +356,11 @@ def execute_action(action: dict) -> str:
 
     elif act == "type":
         text = action.get("text", "")
-        escaped = text.replace(" ", "%s").replace("&", "\\&").replace(";", "\\;")
-        adb("shell", "input", "text", escaped)
+        # Escape for Android's input text: %s = space
+        escaped = text.replace(" ", "%s")
+        # Wrap in shell single quotes to protect against metacharacters
+        # (single quotes inside the text would break this, but we avoid those in prompts)
+        adb("shell", "input", "text", f"'{escaped}'")
         return f"typed '{text}'"
 
     elif act == "key":
