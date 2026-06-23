@@ -37,6 +37,7 @@ src/
 │   ├── diagnostics.ts     Active connection probes + crash report builder + share
 │   ├── logbuffer.ts       200-line ring buffer mirroring console output
 │   ├── notifications.ts   Notification setup + categories + dedupe
+│   ├── speech.ts          Voice input via expo-speech-recognition (experimental; PRD §7 lists voice beyond OS dictation as out-of-scope for v0.x)
 │   └── types.ts           Re-exported model/connection types
 └── stores/
     ├── auth.ts            Biometric state
@@ -73,7 +74,7 @@ scripts/                   E2E test rig (LLM-driven CUA Android smoke)
 
 1. `loadConnections()` reads stored connections from SecureStore at startup.
 2. Active connection (if any) builds a `Client` via `createClient({ baseUrl, directory, auth })`.
-3. `client.project.current()` and `client.path.get()` fill in project + server-home metadata; failures are non-fatal (server might be offline).
+3. `client.project.current()` and `client.path.get()` fill in project + server-home metadata; failures are non-fatal (server might be offline). `serverHome` is still consumed by the directory switcher for `~` expansion — but the former *session-scoping* use of this metadata (`sessionScope.ts`, which always resolved to the default client) was dead and removed in `472ff8d`.
 4. The `useEffect` in `_layout.tsx` keyed on `client` starts the SSE event loop the moment a client exists, and stops it when the user removes/changes the connection.
 5. **Active diagnostics on failure.** When a connection is added or tested and fails, `src/lib/diagnostics.ts:probeConnection` runs three parallel probes (health, server-root, public-internet) and classifies the cause (`tls-error`, `timeout`, `no-internet`, `server-unreachable`, `health-failed`, `malformed-url`, `unknown`). The result drives both the UI alert and the Sentry capture.
 
@@ -163,7 +164,7 @@ A test for this would feed a basic-auth URL into a fake event and assert the scr
 
 ## 7. Versioning & Releases
 
-- Single source of version: `app.json` → `expo.version` (e.g. `0.2.3`). `package.json` version is unused.
+- Single source of truth for the human-facing version is `app.json` → `expo.version` (e.g. `0.4.6`). Since v0.4.6 the `package.json` `version` is kept in sync with it (both are bumped together on release); earlier builds left `package.json` untouched.
 - Git tag `v<version>` triggers `.github/workflows/build.yml` which builds an APK and creates a GitHub Release.
 - Sentry `release` is set to `opencode-mobile@<version>` so source maps (uploaded by `sentry-cli` during build) line up with reported stack frames.
 
