@@ -1,41 +1,57 @@
-OpenCode Mobile is a free, open-source (MIT) Android client for the opencode AI coding agent (sst/opencode). Connect to your own self-hosted opencode server and drive AI-powered coding sessions from your phone — no proprietary backend, no mandatory accounts, no tracking by default.
+Run opencode serve on your laptop or VPS. OpenCode Mobile connects to it from your phone — stream AI sessions, review diffs, and approve tool calls from anywhere.
 
-KEY FEATURES
+Think of it as an SSH client, but for opencode. Or Claude Code remote control, but lighter.
 
-• Multiple connection types — local network, Cloudflare Tunnel, ngrok, or Tailscale to reach any self-hosted opencode instance
-• Real-time streaming chat — watch your AI agent think and respond live
-• Inline diff viewer — see exactly what code changes the agent proposes before you accept
-• Tool-call approval — review and approve agent actions before they run on your code
-• Session management — browse, create, and resume coding sessions
-• Biometric unlock — OS-level fingerprint / PIN to keep your sessions private
-• Secure on-device credential storage — connection secrets are kept in the Android Keystore via expo-secure-store
+This app has zero AI built in. All inference runs on your server with your own API keys. OpenCode Mobile is just the interface — a thin Android client that speaks the opencode HTTP + SSE API.
 
-WHO IT'S FOR
+HOW IT WORKS
 
-• Developers who run opencode (sst/opencode) on their workstation or a server
-• Engineers who want to check in on long-running coding sessions away from their desk
-• Privacy-conscious developers who want a mobile coding companion with zero vendor lock-in
+1. On your machine, run: opencode serve --hostname 0.0.0.0 --port 4096
+2. Install OpenCode Mobile on your phone
+3. Add a connection: enter your server's IP/hostname and port
+4. That's it. You're driving opencode from your phone.
+
+RECOMMENDED SETUP: TAILSCALE
+
+Tailscale (free, zero-config mesh VPN) is the easiest way to connect. Install Tailscale on your laptop and phone, and your laptop gets a stable private hostname like my-laptop.tail1234.ts.net that works from anywhere — no port forwarding, no dynamic DNS, no firewall rules.
+
+Other supported connection methods:
+- Local network (same Wi-Fi) — simplest, fastest
+- WireGuard — if you already run your own VPN
+- Cloudflare Tunnel or ngrok — expose your server via a URL
+- Any setup that gives your phone HTTP access to opencode serve
+
+WHAT YOU CAN DO FROM THE APP
+
+- Send prompts and stream responses token by token
+- Review inline diffs of every file change the agent proposes
+- Approve or reject tool calls before they run on your code
+- Browse, create, and resume coding sessions
+- Monitor long-running agent tasks away from your desk
+
+WHAT THIS APP IS NOT
+
+This is not a standalone AI assistant. It does not call OpenAI, Anthropic, or any AI API directly. It does not work without a running opencode server. There is no cloud backend. There is no account to sign up for. If you just want a mobile AI chat app, this is not it.
 
 REQUIREMENTS
 
-• Your own opencode server, started with `opencode serve`
-• A way to reach it from your phone — local network, or a tunnel such as Tailscale, Cloudflare Tunnel, or ngrok
-• Your own AI provider keys, configured on your server — they stay on your server and never touch this app
+- A machine you control running: opencode serve --hostname 0.0.0.0 --port 4096
+- Network path from your phone to that machine (Tailscale recommended)
+- AI provider API keys configured on your server (OpenAI, Anthropic, Gemini, local models — your choice)
+- opencode installed: https://github.com/sst/opencode
 
-OPEN SOURCE + PRIVACY BY DEFAULT
+PRIVACY AND SECURITY
 
-OpenCode Mobile is MIT licensed. Source code, issue tracker, and community discussion live at:
-https://github.com/dzianisv/opencode-mobile
-
-There are no ads. Crash reporting (Sentry) is opt-in and OFF by default. Your code, prompts, and AI responses go directly between your phone and your own server — the app sends nothing elsewhere unless you explicitly enable crash reporting in Settings → Privacy.
-
-SELF-HOSTED FIRST
-
-The app requires you to bring your own opencode server. This is a feature, not a limitation — your AI traffic goes directly to your backend, which can connect to Claude, GPT, Gemini, local models, or any opencode-compatible endpoint. No middleman, no required subscription.
+- MIT licensed, fully open source: https://github.com/dzianisv/opencode-mobile
+- Your code, prompts, and AI responses travel only between your phone and your own server
+- Crash reporting (Sentry) is opt-in and OFF by default
+- Connection credentials stored in the Android Keystore (expo-secure-store)
+- Biometric unlock available: fingerprint or PIN protects the app
+- No ads. No telemetry unless you enable it.
 
 ANTI-FEATURES DISCLOSURE
 
-NonFreeNet: The opencode server you connect to may in turn connect to proprietary AI services (for example OpenAI, Anthropic, or Google). The app itself contains no proprietary network code and does not require any specific provider.
+NonFreeNet: The opencode server you connect to may call proprietary AI services (OpenAI, Anthropic, Google, etc.). The app itself contains no proprietary network code and does not require any specific AI provider.
 
 SUPPORT
 

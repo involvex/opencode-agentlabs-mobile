@@ -4,7 +4,7 @@
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
 <title>OpenCode Mobile — OpenCode AI Coding Agent on Android</title>
-<meta name="description" content="Free, open-source Android client for the OpenCode AI coding agent. Connect your phone to a self-hosted OpenCode server and code from anywhere. F-Droid or APK." />
+<meta name="description" content="Run opencode serve on your laptop or VPS. OpenCode Mobile connects from your Android phone — stream AI sessions, review diffs, approve tool calls. Best with Tailscale." />
 <meta name="keywords" content="OpenCode Mobile, OpenCode Android client, AI coding agent on Android, self-hosted AI coding, mobile coding agent, OpenCode app, open source Android coding" />
 <meta name="theme-color" content="#3b82f6" />
 <link rel="canonical" href="https://dzianisv.github.io/opencode-mobile/" />
@@ -14,14 +14,14 @@
 <meta property="og:type" content="website" />
 <meta property="og:site_name" content="OpenCode Mobile" />
 <meta property="og:title" content="OpenCode Mobile — OpenCode AI Coding Agent on Android" />
-<meta property="og:description" content="Free, open-source Android client for the OpenCode AI coding agent. Connect to your own self-hosted OpenCode server and code from your phone." />
+<meta property="og:description" content="Remote control for opencode serve. Run opencode on your machine, drive it from your Android phone — stream sessions, review diffs, approve tool calls. Best with Tailscale." />
 <meta property="og:url" content="https://dzianisv.github.io/opencode-mobile/" />
 <meta property="og:image" content="https://dzianisv.github.io/opencode-mobile/og.png" />
 
 <!-- Twitter -->
 <meta name="twitter:card" content="summary_large_image" />
 <meta name="twitter:title" content="OpenCode Mobile — OpenCode AI Coding Agent on Android" />
-<meta name="twitter:description" content="Free, open-source Android client for the OpenCode AI coding agent. Connect to your own self-hosted OpenCode server and code from your phone." />
+<meta name="twitter:description" content="Remote control for opencode serve. Run opencode on your machine, drive it from your Android phone — stream sessions, review diffs, approve tool calls. Best with Tailscale." />
 <meta name="twitter:image" content="https://dzianisv.github.io/opencode-mobile/og.png" />
 
 <!-- Structured data -->
@@ -32,7 +32,7 @@
   "name": "OpenCode Mobile",
   "applicationCategory": "DeveloperApplication",
   "operatingSystem": "Android",
-  "description": "Free, open-source Android client for the OpenCode AI coding agent. Connect to your own self-hosted OpenCode server over Tailscale, a tunnel, or your local network and write, review, and ship code from your phone.",
+  "description": "Remote control for opencode serve. Run opencode on your laptop or VPS, connect from your Android phone — stream AI sessions, review diffs, and approve tool calls from anywhere. Best with Tailscale.",
   "url": "https://dzianisv.github.io/opencode-mobile/",
   "downloadUrl": "https://github.com/dzianisv/opencode-mobile/releases/latest",
   "license": "https://opensource.org/licenses/MIT",
@@ -248,7 +248,7 @@ footer a{margin:0 8px}
       <line x1="46" y1="26" x2="38" y2="58" stroke="#9aa6be" stroke-width="5" stroke-linecap="round"/>
     </svg>
     <h1>OpenCode Mobile</h1>
-    <p class="tagline">The free, open-source Android client for the OpenCode AI coding agent. Connect to your own self-hosted OpenCode server and write, review, and ship code from your phone.</p>
+    <p class="tagline">Run <code>opencode serve</code> on your laptop or VPS. OpenCode Mobile connects to it from your phone — stream AI sessions, review diffs, and approve tool calls from anywhere. Best with Tailscale.</p>
     <div class="cta">
       <a class="btn btn-primary" href="download/">Download for Android</a>
       <a class="btn" href="https://dzianisv.github.io/opencode-mobile/fdroid/repo">Get it on F-Droid</a>
@@ -262,8 +262,8 @@ footer a{margin:0 8px}
 <section id="what">
   <div class="wrap">
     <h2>What is OpenCode Mobile?</h2>
-    <p>OpenCode Mobile is a thin Android client for the <a href="https://github.com/sst/opencode">OpenCode</a> AI coding agent, built with React Native and Expo. It is not a standalone agent — it connects to an OpenCode server that <strong>you</strong> run yourself (on your laptop, a VPS, or anywhere you control) and speaks its HTTP + SSE API to browse sessions, stream responses, and review file changes.</p>
-    <p>All AI model calls happen on your server using your own API keys. The app never proxies your code or conversations through anyone else's servers. It is <strong>free and open-source</strong> under the MIT license — no feature gate, no ads, and no analytics you did not opt into.</p>
+    <p>OpenCode Mobile is a remote control for <a href="https://github.com/sst/opencode">opencode</a>. Start <code>opencode serve --hostname 0.0.0.0 --port 4096</code> on your machine, point the app at it, and you're driving a full AI coding session from your phone. It speaks the opencode HTTP + SSE API directly — no middleman, no cloud relay.</p>
+    <p>The app has <strong>zero AI built in</strong>. All inference runs on your server with your own API keys. The recommended connectivity setup is <strong>Tailscale</strong>: install it on both your laptop and phone and your laptop gets a stable private hostname that works from anywhere, no port forwarding required. You can also use WireGuard, Cloudflare Tunnel, ngrok, or plain LAN. It is <strong>free and open-source</strong> (MIT) — no account, no ads, no telemetry unless you opt in.</p>
   </div>
 </section>
 
