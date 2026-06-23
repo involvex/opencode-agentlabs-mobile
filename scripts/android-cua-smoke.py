@@ -625,23 +625,31 @@ def _precreate_test_session(opencode_url: str, title: str = "cua-smoke-sessions-
     # When opencode_url uses the Android emulator's host-route (10.0.2.2),
     # translate it to localhost for this pre-create call — 10.0.2.2 is
     # only reachable from *inside* the emulator, not from the host/CI runner.
-    api_base = opencode_url.replace("10.0.2.2", "127.0.0.1")
-    url = f"{api_base.rstrip('/')}/session"
-    data = json.dumps({"title": title}).encode()
-    req = urllib.request.Request(
-        url, data=data, method="POST",
-        headers={"Content-Type": "application/json"},
-    )
-    try:
-        with urllib.request.urlopen(req, timeout=10) as resp:
-            body = json.loads(resp.read())
-            session_id = body.get("id", "unknown")
-            print(f"  [pre-create] session created via API ({api_base}): id={session_id!r}, title={title!r}")
-            return title
-    except Exception as exc:
-        print(f"  [pre-create] WARNING: could not pre-create session at {api_base}: {exc}")
-        print(f"  [pre-create] session_list phase will skip the 'must show sessions' assertion")
-        return None
+    # When opencode_url uses an external address (Tailscale, etc.) that the
+    # CI runner can't reach, fall back to localhost:4096 (the runner-local server).
+    candidates = [opencode_url.replace("10.0.2.2", "127.0.0.1")]
+    # If the URL isn't already localhost, also try 127.0.0.1:4096 as fallback
+    if "127.0.0.1" not in candidates[0] and "localhost" not in candidates[0]:
+        candidates.append("http://127.0.0.1:4096")
+
+    for api_base in candidates:
+        url = f"{api_base.rstrip('/')}/session"
+        data = json.dumps({"title": title}).encode()
+        req = urllib.request.Request(
+            url, data=data, method="POST",
+            headers={"Content-Type": "application/json"},
+        )
+        try:
+            with urllib.request.urlopen(req, timeout=5) as resp:
+                body = json.loads(resp.read())
+                session_id = body.get("id", "unknown")
+                print(f"  [pre-create] session created via API ({api_base}): id={session_id!r}, title={title!r}")
+                return title
+        except Exception as exc:
+            print(f"  [pre-create] {api_base} unreachable: {exc}")
+
+    print(f"  [pre-create] WARNING: all candidates failed — session_list phase will skip named-session assertion")
+    return None
 
 
 def _banner(key: str) -> None:
@@ -703,12 +711,15 @@ def run_onboarding_showcase(
         goal=(
             f"You are on the OpenCode mobile app. "
             "The screen shows either a connection screen (first launch) or an empty connections list. "
-            "Your goal: add a new connection to the opencode server. "
-            "Look for an 'Add Connection', '+', or 'New Connection' button and tap it. "
-            f"In the URL / Host field type '{opencode_url}'. "
-            "Leave username and password blank. "
-            "Tap 'Save', 'Connect', or 'Done' to save the connection. "
-            "Report done when you can see the connection has been saved or the app navigated away from the add-connection form."
+            "Your goal: add a new connection to the opencode server and verify it is saved. "
+            "Step 1: Look for an 'Add Connection', '+', or 'New Connection' button and tap it. "
+            f"Step 2: In the URL / Host field type '{opencode_url}'. "
+            "Step 3: Leave username and password blank. "
+            "Step 4: Tap 'Save', 'Connect', or 'Done' to save the connection. "
+            "Step 5: IMPORTANT — after saving, you must see the connection appear in the connections list "
+            f"(showing the URL '{opencode_url}' or a name derived from it). "
+            "If you are back on the connections list and can see the saved connection entry, report done. "
+            "If the form is still showing or the list is empty, the save did not work — try again."
         ),
         max_steps=max_steps_per_phase,
     )
