@@ -13,6 +13,7 @@ import * as Sentry from "@sentry/react-native"
 import appJson from "../../app.json"
 import { log } from "./logbuffer"
 import type { DiagnosticReport } from "./diagnostics"
+import { scrubUrl, scrubString, scrubObject } from "./scrub"
 
 const DSN = process.env.EXPO_PUBLIC_SENTRY_DSN
 const APP_VERSION = (appJson as { expo?: { version?: string } }).expo?.version ?? "unknown"
@@ -124,31 +125,9 @@ function toError(value: unknown): Error {
   }
 }
 
-// --- Scrubbing -----------------------------------------------------------
+// --- Scrubbing (pure functions live in ./scrub for testability) ----------
 
-// Strip basic-auth credentials and any `?token=` style query secrets so URLs
-// can be safely sent or logged.
-export function scrubUrl(url: string): string {
-  return url
-    .replace(/\/\/[^@/]+@/, "//<redacted>@")
-    .replace(/([?&](?:token|access_token|api_key|key|password|pwd|auth)=)[^&#]*/gi, "$1<redacted>")
-}
-
-function scrubString(s: string): string {
-  // Catch any embedded URL inside a free-text string (error messages often
-  // contain them, e.g. "fetch failed: https://user:pw@host/...").
-  return s.replace(/https?:\/\/\S+/g, (m) => scrubUrl(m))
-}
-
-function scrubObject(obj: Record<string, unknown>): Record<string, unknown> {
-  const out: Record<string, unknown> = {}
-  for (const [k, v] of Object.entries(obj)) {
-    if (typeof v === "string") out[k] = scrubString(v)
-    else if (v && typeof v === "object" && !Array.isArray(v)) out[k] = scrubObject(v as Record<string, unknown>)
-    else out[k] = v
-  }
-  return out
-}
+export { scrubUrl } from "./scrub"
 
 function scrubEvent<T extends Sentry.Event>(event: T): T {
   if (event.request?.url) event.request.url = scrubUrl(event.request.url)
