@@ -238,30 +238,26 @@ jobs:
       - name: Run CUA smoke test with emulator
         uses: reactivecircus/android-emulator-runner@v2
         env:
-          MODEL_CAPABLE: ${{ steps.probe.outputs.MODEL_CAPABLE }}
-          SCENARIOS: ${{ steps.probe.outputs.SCENARIOS }}
+          OPENCODE_URL: ${{ env.OPENCODE_URL }}
         with:
-          api-level: 30
+          api-level: 28
           arch: x86_64
-          target: google_apis
+          target: default
+          disable-animations: true
+          emulator-boot-timeout: 600
           emulator-options: -no-window -no-audio -no-boot-anim -gpu swiftshader_indirect -no-snapshot
           # NOTE: android-emulator-runner runs this script with /usr/bin/sh (dash).
-          # Avoid bash-only constructs like multi-line `|| { ... }` brace groups.
           script: |
-            # Non-fatal re-check; server health was already gated in the prior step.
-            curl -sf http://127.0.0.1:4096/global/health || echo "WARN: opencode health re-check failed (started in prior step)"
+            # Clear any stale app state so the showcase starts with a fresh connection screen.
+            adb shell pm clear cc.agentlabs.opencode || true
             adb install android/app/build/outputs/apk/release/app-release.apk
             adb shell am start -n cc.agentlabs.opencode/.MainActivity
             sleep 5
-            # SCENARIOS is computed in the probe step (bash) and passed in via env, so
-            # this script stays single-line — dash (used by android-emulator-runner)
-            # mangles multi-line if/fi blocks. The widened core journey is
-            # connect -> create session -> code -> verify -> list; coding_task is only
-            # included when the model probe confirmed opencode can reply.
-            echo "Running scenarios: ${SCENARIOS}"
-            # --max-steps raised so each scenario (especially coding_task with its
-            # long wait-for-completion loop) has enough budget.
-            python3 scripts/android-cua-smoke.py --model gpt-5.4 --include-xml --max-steps 60 --scenarios "${SCENARIOS}"
+            # --showcase runs the structured onboarding flow which includes:
+            #   session_list: pre-created session MUST appear (not empty-list-ok)
+            #   sessions_reload: navigate back from session, list must be non-empty
+            # These are the regression guards for the "sessions not loading" bug.
+            python3 scripts/android-cua-smoke.py --showcase --model gpt-5.4 --include-xml --opencode-url "${OPENCODE_URL}"
 
       - name: opencode server log
         if: always()
