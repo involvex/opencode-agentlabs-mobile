@@ -1029,7 +1029,12 @@ def run_scenario_sse_disconnect_banner(opencode_url: str, model: str, include_ui
     _sleep(5.0)  # wait for SSE timeout detection in app
 
     # Phase 3: DETERMINISTIC — check UI XML for reconnect text
-    has_banner = check_ui_text("Reconnecting") or check_ui_text("reconnect") or check_ui_text("offline")
+    has_banner = (
+        check_ui_text("Reconnecting") or
+        check_ui_text("Reconnecting\u2026") or
+        check_ui_text("reconnect") or
+        check_ui_text("offline")
+    )
     results["banner_appeared"] = {"status": "success" if has_banner else "fail",
                                   "detail": "uiautomator XML check"}
     print(f"  [DETERMINISTIC] banner_appeared={has_banner}")
@@ -1057,7 +1062,7 @@ def run_scenario_sse_disconnect_banner(opencode_url: str, model: str, include_ui
     deadline = time.time() + 40
     while time.time() < deadline:
         _sleep(3.0)
-        if not (check_ui_text("Reconnecting") or check_ui_text("reconnect") or check_ui_text("offline")):
+        if not (check_ui_text("Reconnecting") or check_ui_text("Reconnecting\u2026") or check_ui_text("reconnect") or check_ui_text("offline")):
             banner_gone = True
             break
     results["banner_dismissed"] = {"status": "success" if banner_gone else "fail",
@@ -1144,7 +1149,7 @@ def run_scenario_backgrounded_permission_notification(opencode_url: str, model: 
     appeared = check_notification_drawer(APP_PACKAGE, timeout=15)
     if not appeared:
         # Fallback: match the real notification copy from events.ts / notifications.ts
-        appeared = check_notification_drawer("Permission requested", timeout=5) or \
+        appeared = check_notification_drawer("Agent needs approval", timeout=5) or \
                    check_notification_drawer("A tool needs your approval", timeout=5)
 
     results["notification_appeared"] = {

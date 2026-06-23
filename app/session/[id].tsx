@@ -125,6 +125,11 @@ export default function SessionScreen() {
   const shortDir = getShortDir(currentSession?.directory)
   const [showScrollButton, setShowScrollButton] = useState(false)
 
+  // SSE reconnect banner
+  const reconnectAttempts = useEvents((s) => s.reconnectAttempts)
+  const [showConnectedFlash, setShowConnectedFlash] = useState(false)
+  const prevReconnecting = useRef(false)
+
   // Voice input — transcript appends to the text input on completion
   const speech = useSpeech(
     useCallback((text: string) => {
@@ -363,6 +368,19 @@ export default function SessionScreen() {
     if (!loadingMore) loadingTriggered.current = false
   }, [loadingMore])
 
+  // Detect reconnecting → stable transition for the "Connected ✓" flash.
+  // reconnectAttempts and lastDisconnectAt reset in the same set() call, so we
+  // can't use lastDisconnectAt alone; a useRef tracks the prior reconnecting state.
+  useEffect(() => {
+    const isReconnecting = reconnectAttempts > 0
+    if (prevReconnecting.current && !isReconnecting) {
+      setShowConnectedFlash(true)
+      const t = setTimeout(() => setShowConnectedFlash(false), 2000)
+      return () => clearTimeout(t)
+    }
+    prevReconnecting.current = isReconnecting
+  }, [reconnectAttempts])
+
   const handlePermissionReply = async (requestID: string, reply: "once" | "always" | "reject") => {
     if (!sessionClient || !sessionID) return
     // Snapshot for rollback
@@ -485,6 +503,18 @@ export default function SessionScreen() {
           }}
           onClose={() => setShowInfo(false)}
         />
+
+        {/* SSE reconnect/connected banner */}
+        {reconnectAttempts > 0 && (
+          <View style={[s.banner, s.bannerReconnecting]}>
+            <Text style={s.bannerText}>Reconnecting\u2026 (attempt {reconnectAttempts})</Text>
+          </View>
+        )}
+        {showConnectedFlash && reconnectAttempts === 0 && (
+          <View style={[s.banner, s.bannerConnected]}>
+            <Text style={s.bannerText}>Connected ✓</Text>
+          </View>
+        )}
 
         {isLoading ? (
           <View style={s.loading}>
@@ -821,4 +851,14 @@ const s = StyleSheet.create({
   dirBadgeDark: { backgroundColor: "#1a1a1a" },
   dirText: { fontSize: 12, color: "#666666", fontWeight: "500" },
   dirTextDark: { color: "#888888" },
+
+  // SSE reconnect/connected banner
+  banner: {
+    paddingHorizontal: 16,
+    paddingVertical: 6,
+    alignItems: "center",
+  },
+  bannerReconnecting: { backgroundColor: "#92400e" },
+  bannerConnected: { backgroundColor: "#065f46" },
+  bannerText: { color: "#ffffff", fontSize: 13, fontWeight: "500" },
 })
