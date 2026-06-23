@@ -84,36 +84,34 @@ There is no finish line — keep compounding.
 </north_star>
 
 <current_mission>
-## Immediate Goal: First Successful Play Store Publication
+## Current state (shipped — as of v0.4.6)
 
-**Deadline mindset**: every action that isn't unblocking Play Store publication is waste.
+- **Play Store**: `cc.agentlabs.opencode` is live on the **internal testing** track.
+- **Website**: `https://opencode.agentlabs.cc` is live (HTTP 200).
+- **CUA E2E**: the `sessions_reload` phase is green in CI (v0.4.6 run `28002986180` ✓). Deterministic ADB-based assertion helpers now back the feature scenarios.
+- **Demo**: 10× sped-up demo at `docs-site/demo.mp4`, embedded on the site.
+- **Support**: `support@agentlabs.cc` → `dzianisvv+agentlabscc@gmail.com` via Cloudflare email routing.
 
-### Blocking checklist (must clear in order)
+## Current mission: grow installs (no terminal done-state)
 
-1. **AAB uploaded to Play Console** ← CURRENT BLOCKER
-   - Build: `ANDROID_HOME=/home/azureuser/android-sdk cd android && ./gradlew bundleRelease --no-daemon`
-   - Signing credentials: in Bitwarden (KEYSTORE_BASE64, KEY_ALIAS, KEY_PASSWORD, KEYSTORE_PASSWORD)
-   - Upload: Play Console → `cc.agentlabs.opencode` → Internal testing → Upload AAB
-   - Account: **`vibeteaichnologies@gmail.com`** (VIBE TECHNOLOGIES, LLC, ID: `8842655543970815326`)
-   - Service account CANNOT do first upload; must be done via web UI
+The publication blocker is cleared — focus is now distribution and growth. Each cycle,
+pick the single highest-leverage action from <growth_surface>; never block growth on the
+third-party gates in <known_external_blockers>.
 
-2. **Store listing committed** (unblocks after step 1)
-   - API: `gcloud auth print-access-token --scopes=https://www.googleapis.com/auth/androidpublisher --account=playstore-deploy@...`
-   - PATCH `/listings/en-US` with video URL `https://www.youtube.com/watch?v=ckAHcfZKuUY`
-   - Commit the edit — will work once a release track exists
-
-3. **App published to internal track** — submit for review
-
-### Secondary (do in parallel, not instead of above)
-
-- **CUA test**: rewrite `scripts/android-cua-smoke.py` for full onboarding flow (connect → TypeScript task → verify → settings). Current test shows `ping` — not compelling.
-- **Demo video**: re-record after CUA test improved. Current video at `https://youtube.com/shorts/ckAHcfZKuUY` is too slow.
-- **Website DNS**: add A record `opencode → 76.76.21.21` and TXT `_vercel → vc-domain-verify=opencode.agentlabs.cc,c9a0888fc28dbb59551f` in Spaceship for `agentlabs.cc`. Vercel project `opencode-mobile-site` is ready.
+1. **Play Store promotion** — graduate from the internal track toward closed/open testing
+   and ultimately the **production** track.
+2. **F-Droid mainline** — the merge request is open; respond to maintainer review. (The
+   self-hosted F-Droid repo already serves installs today.)
+3. **Content marketing** — execute the plan: dev.to / Hashnode posts (canonical to the
+   site), a Show HN, and a Product Hunt launch — owner-gated assets prepared paste-ready.
+4. **Organic discovery** — compound SEO (long-tail pages, structured data, sitemap +
+   IndexNow) and ASO (keyword-rich listing copy, screenshots, feature graphic).
 
 ### Key facts
-- Package: `cc.agentlabs.opencode`
-- Legacy/orphaned app: `ai.opencode.mobile` — ignore it
-- YouTube demo: `https://youtube.com/shorts/ckAHcfZKuUY` (Unlisted, Vibe Technologies channel)
-- Dev server for CUA: `100.108.64.76:4096` (Tailscale)
-- Google account for ALL operations: `vibeteaichnologies@gmail.com` — never `dzianisvv@gmail.com`
+- Package: `cc.agentlabs.opencode` (live). Legacy/orphaned app `ai.opencode.mobile` — ignore it.
+- Developer account: VIBE TECHNOLOGIES, LLC (ID `8842655543970815326`), Google login
+  `vibeteaichnologies@gmail.com` — never `dzianisvv@gmail.com`.
+- Site `https://opencode.agentlabs.cc` · Support `support@agentlabs.cc`.
+- Dev server for CUA: `100.108.64.76:4096` (Tailscale).
+- Install channels live today: Google Play (internal), GitHub release APK, self-hosted F-Droid repo.
 </current_mission>
