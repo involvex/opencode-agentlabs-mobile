@@ -1140,11 +1140,11 @@ def run_scenario_backgrounded_permission_notification(opencode_url: str, model: 
         print(f"  [api] WARNING: could not send permission-triggering message: {exc}")
 
     # Phase 4: DETERMINISTIC — poll notification drawer for permission notification.
-    # The actual notification fired by events.ts has title `req.permission ||
-    # "Permission requested"` and body `req.patterns` or "A tool needs your approval"
-    # — there is NO "Agent needs approval" string. The only token guaranteed in every
-    # dumpsys record is our package name, so gate on APP_PACKAGE (deterministic) and
-    # treat the human-readable copy as a secondary signal.
+    # events.ts fires notify({ title: "Agent needs approval", body: "<perm>: <patterns>",
+    # category: "permissions", sessionId }) — only when app is backgrounded (AppState check
+    # in notifications.ts send()). The only token guaranteed in every dumpsys record is our
+    # package name, so gate on APP_PACKAGE (deterministic); fall back to the notification
+    # title/body as secondary signals.
     print("  [notify] polling notification drawer for permission notification...")
     appeared = check_notification_drawer(APP_PACKAGE, timeout=15)
     if not appeared:

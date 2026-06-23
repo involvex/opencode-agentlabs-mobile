@@ -269,9 +269,18 @@ export const useEvents = create<EventsState>((set, get) => ({
               }))
               notify({
                 category: "permissions",
-                title: req.permission || "Permission requested",
-                body: sanitizeBody(req.patterns?.join(", "), "A tool needs your approval"),
+                title: "Agent needs approval",
+                body: sanitizeBody(
+                  req.permission
+                    ? req.patterns?.length
+                      ? `${req.permission}: ${req.patterns.join(", ")}`
+                      : req.permission
+                    : req.patterns?.join(", "),
+                  "A tool needs your approval",
+                ),
                 sessionId: req.sessionID,
+                dedupeKey: `perm-${req.id}`,
+                dedupeCooldownMs: 60_000,
               })
               break
             }
@@ -305,6 +314,8 @@ export const useEvents = create<EventsState>((set, get) => ({
                 title: req.questions?.[0]?.header || "Input needed",
                 body: sanitizeBody(req.questions?.[0]?.question, "The assistant has a question"),
                 sessionId: req.sessionID,
+                dedupeKey: `question-${req.id}`,
+                dedupeCooldownMs: 60_000,
               })
               break
             }
