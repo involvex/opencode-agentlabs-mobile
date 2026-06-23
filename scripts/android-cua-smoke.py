@@ -607,7 +607,7 @@ PHASE_BANNERS = {
     "new_session":      "STEP 4:   Creating a new AI coding session",
     "typescript":       "STEP 5-6: Submitting TypeScript task — watching opencode work",
     "verify":           "STEP 7:   Verifying task output / success response",
-    "sessions_reload":  "STEP 7b:  Navigating back to sessions tab — verifying sessions still load",
+    "sessions_reload":  "STEP 4b: Navigate back to sessions tab — verify sessions load (regression guard)",
     "settings":         "STEP 8-9: Navigating to Settings — showing model selection",
 }
 
