@@ -39,6 +39,6 @@ NonFreeNet: The opencode server you connect to may in turn connect to proprietar
 
 SUPPORT
 
-Email: support@vibebrowser.app
+Email: support@agentlabs.cc
 Issues: https://github.com/dzianisv/opencode-mobile/issues
 Privacy policy: https://dzianisv.github.io/opencode-mobile/privacy/

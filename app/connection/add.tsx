@@ -146,7 +146,7 @@ export default function AddConnectionScreen() {
     const email = waitlistEmail.trim()
     const subject = encodeURIComponent("OpenCode Connect Waitlist")
     const body = encodeURIComponent(email ? `Sign me up!\n\nEmail: ${email}` : "Sign me up!")
-    Linking.openURL(`mailto:connect@vibebrowser.app?subject=${subject}&body=${body}`)
+    Linking.openURL(`mailto:connect@agentlabs.cc?subject=${subject}&body=${body}`)
   }
 
   // Quick connect mode - simplified

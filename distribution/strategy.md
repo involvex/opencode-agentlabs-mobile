@@ -72,7 +72,7 @@ Rejected alternatives:
 | Service account `playstore-deploy@…` | ✅ Created, JSON key saved to Bitwarden + GitHub secret |
 | Signed AAB | ✅ Built at `android/app/build/outputs/bundle/release/app-release.aab` (58.5 MB) |
 | Website verification | ✅ www.vibebrowser.app verified via Search Console auto-detection |
-| Contact email verification | ✅ support@vibebrowser.app verified via Play Console code |
+| Contact email verification | ✅ support@agentlabs.cc verified via Play Console code |
 | Payments profile | ✅ Linked with D-U-N-S 142059652 |
 | CI workflow audit + fixes | ✅ `publish-play-store.yml` — versionCode auto-bump, r0adkll@v1.1.5, whatsNewDirectory wired |
 | Play Store listing copy | ✅ `distribution/play-listing.md` |

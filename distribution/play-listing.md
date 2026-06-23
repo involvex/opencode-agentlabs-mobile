@@ -62,7 +62,7 @@ OpenCode Mobile is MIT licensed. Source code, issue tracker, and community discu
 <b>PRIVACY</b>
 OpenCode Mobile does not collect your code, prompts, or AI responses. All traffic goes directly from the app to YOUR opencode server — never through our infrastructure. We use Sentry for crash diagnostics only (no PII, no message content, opt-in available).
 
-Support: support@vibebrowser.app
+Support: support@agentlabs.cc
 Issues: github.com/dzianisv/opencode-mobile/issues
 ```
 (2600/4000 chars)
@@ -112,7 +112,7 @@ Issues: github.com/dzianisv/opencode-mobile/issues
 | App or game | App | |
 | Category | Tools | 36.8% CVR on Play vs 27.3% average. Productivity rejected — higher competition, less precise. |
 | Tags | developer, ai, coding, open-source, productivity | Submit all five in Play Console. |
-| Email | support@vibebrowser.app | Already verified during signup. |
+| Email | support@agentlabs.cc | Already verified during signup. |
 | Phone | +1 360-504-8967 | Optional public; matches developer profile. |
 | Website | https://agentlabs.cc/opencode | Already verified. |
 
@@ -152,7 +152,7 @@ Privacy policy must cover:
 - Third-party SDKs (Sentry — link to https://sentry.io/privacy/)
 - Data retention (Sentry default 90 days)
 - User rights (delete request via email, contact us)
-- Contact: support@vibebrowser.app
+- Contact: support@agentlabs.cc
 
 ```
 OpenCode Mobile Privacy Policy
@@ -174,9 +174,9 @@ Third-party services:
 Data sharing: none beyond Sentry.
 
 User rights:
-- Email support@vibebrowser.app to request deletion of crash records associated with your device.
+- Email support@agentlabs.cc to request deletion of crash records associated with your device.
 
-Contact: support@vibebrowser.app
+Contact: support@agentlabs.cc
 ```
 
 ---
@@ -189,7 +189,7 @@ Google requires this before publishing. Answers for OpenCode Mobile current stat
 |---|---|
 | Does your app collect or share any of the required user data types? | Yes |
 | Is all of the user data collected by your app encrypted in transit? | Yes (HTTPS to Sentry) |
-| Do you provide a way for users to request that their data is deleted? | Yes — via support@vibebrowser.app |
+| Do you provide a way for users to request that their data is deleted? | Yes — via support@agentlabs.cc |
 
 ### Data types collected
 
@@ -266,7 +266,7 @@ OpenCode Mobile requires the user to bring their own opencode server (https://op
 3. In the app, tap "Connect" → enter the URL → connect.
 4. Start a session, type a prompt, observe streaming response.
 
-If reviewers cannot self-host, contact support@vibebrowser.app and we will provide a temporary hosted opencode endpoint for review.
+If reviewers cannot self-host, contact support@agentlabs.cc and we will provide a temporary hosted opencode endpoint for review.
 ```
 
 ---

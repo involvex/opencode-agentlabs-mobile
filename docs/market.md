@@ -211,7 +211,7 @@ Adjacent multi-agent platforms: **Paseo** (6.6k stars beta, biggest threat), **V
 | 2026-05-24 | Free client everywhere; opencode Cloud separate paid product | Monetization research: Tailscale model has $45M ARR; "paid Play / free F-Droid" never works for MIT apps |
 | 2026-05-24 | Default monetization = "Subscriptions" in Play Console | Optimistic for opencode Cloud; not enforced in client |
 | 2026-05-24 | "Yes — earning money" + "Subscriptions" in Play Console signup | Future-proof for Cloud upsell |
-| 2026-05-24 | Apple ID = support@vibebrowser.app (not Gmail) | Apple recommends domain-matched email for org accounts |
+| 2026-05-24 | Apple ID = support@agentlabs.cc (not Gmail) | Apple recommends domain-matched email for org accounts |
 | 2026-05-24 | EAS Build for iOS CI | Zero Mac infra; managed certs; $0 free tier |
 | 2026-05-24 | Sentry opt-in default OFF | F-Droid parity + cleaner data safety form |
 | 2026-05-24 | `opencode.vibebrowser.app` subdomain (not path) | Cleaner URLs, separate Vercel project, dedicated landing |

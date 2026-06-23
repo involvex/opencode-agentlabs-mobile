@@ -160,7 +160,7 @@ If OpenCode Mobile saves you time, consider sponsoring:
 | Backer | $15/mo | Name + early access to opencode Cloud beta |
 | Business | $50/mo | Logo on [agentlabs.cc/opencode](https://agentlabs.cc/opencode) + quarterly support call |
 
-Questions or private support: [support@vibebrowser.app](mailto:support@vibebrowser.app)
+Questions or private support: [support@agentlabs.cc](mailto:support@agentlabs.cc)
 
 ---
 

@@ -74,11 +74,11 @@ OpenCode requires you to run an opencode server:
 2. Run: opencode serve
 3. Connect the app to the server URL
 
-If you cannot self-host, contact support@vibebrowser.app and we will provide a temporary review endpoint.
+If you cannot self-host, contact support@agentlabs.cc and we will provide a temporary review endpoint.
 
 SUPPORT
 
-Email: support@vibebrowser.app
+Email: support@agentlabs.cc
 Issues: https://github.com/dzianisv/opencode-mobile/issues
 ```
 
@@ -244,7 +244,7 @@ Paste the following in the "Notes" field of the App Review Information section:
 OpenCode Mobile requires the reviewer to connect to an opencode server.
 
 OPTION A — We provide a hosted review endpoint:
-Contact support@vibebrowser.app before the review window and we will email a temporary server URL valid for 72 hours.
+Contact support@agentlabs.cc before the review window and we will email a temporary server URL valid for 72 hours.
 
 OPTION B — Self-host (5 minutes):
 1. Install Node.js 20+ on any macOS/Linux machine
@@ -325,7 +325,7 @@ OpenCode Mobile — iOS beta
 
 Drive your self-hosted opencode AI coding agent from your iPhone or iPad. Connect to opencode running on your workstation (or any server) and guide AI coding sessions remotely.
 
-This is an early beta. Please report issues via the TestFlight feedback button or email support@vibebrowser.app.
+This is an early beta. Please report issues via the TestFlight feedback button or email support@agentlabs.cc.
 
 To use: you need opencode running somewhere accessible (local Wi-Fi, Tailscale, Cloudflare Tunnel, etc). Run `opencode serve` and enter the server URL in the app.
 ```

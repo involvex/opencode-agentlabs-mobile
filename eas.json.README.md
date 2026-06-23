@@ -13,7 +13,7 @@ Example value: `6478291034`
 
 **Where to find it** (after enrollment + app creation):
 
-1. Open https://appstoreconnect.apple.com/ and sign in with `support@vibebrowser.app`
+1. Open https://appstoreconnect.apple.com/ and sign in with `support@agentlabs.cc`
 2. Click **My Apps** in the top navigation
 3. Click on **OpenCode** (the app you created)
 4. In the left sidebar click **App Information** under the General section
@@ -38,7 +38,7 @@ Example value: `ABC1234DEF`
 
 **Where to find it** (after enrollment):
 
-1. Open https://developer.apple.com/account/ and sign in with `support@vibebrowser.app`
+1. Open https://developer.apple.com/account/ and sign in with `support@agentlabs.cc`
 2. Click your name / account icon in the top right → **Membership details**
 3. Your **Team ID** is listed under the team name
 
@@ -62,7 +62,7 @@ Alternatively, in App Store Connect:
 
 | Field | Value | Notes |
 |---|---|---|
-| `appleId` | `appstore@vibebrowser.app` | The Apple ID used for App Store Connect login — update if different |
+| `appleId` | `appstore@agentlabs.cc` | The Apple ID used for App Store Connect login — update if different |
 | `distribution` (production ios) | `store` | Correct for App Store / TestFlight submissions |
 | `buildType` (production android) | `app-bundle` | Correct for Play Store AAB submissions |
 | `autoIncrement` | `false` | Build number is bumped by the CI workflow (github.run_number), not EAS |

@@ -71,7 +71,7 @@ going live. When Play is live, come back and add the Play URL where noted.
 | Icon | `distribution/play-graphics/icon-512.png` |
 | Pricing | Free |
 | Author | VIBE TECHNOLOGIES, LLC |
-| Contact | support@vibebrowser.app |
+| Contact | support@agentlabs.cc |
 
 ---
 

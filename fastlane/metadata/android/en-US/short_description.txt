@@ -1,1 +1,1 @@
-AI coding agent for Android — drive your self-hosted opencode server.
+Remote control for opencode serve. Stream AI coding sessions from your phone.

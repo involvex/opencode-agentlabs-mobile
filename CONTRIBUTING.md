@@ -164,4 +164,4 @@ That's it — no paperwork.
 
 ## Code of Conduct
 
-This project follows the [Contributor Covenant Code of Conduct](CODE_OF_CONDUCT.md). Please treat everyone with respect. Report issues to [support@vibebrowser.app](mailto:support@vibebrowser.app).
+This project follows the [Contributor Covenant Code of Conduct](CODE_OF_CONDUCT.md). Please treat everyone with respect. Report issues to [support@agentlabs.cc](mailto:support@agentlabs.cc).

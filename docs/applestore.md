@@ -10,7 +10,7 @@ For full company facts (D-U-N-S, address, governor) see `~/.agents/skills/vibete
 
 | Field | Value |
 |---|---|
-| Apple ID email | `support@vibebrowser.app` (per decision 2026-05-24) |
+| Apple ID email | `support@agentlabs.cc` (per decision 2026-05-24) |
 | Apple Developer Program | ❌ **not enrolled — user signing up now** |
 | D-U-N-S (for org enrollment) | 142059652 |
 | Enrollment fee | $99/year (not yet paid) |
@@ -75,7 +75,7 @@ Because the answer is "No", no ERN (Encryption Registration Number) is required 
 
 | # | Item | Owner | Status |
 |---|---|---|---|
-| 1 | Sign in / create Apple ID for `support@vibebrowser.app` w/ 2FA | User | 🔴 user action required |
+| 1 | Sign in / create Apple ID for `support@agentlabs.cc` w/ 2FA | User | 🔴 user action required |
 | 2 | Enroll in Apple Developer Program ($99) | User | 🔴 user action required |
 | 3 | Pass Apple verification call | User | 🔴 user action required |
 | 4 | App icon — 1024×1024 PNG, opaque (no alpha) | ✅ Done | `assets/icon-appstore.png` (flattened from Android-produced `assets/icon.png`) |

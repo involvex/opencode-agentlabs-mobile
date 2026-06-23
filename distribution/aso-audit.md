@@ -147,7 +147,7 @@ OpenCode Mobile is MIT licensed. Source code, issue tracker, and community discu
 <b>PRIVACY</b>
 OpenCode Mobile does not collect your code, prompts, or AI responses. All traffic goes directly from the app to YOUR opencode server — never through our infrastructure. We use Sentry for crash diagnostics only (no PII, no message content, opt-in available).
 
-Support: support@vibebrowser.app
+Support: support@agentlabs.cc
 Issues: github.com/dzianisv/opencode-mobile/issues
 ```
 

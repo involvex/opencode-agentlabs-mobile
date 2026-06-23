@@ -13,7 +13,7 @@
 OpenCode Mobile is developed and distributed by **VIBE TECHNOLOGIES, LLC**, a Washington State limited liability company.
 
 - Address: 519 S Henderson St, Seattle, WA 98108-4522, USA
-- Contact: support@vibebrowser.app
+- Contact: support@agentlabs.cc
 - Source code: https://github.com/dzianisv/opencode-mobile (MIT license)
 
 ---
@@ -84,7 +84,7 @@ We do not operate our own servers that store your data; there is no VIBE TECHNOL
 You have the right to:
 
 - **Opt out** — disable crash reporting at any time in Settings → Privacy.
-- **Request deletion** — email support@vibebrowser.app with subject "Data deletion request" and we will request deletion of any crash events associated with your device from Sentry.
+- **Request deletion** — email support@agentlabs.cc with subject "Data deletion request" and we will request deletion of any crash events associated with your device from Sentry.
 - **Access** — request a summary of what diagnostic data (if any) we hold about your device by emailing the same address.
 
 Residents of the EU/EEA/UK may exercise rights under GDPR/UK GDPR. California residents may exercise rights under the CCPA.
@@ -116,7 +116,7 @@ VIBE TECHNOLOGIES, LLC
 519 S Henderson St
 Seattle, WA 98108-4522
 USA
-Email: support@vibebrowser.app
+Email: support@agentlabs.cc
 
 ---
 

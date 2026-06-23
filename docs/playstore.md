@@ -19,7 +19,7 @@ For full company facts (D-U-N-S, address, governor, etc.) see `~/.agents/skills/
 | Registration fee | ✅ $25 paid via Mercury virtual card (Bitwarden: `MERCURY_VIRTUAL_CARD_PLAY_CONSOLE`) |
 | Payments profile | ✅ linked, D-U-N-S verified |
 | Website ownership | ✅ verified — https://www.vibebrowser.app/ (Search Console auto-detected meta tag) |
-| Contact email | ✅ support@vibebrowser.app verified |
+| Contact email | ✅ support@agentlabs.cc verified |
 | Identity verification | ❌ **pending — needs governor ID upload at Home → Verify your identity** |
 | Phone verification | ⏸ auto after identity |
 | API access (GCP link) | ⏸ blocked on identity (URL `/api-access` redirects home) |

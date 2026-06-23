@@ -33,4 +33,4 @@ MIT licensed. Source + issues: https://github.com/dzianisv/opencode-mobile
 
 FEEDBACK
 
-Please use the TestFlight feedback button or email support@vibebrowser.app. We read every report.
+Please use the TestFlight feedback button or email support@agentlabs.cc. We read every report.
