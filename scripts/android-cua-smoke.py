@@ -345,6 +345,82 @@ def ui_dump() -> str:
     return ""
 
 
+# ---------------------------------------------------------------------------
+# Deterministic assertion helpers (ADB-based — no LLM, no hallucination)
+# ---------------------------------------------------------------------------
+
+def check_ui_text(text: str, case_sensitive: bool = False) -> bool:
+    """Return True if `text` appears anywhere in the current UI hierarchy XML.
+
+    Uses `uiautomator dump` — fully deterministic, no LLM vision involved.
+    Prefer this over asking the LLM to look for text whenever possible.
+
+    Example:
+        assert check_ui_text("Reconnecting"), "FAIL: reconnect banner not shown"
+    """
+    xml = ui_dump()
+    haystack = xml if case_sensitive else xml.lower()
+    needle = text if case_sensitive else text.lower()
+    return needle in haystack
+
+
+def check_notification_drawer(expected_text: str, timeout: int = 10) -> bool:
+    """Return True if `expected_text` appears in the OS notification drawer
+    within `timeout` seconds.
+
+    Polls `adb shell dumpsys notification --noredact` — deterministic.
+    No LLM vision involved; pass/fail is a simple string match.
+
+    Example:
+        assert check_notification_drawer("Agent needs approval", timeout=10)
+    """
+    end = time.time() + timeout
+    while time.time() < end:
+        try:
+            out = subprocess.check_output(
+                ["adb", "shell", "dumpsys", "notification", "--noredact"],
+                text=True, stderr=subprocess.DEVNULL, timeout=10,
+            )
+            if expected_text.lower() in out.lower():
+                return True
+        except Exception:
+            pass
+        time.sleep(1)
+    return False
+
+
+def simulate_network_drop() -> None:
+    """Cut all network connectivity on the emulator/device.
+
+    Use to test SSE reconnect, disconnect banner, and backgrounded-notification
+    scenarios. Always pair with `restore_network()`.
+
+    Note: on the emulator, this affects all interfaces including the host tunnel
+    (10.0.2.2). The opencode server will become unreachable, triggering SSE
+    disconnect handling in the app.
+    """
+    adb("shell", "svc", "wifi", "disable")
+    adb("shell", "svc", "data", "disable")
+
+
+def restore_network() -> None:
+    """Restore network connectivity after `simulate_network_drop()`."""
+    adb("shell", "svc", "wifi", "enable")
+    adb("shell", "svc", "data", "enable")
+
+
+def background_app() -> None:
+    """Press Home to background the app (keeps it alive, fires background notifications)."""
+    adb("shell", "input", "keyevent", "KEYCODE_HOME")
+    _sleep(1.0)
+
+
+def foreground_app(package: str = APP_PACKAGE) -> None:
+    """Bring the app back to foreground."""
+    adb("shell", "monkey", "-p", package, "-c", "android.intent.category.LAUNCHER", "1")
+    _sleep(1.5)
+
+
 def execute_action(action: dict) -> str:
     """Execute an action dict returned by the LLM. Returns status string."""
     act = action.get("type", "")
@@ -915,6 +991,160 @@ SMOKE_SCENARIOS = [
 ]
 
 
+# ---------------------------------------------------------------------------
+# Feature-specific deterministic test scenarios (for ticket validation)
+# These use ADB-based assertions — NOT LLM vision — as the pass/fail gate.
+# ---------------------------------------------------------------------------
+
+def run_scenario_sse_disconnect_banner(opencode_url: str, model: str, include_ui_xml: bool) -> dict:
+    """#42 — SSE disconnect banner.
+
+    Validates that when the network drops, the app shows a 'Reconnecting...'
+    banner in the session view. Pass/fail is determined by uiautomator XML dump,
+    not LLM vision — no hallucination possible.
+    """
+    results: dict = {}
+
+    # Phase 1: LLM opens a session
+    ok = run_cua_step(
+        goal=(
+            f"The app is open showing the OpenCode Mobile connections screen. "
+            f"Connect to the server at '{opencode_url}' if not already connected. "
+            "Then open any session (create one if the list is empty). "
+            "Report done when you can see the session chat view with a text input at the bottom."
+        ),
+        max_steps=20, model=model, include_ui_xml=include_ui_xml,
+        step_label="open_session",
+    )
+    results["open_session"] = ok
+
+    if ok["status"] != "success":
+        return {"status": "fail", "phase": "open_session", "results": results}
+
+    _sleep(2.0)
+
+    # Phase 2: DETERMINISTIC — cut network
+    print("  [net] dropping network...")
+    simulate_network_drop()
+    _sleep(5.0)  # wait for SSE timeout detection in app
+
+    # Phase 3: DETERMINISTIC — check UI XML for reconnect text
+    has_banner = check_ui_text("Reconnecting") or check_ui_text("reconnect") or check_ui_text("offline")
+    results["banner_appeared"] = {"status": "success" if has_banner else "fail",
+                                  "detail": "uiautomator XML check"}
+    print(f"  [DETERMINISTIC] banner_appeared={has_banner}")
+
+    # Phase 4: LLM visual check (informational only — not gating)
+    visual = run_cua_step(
+        goal=(
+            "The device network was just disabled. Look at the top of the session chat. "
+            "Report what you see — is there a yellow/amber banner saying Reconnecting, Offline, or similar? "
+            "This is informational only; just describe what you observe."
+        ),
+        max_steps=4, model=model, include_ui_xml=include_ui_xml,
+        step_label="banner_visual",
+    )
+    results["banner_visual"] = visual
+
+    # Phase 5: DETERMINISTIC — restore network, wait, check banner gone
+    print("  [net] restoring network...")
+    restore_network()
+    _sleep(15.0)  # wait for SSE reconnect (backoff up to 15s)
+
+    banner_gone = not (check_ui_text("Reconnecting") or check_ui_text("reconnect") or check_ui_text("offline"))
+    results["banner_dismissed"] = {"status": "success" if banner_gone else "fail",
+                                   "detail": "uiautomator XML check after reconnect"}
+    print(f"  [DETERMINISTIC] banner_dismissed={banner_gone}")
+
+    overall = "success" if has_banner and banner_gone else "fail"
+    return {"status": overall, "results": results}
+
+
+def run_scenario_backgrounded_permission_notification(opencode_url: str, model: str, include_ui_xml: bool) -> dict:
+    """#39 — Push notification when app is backgrounded and agent awaits permission.
+
+    Pass/fail determined by `adb dumpsys notification` — deterministic.
+    The LLM is used only to set up the session; the assertion is ADB-based.
+
+    Requires: the opencode server to have a pre-staged session that will
+    trigger a permission request (e.g. a bash tool call waiting for approval).
+    Pre-creates such a session via the REST API.
+    """
+    results: dict = {}
+
+    # Pre-create a session via API
+    precreated = _precreate_test_session(opencode_url, title="cua-permission-notification-test")
+
+    # Phase 1: LLM connects and opens that session
+    goal_connect = (
+        f"Connect to '{opencode_url}' if not already connected. "
+        "Navigate to the Sessions tab. "
+    )
+    if precreated:
+        goal_connect += f"Open the session titled '{precreated}'. "
+    else:
+        goal_connect += "Open or create any session. "
+    goal_connect += "Report done when the session chat view is open."
+
+    ok = run_cua_step(goal=goal_connect, max_steps=20, model=model,
+                      include_ui_xml=include_ui_xml, step_label="open_session")
+    results["open_session"] = ok
+
+    if ok["status"] != "success":
+        return {"status": "fail", "phase": "open_session", "results": results}
+
+    # Phase 2: DETERMINISTIC — background the app
+    print("  [app] backgrounding app...")
+    background_app()
+    _sleep(2.0)
+
+    # Phase 3: API — trigger a permission event
+    # Send a message that invokes a bash tool (which requires approval).
+    # The server will emit permission.requested via SSE.
+    import urllib.request
+    api_base = opencode_url.replace("10.0.2.2", "127.0.0.1")
+    try:
+        # Get the most recent session to send to
+        resp = urllib.request.urlopen(f"{api_base}/session?limit=1&roots=true", timeout=5)
+        sessions = json.loads(resp.read())
+        if sessions:
+            sid = sessions[0]["id"]
+            msg_data = json.dumps({
+                "parts": [{"type": "text", "text": "Run: echo hello — and wait for approval"}]
+            }).encode()
+            req = urllib.request.Request(
+                f"{api_base}/session/{sid}/prompt_async",
+                data=msg_data, method="POST",
+                headers={"Content-Type": "application/json"},
+            )
+            urllib.request.urlopen(req, timeout=5)
+            print(f"  [api] sent message to session {sid[:16]}...")
+    except Exception as exc:
+        print(f"  [api] WARNING: could not send permission-triggering message: {exc}")
+
+    # Phase 4: DETERMINISTIC — poll notification drawer for permission notification
+    # Implementation of #39 should fire a push when permission.requested arrives and app is backgrounded.
+    print("  [notify] polling notification drawer for permission notification...")
+    appeared = check_notification_drawer("Agent needs approval", timeout=15)
+    if not appeared:
+        # Fallback: check for any opencode notification
+        appeared = check_notification_drawer("OpenCode", timeout=5) or \
+                   check_notification_drawer("opencode", timeout=5) or \
+                   check_notification_drawer("approval", timeout=5)
+
+    results["notification_appeared"] = {
+        "status": "success" if appeared else "fail",
+        "detail": "adb dumpsys notification check (deterministic)",
+    }
+    print(f"  [DETERMINISTIC] notification_appeared={appeared}")
+
+    # Phase 5: Restore app foreground
+    foreground_app()
+
+    overall = "success" if appeared else "fail"
+    return {"status": overall, "results": results}
+
+
 def _connect_and_verify_sessions_goal(url: str) -> str:
     return (
         f"You see the OpenCode mobile app. "
@@ -990,8 +1220,9 @@ Examples:
     parser.add_argument("--goal", help="Legacy: single custom goal (disables showcase).")
     parser.add_argument(
         "--scenarios",
-        help="Legacy: comma-separated scenario names to run (disables showcase). "
-             "Valid: connect_and_verify_sessions, send_message, multi_turn, verify_session_list.",
+        help="Comma-separated scenario names to run (disables showcase). "
+             "LLM scenarios: connect_and_verify_sessions, coding_task, verify_session_list. "
+             "Deterministic (ADB-based): sse_disconnect_banner, backgrounded_permission_notification.",
     )
     parser.add_argument(
         "--skip-connect-scenario", action="store_true",
@@ -1081,14 +1312,45 @@ Examples:
     }
 
     if args.scenarios:
+        # Deterministic feature scenarios (run as functions, not LLM-goal strings)
+        deterministic_catalog = {
+            "sse_disconnect_banner": lambda: run_scenario_sse_disconnect_banner(
+                connect_url, args.model, args.include_xml),
+            "backgrounded_permission_notification": lambda: run_scenario_backgrounded_permission_notification(
+                connect_url, args.model, args.include_xml),
+        }
+
         catalog = {connect_scenario["name"]: connect_scenario}
         for s in SMOKE_SCENARIOS:
             catalog[s["name"]] = s
+
         requested = [n.strip() for n in args.scenarios.split(",") if n.strip()]
-        unknown = [n for n in requested if n not in catalog]
+        unknown = [n for n in requested if n not in catalog and n not in deterministic_catalog]
         if unknown:
-            sys.exit(f"Unknown scenario(s): {', '.join(unknown)}. Valid: {', '.join(catalog.keys())}")
-        scenarios = [catalog[n] for n in requested]
+            valid = list(catalog.keys()) + list(deterministic_catalog.keys())
+            sys.exit(f"Unknown scenario(s): {', '.join(unknown)}. Valid: {', '.join(valid)}")
+
+        # Run deterministic scenarios first (they manage their own flow)
+        det_results = []
+        llm_scenarios = []
+        for name in requested:
+            if name in deterministic_catalog:
+                print(f"\n{'='*60}")
+                print(f"Scenario (deterministic): {name}")
+                print(f"{'='*60}")
+                result = deterministic_catalog[name]()
+                result["scenario"] = name
+                det_results.append(result)
+                icon = "PASS" if result["status"] == "success" else "FAIL"
+                print(f"  [{icon}] {name}: {result['status']}")
+            else:
+                llm_scenarios.append(catalog[name])
+
+        if det_results and not llm_scenarios:
+            overall = all(r["status"] == "success" for r in det_results)
+            sys.exit(0 if overall else 1)
+
+        scenarios = llm_scenarios
     elif args.only_connect_scenario:
         scenarios = [connect_scenario]
     else:
