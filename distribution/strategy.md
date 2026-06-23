@@ -42,7 +42,7 @@ Rejected alternatives:
 1. **Google Play identity verification** — upload governor ID (Dzianis Vashchuk). Unlocks: API access, Create app, AAB upload, CI publish.
 2. **Apple Developer Program enrollment** — $99/year, D-U-N-S 142059652 ready. iOS agent will produce runbook.
 3. **App icon + adaptive icon + feature graphic** — current `assets/*.json` are placeholders. Need real PNGs before either Play or App Store publish.
-4. **Privacy policy URL** — live & verified at https://dzianisv.github.io/opencode-mobile/privacy/ (this GitHub Pages URL is the canonical privacy URL used for store submissions; if the owner later deploys the branded `opencode.vibebrowser.app/privacy`, it can replace it — reversible). Template in `play-listing.md`.
+4. **Privacy policy URL** — live & verified at https://dzianisv.github.io/opencode-mobile/privacy/ (this GitHub Pages URL is the canonical privacy URL used for store submissions; if the owner later deploys the branded `agentlabs.cc/opencode/privacy`, it can replace it — reversible). Template in `play-listing.md`.
 
 ### Soft blockers (we can fix without user)
 
@@ -71,7 +71,7 @@ Rejected alternatives:
 | androidpublisher API | ✅ Enabled |
 | Service account `playstore-deploy@…` | ✅ Created, JSON key saved to Bitwarden + GitHub secret |
 | Signed AAB | ✅ Built at `android/app/build/outputs/bundle/release/app-release.aab` (58.5 MB) |
-| Website verification | ✅ www.vibebrowser.app verified via Search Console auto-detection |
+| Website verification | ✅ agentlabs.cc verified via Search Console auto-detection |
 | Contact email verification | ✅ support@agentlabs.cc verified via Play Console code |
 | Payments profile | ✅ Linked with D-U-N-S 142059652 |
 | CI workflow audit + fixes | ✅ `publish-play-store.yml` — versionCode auto-bump, r0adkll@v1.1.5, whatsNewDirectory wired |

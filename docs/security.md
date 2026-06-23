@@ -243,7 +243,7 @@ When the opencode AI agent requests a file-access permission, the notification b
 
 ## Defer-to-later items
 
-- **Certificate pinning for `opencode.vibebrowser.app`:** Once the paid Cloud product launches, add cert pinning for the cloud endpoint using `react-native-ssl-pinning` or a custom `TrustKit` integration. Not needed while the app only connects to user-owned servers.
+- **Certificate pinning for `agentlabs.cc/opencode`:** Once the paid Cloud product launches, add cert pinning for the cloud endpoint using `react-native-ssl-pinning` or a custom `TrustKit` integration. Not needed while the app only connects to user-owned servers.
 - **Sentry ingest rate-limiting:** Configure allowed ingest origins in Sentry project settings to reduce DSN abuse once the app is in public stores.
 - **Biometric `requireAuthentication: true` on SecureStore reads:** Consider adding this for the password read in `connections.ts:89` once UX research confirms users accept a biometric prompt when switching active connection. Currently the design is authenticated-at-app-level only.
 - **R8/ProGuard enabling (M-06):** Requires Expo/RN compatibility testing. Defer to a dedicated release hardening sprint.

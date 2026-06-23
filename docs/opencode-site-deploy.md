@@ -1,10 +1,10 @@
-# opencode.vibebrowser.app — Deploy Guide
+# agentlabs.cc/opencode — Deploy Guide
 
 ## Status
 
 - Vercel project: `opencode-mobile-site` (team `dzianisvs-projects`)
 - Auto-domain (live now): https://opencode-mobile-site.vercel.app
-- Custom domain (pending DNS): https://opencode.vibebrowser.app
+- Custom domain (pending DNS): https://agentlabs.cc/opencode
 - Source: `/home/azureuser/workspace/vibebrowser/OpenCodeMobileSite/`
 
 ## Pages deployed
@@ -22,7 +22,7 @@
 Cloudflare API token was not found (not in Bitwarden, not in env). You must
 add the DNS record manually.
 
-**Log in to Cloudflare → vibebrowser.app zone → DNS → Add record:**
+**Log in to Cloudflare → agentlabs.cc zone → DNS → Add record:**
 
 | Type | Name | Target | Proxy |
 |------|------|--------|-------|
@@ -32,7 +32,7 @@ After adding the CNAME, Vercel will automatically issue a TLS certificate.
 Verify with:
 
 ```bash
-curl -sI https://opencode.vibebrowser.app/ | head -5
+curl -sI https://agentlabs.cc/opencode/ | head -5
 ```
 
 ## Re-deploy

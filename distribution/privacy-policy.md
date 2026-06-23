@@ -2,7 +2,7 @@
 
 **Effective date:** 2026-05-24
 **Operator:** VIBE TECHNOLOGIES, LLC
-**App:** OpenCode Mobile (`ai.opencode.mobile`)
+**App:** OpenCode Mobile (`cc.agentlabs.opencode`)
 
 > **Summary:** OpenCode Mobile does not collect your code, prompts, AI responses, server URLs, or any chat content. All AI traffic goes directly from the app to your own opencode server. We use Sentry only for anonymous crash diagnostics, and only with your consent.
 

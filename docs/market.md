@@ -98,7 +98,7 @@ GitHub Sponsors profile under VIBE TECHNOLOGIES, LLC org.
 |---|---|---|
 | Supporter | $5/mo | Name in `SUPPORTERS.md` |
 | Backer | $15/mo | Name + early access to Cloud beta + private Discord channel |
-| Business | $50/mo | Company logo on opencode.vibebrowser.app footer + 30-min support call once per quarter |
+| Business | $50/mo | Company logo on agentlabs.cc/opencode footer + 30-min support call once per quarter |
 
 **Realistic ceiling**: $500-1500/month based on comparable OSS dev-tool projects (Aves Gallery, AntennaPod). Pays Sentry + CI + 1-2 servers. Does **not** fund a salary.
 
@@ -114,7 +114,7 @@ GitHub Sponsors profile under VIBE TECHNOLOGIES, LLC org.
 - [x] Apple Developer enrollment started
 - [ ] Identity verification approved (user task)
 - [ ] App icons + screenshots + privacy policy live (agents working)
-- [ ] opencode.vibebrowser.app subdomain live (agent working)
+- [ ] agentlabs.cc/opencode subdomain live (agent working)
 
 ### Week 3-4: Soft launch — Play Internal Testing
 
@@ -139,7 +139,7 @@ GitHub Sponsors profile under VIBE TECHNOLOGIES, LLC org.
 ### Week 9-10: F-Droid mainline + content marketing
 
 - File F-Droid mainline MR (https://gitlab.com/fdroid/fdroiddata).
-- Blog post on opencode.vibebrowser.app: "Building OpenCode Mobile in 12 weeks."
+- Blog post on agentlabs.cc/opencode: "Building OpenCode Mobile in 12 weeks."
 - Reach out to dev YouTubers / podcast hosts for a demo.
 
 ### Week 11-12: opencode Cloud waitlist + first paying customers
@@ -214,7 +214,7 @@ Adjacent multi-agent platforms: **Paseo** (6.6k stars beta, biggest threat), **V
 | 2026-05-24 | Apple ID = support@agentlabs.cc (not Gmail) | Apple recommends domain-matched email for org accounts |
 | 2026-05-24 | EAS Build for iOS CI | Zero Mac infra; managed certs; $0 free tier |
 | 2026-05-24 | Sentry opt-in default OFF | F-Droid parity + cleaner data safety form |
-| 2026-05-24 | `opencode.vibebrowser.app` subdomain (not path) | Cleaner URLs, separate Vercel project, dedicated landing |
+| 2026-05-24 | `agentlabs.cc/opencode` subdomain (not path) | Cleaner URLs, separate Vercel project, dedicated landing |
 
 ---
 
@@ -232,6 +232,6 @@ Adjacent multi-agent platforms: **Paseo** (6.6k stars beta, biggest threat), **V
 1. ✅ Decide pricing model (done — this doc)
 2. ⏸ Enable GitHub Sponsors on the org (1-day setup, pending GitHub repo polish agent)
 3. ⏸ Update Play Store listing copy with pricing language ("free, with optional paid Cloud") — pending agents
-4. ⏸ Domain `opencode.vibebrowser.app` live with landing + /privacy + /terms — agent running
-5. ⏸ Write "How we're funded" page at opencode.vibebrowser.app/funding — covers free vs paid breakdown
+4. ⏸ Domain `agentlabs.cc/opencode` live with landing + /privacy + /terms — agent running
+5. ⏸ Write "How we're funded" page at agentlabs.cc/opencode/funding — covers free vs paid breakdown
 6. Defer: opencode Cloud MVP build (start after first 1000 free-client users)
