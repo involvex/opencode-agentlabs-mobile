@@ -1046,14 +1046,22 @@ def run_scenario_sse_disconnect_banner(opencode_url: str, model: str, include_ui
     )
     results["banner_visual"] = visual
 
-    # Phase 5: DETERMINISTIC — restore network, wait, check banner gone
+    # Phase 5: DETERMINISTIC — restore network, wait, check banner gone.
+    # After restore, a pending reconnect timer can take up to 15s to fire, and
+    # events.ts only zeroes reconnectAttempts after STABLE_CONNECTION_MS (10s) of a
+    # healthy stream — so the banner can legitimately linger ~25s. Poll up to 40s
+    # instead of a fixed 15s sleep to avoid a false "still showing" failure.
     print("  [net] restoring network...")
     restore_network()
-    _sleep(15.0)  # wait for SSE reconnect (backoff up to 15s)
-
-    banner_gone = not (check_ui_text("Reconnecting") or check_ui_text("reconnect") or check_ui_text("offline"))
+    banner_gone = False
+    deadline = time.time() + 40
+    while time.time() < deadline:
+        _sleep(3.0)
+        if not (check_ui_text("Reconnecting") or check_ui_text("reconnect") or check_ui_text("offline")):
+            banner_gone = True
+            break
     results["banner_dismissed"] = {"status": "success" if banner_gone else "fail",
-                                   "detail": "uiautomator XML check after reconnect"}
+                                   "detail": "uiautomator XML poll (<=40s) after reconnect"}
     print(f"  [DETERMINISTIC] banner_dismissed={banner_gone}")
 
     overall = "success" if has_banner and banner_gone else "fail"
@@ -1100,7 +1108,11 @@ def run_scenario_backgrounded_permission_notification(opencode_url: str, model: 
 
     # Phase 3: API — trigger a permission event
     # Send a message that invokes a bash tool (which requires approval).
-    # The server will emit permission.requested via SSE.
+    # The server emits a `permission.asked` SSE event (NOT `permission.requested`).
+    # events.ts already calls notify({ category: "permissions", ... }) for it, and
+    # notifications.send() only fires while the app is backgrounded (AppState != "active").
+    # NOTE: this assumes the opencode server actually requires approval for the tool;
+    # if the server auto-approves, no permission.asked fires and no notification appears.
     import urllib.request
     api_base = opencode_url.replace("10.0.2.2", "127.0.0.1")
     try:
@@ -1122,15 +1134,18 @@ def run_scenario_backgrounded_permission_notification(opencode_url: str, model: 
     except Exception as exc:
         print(f"  [api] WARNING: could not send permission-triggering message: {exc}")
 
-    # Phase 4: DETERMINISTIC — poll notification drawer for permission notification
-    # Implementation of #39 should fire a push when permission.requested arrives and app is backgrounded.
+    # Phase 4: DETERMINISTIC — poll notification drawer for permission notification.
+    # The actual notification fired by events.ts has title `req.permission ||
+    # "Permission requested"` and body `req.patterns` or "A tool needs your approval"
+    # — there is NO "Agent needs approval" string. The only token guaranteed in every
+    # dumpsys record is our package name, so gate on APP_PACKAGE (deterministic) and
+    # treat the human-readable copy as a secondary signal.
     print("  [notify] polling notification drawer for permission notification...")
-    appeared = check_notification_drawer("Agent needs approval", timeout=15)
+    appeared = check_notification_drawer(APP_PACKAGE, timeout=15)
     if not appeared:
-        # Fallback: check for any opencode notification
-        appeared = check_notification_drawer("OpenCode", timeout=5) or \
-                   check_notification_drawer("opencode", timeout=5) or \
-                   check_notification_drawer("approval", timeout=5)
+        # Fallback: match the real notification copy from events.ts / notifications.ts
+        appeared = check_notification_drawer("Permission requested", timeout=5) or \
+                   check_notification_drawer("A tool needs your approval", timeout=5)
 
     results["notification_appeared"] = {
         "status": "success" if appeared else "fail",
