@@ -2,7 +2,6 @@ import { create } from "zustand"
 import type { Session, Message, Part, Event, MessageWithParts, Client } from "../lib/sdk"
 import { useConnections } from "./connections"
 import { useSettings } from "./settings"
-import { sessionScopeDirectory } from "./sessionScope"
 import { addBreadcrumb } from "../lib/sentry"
 
 // Helper to convert API response to our internal format
@@ -75,36 +74,20 @@ export const useSessions = create<SessionsState>((set, get) => ({
 
   loadSessions: async () => {
     const connState = useConnections.getState()
-    if (!connState.client) {
+    const client = connState.client
+    if (!client) {
       set({ error: "No active connection" })
       return
     }
 
     try {
       set({ isLoading: true, error: null })
-      const initialConnectionID = connState.activeConnection?.id || null
-      const hasExplicitDirectory = Boolean(connState.activeConnection?.directory)
-      let home = connState.serverHome
-
-      if (!hasExplicitDirectory && !home) {
-        const paths = await connState.client.path.get().catch(() => null)
-        home = paths?.home || null
-        if (home) {
-          useConnections.setState({ serverHome: home })
-        }
-      }
-
-      const latestConnState = useConnections.getState()
-      const latestConnectionID = latestConnState.activeConnection?.id || null
-      if (latestConnectionID !== initialConnectionID) {
-        set({ isLoading: false })
-        return
-      }
-
-      const scopeDir = sessionScopeDirectory(Boolean(latestConnState.activeConnection?.directory), home)
-      const listClient = scopeDir ? latestConnState.clientForDirectory(scopeDir) : latestConnState.client
-
-      const sessions = await (listClient || latestConnState.client!).session.list({ roots: true, limit: 50 })
+      // List with the connection's default client and send no directory scope:
+      // opencode-server resolves the x-opencode-directory header to a project by
+      // exact match, and $HOME maps to the empty "global" project, which hides the
+      // user's real workspace sessions (bug #32). The default client already carries
+      // the connection's explicit directory when one is configured.
+      const sessions = await client.session.list({ roots: true, limit: 50 })
       set({ sessions, isLoading: false })
     } catch (error) {
       set({ error: "Failed to load sessions", isLoading: false })
@@ -185,34 +168,24 @@ export const useSessions = create<SessionsState>((set, get) => ({
 
   createSession: async (title) => {
     const connState = useConnections.getState()
-    if (!connState.client) {
+    const client = connState.client
+    if (!client) {
       set({ error: "No active connection" })
       return null
     }
 
-    // Create the session in the SAME directory scope that loadSessions reads from
-    // (see sessionScopeDirectory / bug #10). Both paths derive scope from the one
-    // helper so a freshly created session is always visible to the list.
-    const scopeDir = sessionScopeDirectory(Boolean(connState.activeConnection?.directory), connState.serverHome)
-    const client = scopeDir ? connState.clientForDirectory(scopeDir) || connState.client : connState.client
-
     try {
       const created = await client.session.create({ title })
-      // Stamp the scope we created in onto the session so every downstream path
-      // (navigation params, selectSession, sendMessage's clientFor) addresses it
-      // in the SAME scope. Without this, opening/sending to a freshly created
-      // home-scoped session via the default client would hit the wrong scope (#10).
-      const session = scopeDir && !created.directory ? { ...created, directory: scopeDir } : created
       // Don't optimistically add to sessions list — let loadSessions() handle it
       // to avoid duplicate key errors from race conditions
       set({
-        currentSession: session,
+        currentSession: created,
         messages: [],
         parts: {},
         hasMore: false,
         loadingMore: false,
       })
-      return session
+      return created
     } catch (error) {
       set({ error: "Failed to create session" })
       return null
