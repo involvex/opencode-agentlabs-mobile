@@ -621,7 +621,12 @@ def _precreate_test_session(opencode_url: str, title: str = "cua-smoke-sessions-
     pre-existing sessions from the server on connect (not just an empty screen).
     """
     import urllib.request
-    url = f"{opencode_url.rstrip('/')}/session"
+    # The CUA script runs on the HOST machine, not inside the emulator.
+    # When opencode_url uses the Android emulator's host-route (10.0.2.2),
+    # translate it to localhost for this pre-create call — 10.0.2.2 is
+    # only reachable from *inside* the emulator, not from the host/CI runner.
+    api_base = opencode_url.replace("10.0.2.2", "127.0.0.1")
+    url = f"{api_base.rstrip('/')}/session"
     data = json.dumps({"title": title}).encode()
     req = urllib.request.Request(
         url, data=data, method="POST",
@@ -631,10 +636,10 @@ def _precreate_test_session(opencode_url: str, title: str = "cua-smoke-sessions-
         with urllib.request.urlopen(req, timeout=10) as resp:
             body = json.loads(resp.read())
             session_id = body.get("id", "unknown")
-            print(f"  [pre-create] session created via API: id={session_id!r}, title={title!r}")
+            print(f"  [pre-create] session created via API ({api_base}): id={session_id!r}, title={title!r}")
             return title
     except Exception as exc:
-        print(f"  [pre-create] WARNING: could not pre-create session: {exc}")
+        print(f"  [pre-create] WARNING: could not pre-create session at {api_base}: {exc}")
         print(f"  [pre-create] session_list phase will skip the 'must show sessions' assertion")
         return None
 
