@@ -2,6 +2,11 @@ name: CUA Smoke Test
 
 on:
   workflow_dispatch:
+    inputs:
+      opencode_url:
+        description: "OpenCode server URL (overrides default). Use Tailscale URL for a live server."
+        required: false
+        default: ""
   push:
     branches: [main]
     tags: ["v*"]
@@ -27,9 +32,8 @@ jobs:
       # which makes send_message/multi_turn scenarios get skipped (#22).
       # `preview` is also the @ai-sdk/azure 3.x default.
       OPENCODE_AZURE_API_VERSION: "preview"
-      # Android emulator reaches the runner host loopback via 10.0.2.2.
-      # A real `opencode serve` runs on the host (see steps below), making this a true E2E.
-      OPENCODE_URL: "http://10.0.2.2:4096"
+      # Default: emulator reaches runner host via 10.0.2.2. Override with dispatch input for live server.
+      OPENCODE_URL: ${{ inputs.opencode_url != '' && inputs.opencode_url || 'http://10.0.2.2:4096' }}
       ARCHIVEBOX_URL: ${{ secrets.ARCHIVEBOX_URL }}
       ARCHIVEBOX_API_KEY: ${{ secrets.ARCHIVEBOX_API_KEY }}
     steps:
@@ -126,6 +130,7 @@ jobs:
           echo "opencode.json written:"; cat "$HOME/.config/opencode/opencode.json"
 
       - name: Start opencode server on runner host
+        if: ${{ inputs.opencode_url == '' }}
         run: |
           set -x
           # Bind all interfaces so the emulator can reach it via 10.0.2.2.
@@ -164,6 +169,7 @@ jobs:
 
       - name: Probe opencode model capability (can it reply?)
         id: probe
+        if: ${{ inputs.opencode_url == '' }}
         env:
           AZURE_OPENAI_MODEL: "gpt-5.4"
         run: |
