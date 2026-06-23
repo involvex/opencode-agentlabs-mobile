@@ -170,7 +170,8 @@ jobs:
           # Deterministic check that the server can actually produce an assistant
           # reply BEFORE we spend ~30min driving the UI. Creates a session, sends a
           # prompt via REST, and checks for an assistant message. Non-fatal: records
-          # MODEL_CAPABLE=true/false so the scenario set can be chosen accordingly.
+          # MODEL_CAPABLE=true/false as an informational signal (the emulator step
+          # always runs --showcase regardless of model capability).
           set +e
           # Use -s (not -sf): we WANT the body even on non-2xx so failures are visible.
           SID=$(curl -s -X POST http://127.0.0.1:4096/session -H 'content-type: application/json' -d '{}' | python3 -c "import sys,json;print(json.load(sys.stdin).get('id',''))" 2>/dev/null)
@@ -224,16 +225,6 @@ jobs:
           fi
           echo "MODEL_CAPABLE=$CAPABLE" >> "$GITHUB_OUTPUT"
           echo "opencode model-capable in CI: $CAPABLE"
-          # Choose the scenario set HERE (bash) and export it, so the emulator step's
-          # script (run by dash, which mangles multi-line if/fi blocks) stays single-line.
-          if [ "$CAPABLE" = "true" ]; then
-            SCENARIOS="connect_and_verify_sessions,coding_task,verify_session_list"
-          else
-            SCENARIOS="connect_and_verify_sessions,verify_session_list"
-            echo "WARN: opencode not model-capable in CI; excluding coding_task (environmental, not an app bug)."
-          fi
-          echo "SCENARIOS=$SCENARIOS" >> "$GITHUB_OUTPUT"
-          echo "chosen scenarios: $SCENARIOS"
 
       - name: Run CUA smoke test with emulator
         uses: reactivecircus/android-emulator-runner@v2
