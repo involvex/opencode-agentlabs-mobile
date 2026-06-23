@@ -1,5 +1,3 @@
-v0.4.6 — Sessions loading fix verified + clearer setup guide
+v0.4.7 — Reconnecting banner + push notifications for approvals
 
-Sessions now reliably load from your opencode server on connect, and remain visible when navigating between views. Regression confirmed fixed by automated E2E test.
-
-Updated: support email is now support@agentlabs.cc. App description now clearly explains the setup: run opencode serve on your machine, connect via Tailscale or local network.
+See a live status banner when your server connection drops ("Reconnecting...") and a confirmation when it recovers. Agent approval requests and questions now send an OS push notification when the app is in the background. Privacy improvements: URL credential scrubbing is now covered by automated tests.
