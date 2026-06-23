@@ -270,19 +270,28 @@ footer a{margin:0 8px}
 <section id="screenshots">
   <div class="wrap">
     <h2>See it in action</h2>
-    <p class="muted" style="margin-bottom:18px">Connect to your server, chat with the agent, review every diff before it lands — all from your phone.</p>
+    <p class="muted" style="margin-bottom:18px">Connect to your server, start a session, watch the agent work — all from your phone.</p>
+    <div style="text-align:center;margin-bottom:28px">
+      <video autoplay loop muted playsinline
+        style="max-width:320px;width:100%;border-radius:18px;border:1px solid rgba(255,255,255,.1);box-shadow:0 8px 32px rgba(0,0,0,.4)"
+        poster="screenshots/01.png">
+        <source src="demo.mp4" type="video/mp4" />
+        <img src="demo.gif" alt="OpenCode Mobile demo: connect to opencode serve, start a session, stream AI responses" style="max-width:320px;width:100%;border-radius:18px" />
+      </video>
+      <p class="muted" style="font-size:.85rem;margin-top:8px">10× speed — full session from connect to AI reply</p>
+    </div>
     <div style="display:flex;gap:16px;flex-wrap:wrap;justify-content:center">
       <figure style="margin:0;flex:1 1 240px;max-width:300px">
-        <img src="screenshots/01.png" alt="OpenCode Mobile connection screen: add a server URL or connect via Cloudflare Tunnel or ngrok" width="1080" height="2400" loading="lazy" style="width:100%;height:auto;border-radius:14px;border:1px solid rgba(255,255,255,.08)" />
-        <figcaption class="muted" style="text-align:center;font-size:.9rem;margin-top:8px">Connect to your own server</figcaption>
+        <img src="screenshots/01.png" alt="OpenCode Mobile sessions list after connecting to opencode serve" width="1280" height="2560" loading="lazy" style="width:100%;height:auto;border-radius:14px;border:1px solid rgba(255,255,255,.08)" />
+        <figcaption class="muted" style="text-align:center;font-size:.9rem;margin-top:8px">Sessions load from your server on connect</figcaption>
       </figure>
       <figure style="margin:0;flex:1 1 240px;max-width:300px">
-        <img src="screenshots/02.png" alt="OpenCode Mobile streaming chat with the AI agent and an inline approve/reject tool-call prompt" width="1080" height="2400" loading="lazy" style="width:100%;height:auto;border-radius:14px;border:1px solid rgba(255,255,255,.08)" />
-        <figcaption class="muted" style="text-align:center;font-size:.9rem;margin-top:8px">Stream replies, approve tool calls</figcaption>
+        <img src="screenshots/02.png" alt="OpenCode Mobile streaming AI response in a coding session" width="1280" height="2560" loading="lazy" style="width:100%;height:auto;border-radius:14px;border:1px solid rgba(255,255,255,.08)" />
+        <figcaption class="muted" style="text-align:center;font-size:.9rem;margin-top:8px">Stream AI responses in real time</figcaption>
       </figure>
       <figure style="margin:0;flex:1 1 240px;max-width:300px">
-        <img src="screenshots/03.png" alt="OpenCode Mobile diff viewer showing added and removed lines for a file the agent changed" width="1080" height="2400" loading="lazy" style="width:100%;height:auto;border-radius:14px;border:1px solid rgba(255,255,255,.08)" />
-        <figcaption class="muted" style="text-align:center;font-size:.9rem;margin-top:8px">Review every diff before it lands</figcaption>
+        <img src="screenshots/03.png" alt="OpenCode Mobile sessions tab showing loaded sessions after navigating back" width="1280" height="2560" loading="lazy" style="width:100%;height:auto;border-radius:14px;border:1px solid rgba(255,255,255,.08)" />
+        <figcaption class="muted" style="text-align:center;font-size:.9rem;margin-top:8px">Sessions persist across navigation</figcaption>
       </figure>
     </div>
   </div>
