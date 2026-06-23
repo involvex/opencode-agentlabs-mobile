@@ -1,3 +1,5 @@
-v0.4 — streaming chat, diff viewer, tool-call approval, biometric unlock.
+v0.4.6 — Sessions loading fix verified + clearer setup guide
 
-Watch your AI coding agent think token by token. Review every file diff before it lands. Approve or reject tool calls (file writes, shell commands) from your phone. Biometric lock keeps sessions private. Connect via local Wi-Fi, Cloudflare Tunnel, ngrok, or Tailscale.
+Sessions now reliably load from your opencode server on connect, and remain visible when navigating between views. Regression confirmed fixed by automated E2E test.
+
+Updated: support email is now support@agentlabs.cc. App description now clearly explains the setup: run opencode serve on your machine, connect via Tailscale or local network.

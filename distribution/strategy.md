@@ -26,12 +26,12 @@ Rejected alternatives:
 
 | # | Channel | Identity | Status | Time to live | Notes |
 |---|---|---|---|---|---|
-| 1 | **Google Play (Internal)** | `ai.opencode.mobile` | ⏸ blocked on identity verification | Days after ID approved | CI ready. Track: `internal` first, then closed testing (12+ testers / 14d) before production. |
-| 2 | **IzzyOnDroid** | `ai.opencode.mobile` (same key) | ❌ not started | 1–3 days | Submit prebuilt APK to https://codeberg.org/IzzyOnDroid/repodata/issues. Fastest OSS channel. |
-| 3 | **F-Droid mainline** | `ai.opencode.mobile` (same key, reproducible build) | ❌ not started | 4–12 weeks | File MR at https://gitlab.com/fdroid/fdroiddata. Requires `expo-notifications` FCM audit + Sentry opt-in gate. |
-| 4 | **Apple App Store** | `ai.opencode.mobile` | ⏸ pending iOS prep agent | Weeks (Apple enrollment $99 + review) | iOS agent running — separate report. |
+| 1 | **Google Play (Internal)** | `cc.agentlabs.opencode` | ⏸ blocked on identity verification | Days after ID approved | CI ready. Track: `internal` first, then closed testing (12+ testers / 14d) before production. |
+| 2 | **IzzyOnDroid** | `cc.agentlabs.opencode` (same key) | ❌ not started | 1–3 days | Submit prebuilt APK to https://codeberg.org/IzzyOnDroid/repodata/issues. Fastest OSS channel. |
+| 3 | **F-Droid mainline** | `cc.agentlabs.opencode` (same key, reproducible build) | ❌ not started | 4–12 weeks | File MR at https://gitlab.com/fdroid/fdroiddata. Requires `expo-notifications` FCM audit + Sentry opt-in gate. |
+| 4 | **Apple App Store** | `cc.agentlabs.opencode` | ⏸ pending iOS prep agent | Weeks (Apple enrollment $99 + review) | iOS agent running — separate report. |
 
-**All channels: same package id (`ai.opencode.mobile`), same signing key.** Lets users update across stores in-place.
+**All channels: same package id (`cc.agentlabs.opencode`), same signing key.** Lets users update across stores in-place.
 
 ---
 
@@ -87,7 +87,7 @@ Rejected alternatives:
 
 1. (manual, in browser) Home → Verify your identity → upload governor ID. Wait days.
 2. (manual) Setup → API access → Link `opencode-mobile-deploy`. Grant `playstore-deploy@…` "Release to production".
-3. (manual) Create app `ai.opencode.mobile`. Fill listing from `play-listing.md`. Upload icon + feature graphic + screenshots. Complete Data safety + Content rating + App access.
+3. (manual) Create app `cc.agentlabs.opencode`. Fill listing from `play-listing.md`. Upload icon + feature graphic + screenshots. Complete Data safety + Content rating + App access.
 4. (manual, first time) Upload `app-release.aab` to Internal testing track. Add tester emails.
 5. (automated thereafter) `git tag v0.2.4 && git push --tags` → CI builds + publishes to Internal.
 
@@ -97,7 +97,7 @@ Rejected alternatives:
 2. File issue at https://codeberg.org/IzzyOnDroid/repodata/issues:
    ```
    App name: OpenCode Mobile
-   Package: ai.opencode.mobile
+   Package: cc.agentlabs.opencode
    License: MIT
    GitHub release: https://github.com/dzianisv/opencode-mobile/releases
    APK SHA-256: <sha256>
@@ -109,7 +109,7 @@ Rejected alternatives:
 ### F-Droid mainline (after Sentry opt-in + FCM audit done)
 
 1. Fork https://gitlab.com/fdroid/fdroiddata.
-2. Create `metadata/ai.opencode.mobile.yml` with reproducible-build config (template in F-Droid report).
+2. Create `metadata/cc.agentlabs.opencode.yml` with reproducible-build config (template in F-Droid report).
 3. Set `AllowedAPKSigningKeys: <sha256-fingerprint>` so F-Droid serves our pre-signed APK.
 4. File MR. Iterate on build failures with reviewers. 4–12 week timeline.
 5. Once accepted, request IzzyOnDroid delisting (they auto-remove when mainline accepts).
