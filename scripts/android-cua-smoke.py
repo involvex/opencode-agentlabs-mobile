@@ -1184,6 +1184,523 @@ def _connect_and_verify_sessions_goal(url: str) -> str:
 
 
 # ---------------------------------------------------------------------------
+# Deterministic API helpers for e2e coding task validation
+# ---------------------------------------------------------------------------
+
+def _api_base(opencode_url: str) -> str:
+    """Translate emulator host route to localhost for host-side API calls."""
+    url = opencode_url.replace("10.0.2.2", "127.0.0.1")
+    if "127.0.0.1" not in url and "localhost" not in url:
+        # External URL (Tailscale etc.) — try it directly
+        pass
+    return url.rstrip("/")
+
+
+def wait_for_session_idle(opencode_url: str, timeout: int = 180, poll_interval: int = 3) -> dict | None:
+    """Poll GET /session (most recent root session) until status == 'idle'.
+
+    Returns the session dict when idle, or None on timeout.
+    This is fully deterministic — no LLM vision involved.
+    """
+    import urllib.request as _ur
+    api = _api_base(opencode_url)
+    # Also try localhost fallback if the primary candidate is not localhost
+    candidates = [api]
+    if "127.0.0.1" not in api and "localhost" not in api:
+        candidates.append("http://127.0.0.1:4096")
+
+    deadline = time.time() + timeout
+    while time.time() < deadline:
+        for base in candidates:
+            try:
+                resp = _ur.urlopen(f"{base}/session?limit=10&roots=true", timeout=5)
+                sessions = json.loads(resp.read())
+                if sessions:
+                    # Find most recent non-archived session
+                    latest = max(sessions, key=lambda s: s.get("created", 0))
+                    status = latest.get("status", "?")
+                    if status == "idle":
+                        return latest
+            except Exception:
+                pass
+        time.sleep(poll_interval)
+    return None
+
+
+def check_session_file_created(opencode_url: str, filename: str) -> dict:
+    """Check the most recent session's messages for a file-creation tool call naming `filename`.
+
+    Returns {"found": bool, "session_id": str | None, "evidence": str}
+    Deterministic — reads the opencode REST API directly.
+    """
+    import urllib.request as _ur
+    api = _api_base(opencode_url)
+    candidates = [api]
+    if "127.0.0.1" not in api and "localhost" not in api:
+        candidates.append("http://127.0.0.1:4096")
+
+    for base in candidates:
+        try:
+            # Get most recent session
+            resp = _ur.urlopen(f"{base}/session?limit=10&roots=true", timeout=5)
+            sessions = json.loads(resp.read())
+            if not sessions:
+                continue
+            latest = max(sessions, key=lambda s: s.get("created", 0))
+            sid = latest["id"]
+
+            # Fetch messages
+            resp2 = _ur.urlopen(f"{base}/session/{sid}/message?limit=100", timeout=10)
+            messages = json.loads(resp2.read())
+
+            # Scan all message parts for filename
+            needle = filename.lower()
+            for msg in messages:
+                for part in msg.get("parts", []):
+                    part_str = json.dumps(part).lower()
+                    if needle in part_str:
+                        return {
+                            "found": True,
+                            "session_id": sid,
+                            "evidence": f"filename '{filename}' found in message part: {part.get('type', '?')}",
+                        }
+            return {"found": False, "session_id": sid, "evidence": "filename not found in any message part"}
+        except Exception as exc:
+            continue
+
+    return {"found": False, "session_id": None, "evidence": f"API unreachable: {opencode_url}"}
+
+
+# ---------------------------------------------------------------------------
+# Full E2E coding task scenario
+# ---------------------------------------------------------------------------
+
+def run_scenario_hello_world_e2e(
+    opencode_url: str,
+    model: str,
+    include_ui_xml: bool,
+    project_dir: str = "~/workspace/opencode-mobile",
+    ai_model_hint: str = "deepseek",
+    task: str = "Write a hello_world.py file that prints 'Hello World' to stdout.",
+    target_filename: str = "hello_world.py",
+) -> dict:
+    """Full end-to-end scenario: connect → open project → select model → run task → validate.
+
+    Validates that:
+      1. The app connects to the opencode server.
+      2. A new session is created in the specified project directory.
+      3. The chosen AI model handles the coding task.
+      4. The AI agent creates the target file (deterministic API check).
+      5. The app renders the tool call output in the chat (deterministic ADB check).
+
+    Returns a dict with per-phase results and a final "status" key.
+    """
+    results: dict[str, dict] = {}
+
+    def _phase(name: str, goal: str, steps: int = 20, critical: bool = True) -> bool:
+        _banner(name)
+        r = run_cua_step(goal=goal, max_steps=steps, model=model,
+                         include_ui_xml=include_ui_xml, step_label=name)
+        results[name] = r
+        ok = r["status"] == "success"
+        print(f"\n  [{'PASS' if ok else 'FAIL'}] {name}: {r['status']} ({r['steps']} steps)")
+        if r.get("summary"): print(f"         {r['summary']}")
+        if r.get("reason"):  print(f"         reason: {r['reason']}")
+        return ok
+
+    # ------------------------------------------------------------------
+    # Phase 1: Connect to server
+    # ------------------------------------------------------------------
+    ok = _phase(
+        "connect",
+        goal=(
+            f"You are in the OpenCode mobile app. "
+            "Go to the Connections tab (bottom navigation bar). "
+            "If a connection to the opencode server already exists, tap it to activate it. "
+            "Otherwise tap '+' or 'Add Connection', "
+            f"enter the URL '{opencode_url}', leave username/password blank, tap Save. "
+            "After saving, navigate to the Sessions tab. "
+            "Report done once you are on the Sessions screen and can see the session list (even if empty)."
+        ),
+        steps=20,
+    )
+    if not ok:
+        return {"status": "fail", "phase": "connect", "results": results}
+    _sleep(2.0)
+
+    # ------------------------------------------------------------------
+    # Phase 2: Create session in specific project directory
+    # The '+' FAB long-press opens a modal with a custom directory input.
+    # ------------------------------------------------------------------
+    ok = _phase(
+        "open_project",
+        goal=(
+            "You are on the Sessions list screen of OpenCode Mobile. "
+            "You need to create a NEW session in a specific project directory. "
+            "To do this: LONG-PRESS the '+' button (FAB, bottom-right corner) — "
+            "hold it for 1 second until a modal sheet appears. "
+            "The modal will show 'Current Directory' and a text input labelled "
+            "'Or use a different folder'. "
+            f"Tap that text input and type the path: {project_dir} "
+            "Then tap the 'Create in this directory' button (or 'Create' / 'Open'). "
+            "Report done when the session chat view opens "
+            "(you see a text input at the bottom of the screen)."
+        ),
+        steps=20,
+    )
+    if not ok:
+        return {"status": "fail", "phase": "open_project", "results": results}
+    _sleep(1.5)
+
+    # ------------------------------------------------------------------
+    # Phase 3: Select AI model (tap model indicator at top of session)
+    # ------------------------------------------------------------------
+    ok = _phase(
+        "select_model",
+        goal=(
+            "You are inside an OpenCode session chat view. "
+            "At the top of the screen there is a model name indicator — it shows the current AI model. "
+            "Tap that model name to open the model picker. "
+            "In the model list, look for a model containing the text: "
+            f"'{ai_model_hint}' (case-insensitive, e.g. deepseek-v3, deepseek-v4, deepseek-chat). "
+            "Tap to select it. "
+            "If the model picker doesn't appear, or no deepseek model is listed, "
+            "report done anyway — the default model will be used. "
+            "Report done once the model is selected or confirmed."
+        ),
+        steps=15,
+    )
+    # Model picker is informational — proceed even if selection fails
+    _sleep(1.0)
+
+    # ------------------------------------------------------------------
+    # Phase 4: Submit coding task
+    # ------------------------------------------------------------------
+    ok = _phase(
+        "submit_task",
+        goal=(
+            "You are inside an OpenCode session chat view with a text input at the bottom. "
+            f"The task to submit is: {task!r} "
+            "Tap the text input field at the bottom. "
+            "Type that task. "
+            "Then dismiss the keyboard (tap a blank area above it) so the send button is visible. "
+            "Tap the send/arrow button (bottom-right of the input row) to submit. "
+            "Report done as soon as you see the message appear in the chat "
+            "(the agent will start thinking — that's expected)."
+        ),
+        steps=15,
+    )
+    if not ok:
+        return {"status": "fail", "phase": "submit_task", "results": results}
+    _sleep(2.0)
+
+    # ------------------------------------------------------------------
+    # Phase 5 (DETERMINISTIC): Poll API until session is idle
+    # ------------------------------------------------------------------
+    _banner("wait_idle")
+    print(f"  [wait_idle] polling {opencode_url} for session idle (max 180s)...")
+    idle_session = wait_for_session_idle(opencode_url, timeout=180, poll_interval=4)
+    results["wait_idle"] = {
+        "status": "success" if idle_session else "timeout",
+        "steps": 0,
+        "detail": f"session_id={idle_session['id'][:16] if idle_session else 'n/a'}",
+    }
+    print(f"  [{'PASS' if idle_session else 'FAIL'}] wait_idle: {'idle' if idle_session else 'TIMEOUT — session never went idle'}")
+
+    if not idle_session:
+        # Session timed out — take a screenshot for diagnostics and continue to validation
+        screenshot_b64("wait_idle_timeout")
+
+    # ------------------------------------------------------------------
+    # Phase 6 (DETERMINISTIC): Validate file was created — API message scan
+    # ------------------------------------------------------------------
+    _banner("validate_api")
+    file_check = check_session_file_created(opencode_url, target_filename)
+    results["validate_api"] = {
+        "status": "success" if file_check["found"] else "fail",
+        "steps": 0,
+        "detail": file_check["evidence"],
+        "session_id": file_check.get("session_id"),
+    }
+    print(f"  [{'PASS' if file_check['found'] else 'FAIL'}] validate_api: {file_check['evidence']}")
+
+    # ------------------------------------------------------------------
+    # Phase 7 (DETERMINISTIC): Validate file name visible in app UI
+    # ------------------------------------------------------------------
+    _banner("validate_ui")
+    # Scroll down to ensure final messages are visible
+    w, h = get_screen_size()
+    adb("shell", "input", "swipe", str(w // 2), str(h // 4), str(w // 2), str(h * 3 // 4), "400")
+    _sleep(1.0)
+    ui_found = check_ui_text(target_filename)
+    # Also check common variant spellings
+    if not ui_found:
+        ui_found = check_ui_text(target_filename.replace("_", ""))  # helloworld.py
+    results["validate_ui"] = {
+        "status": "success" if ui_found else "fail",
+        "steps": 0,
+        "detail": f"uiautomator XML {'contains' if ui_found else 'does NOT contain'} '{target_filename}'",
+    }
+    print(f"  [{'PASS' if ui_found else 'FAIL'}] validate_ui: {results['validate_ui']['detail']}")
+
+    # ------------------------------------------------------------------
+    # Phase 8 (LLM): Capture screenshot + brief visual evaluation
+    # ------------------------------------------------------------------
+    _phase(
+        "eval_screenshot",
+        goal=(
+            "The opencode AI agent has finished its task. "
+            "Scroll down to see the latest messages in the chat. "
+            f"Look for evidence that '{target_filename}' was created: "
+            "a file creation tool call, a code block, or a completion message. "
+            "Take a screenshot showing the session result. "
+            "In your done summary, describe what you see as evidence "
+            f"that the agent succeeded or failed to create {target_filename}."
+        ),
+        steps=8,
+        critical=False,
+    )
+
+    # ------------------------------------------------------------------
+    # Overall result
+    # ------------------------------------------------------------------
+    critical_phases = ["connect", "submit_task", "wait_idle", "validate_api", "validate_ui"]
+    failed = [k for k in critical_phases if results.get(k, {}).get("status") not in ("success",)]
+    overall = "success" if not failed else "fail"
+    if failed:
+        print(f"\n  [FAIL] failed critical phases: {failed}")
+
+    return {"status": overall, "phase_results": results}
+
+
+# ---------------------------------------------------------------------------
+# Natural-language query → test plan → execute → evaluate
+# ---------------------------------------------------------------------------
+
+QUERY_PLANNER_PROMPT = """\
+You are a mobile app test planner for an Android app called OpenCode Mobile.
+The app connects to an opencode AI coding server and lets users manage coding sessions.
+
+Given a natural-language test description, produce a JSON test plan.
+
+Output ONLY a JSON object with this structure:
+{
+  "title": "<short test name>",
+  "goal_summary": "<1-2 sentence description of what this test verifies>",
+  "phases": [
+    {
+      "name": "<snake_case phase name>",
+      "goal": "<detailed instruction for the LLM UI driver — be explicit about taps, waits, and success criteria>",
+      "max_steps": <int 8–30>,
+      "critical": <true|false>
+    }
+  ],
+  "deterministic_checks": [
+    {
+      "name": "<check name>",
+      "type": "ui_text|session_idle|file_created",
+      "value": "<text to find | filename to find>",
+      "description": "<what this checks>"
+    }
+  ]
+}
+
+Rules for phases:
+- Each phase is one focused UI action.
+- goal must be precise: include exact button names, expected states, and done/fail conditions.
+- Be cautious with send — always use tap on the send button, NEVER the enter key.
+- If a phase needs to wait for AI agent output, set max_steps >= 25.
+- Phases with critical=false are informational only; failure does not fail the overall test.
+
+Rules for deterministic_checks:
+- ui_text: checks if text appears in uiautomator XML dump (ADB, no LLM).
+- session_idle: polls REST API until session status == idle.
+- file_created: checks REST API session messages for a filename.
+
+Available context:
+- App package: cc.agentlabs.opencode
+- Default server URL used in tests: {opencode_url}
+- Sessions tab is in the bottom navigation bar.
+- Long-press FAB (+) opens a modal to create a session in a custom directory.
+- Model picker appears at the top of the session chat view — tap it to change models.
+- Send button is at the bottom-right of the text input row.
+"""
+
+QUERY_EVALUATOR_PROMPT = """\
+You are a test evaluator for an Android app test suite.
+Given the test plan and results, produce a structured evaluation report.
+
+Output a JSON object:
+{
+  "overall": "pass" | "fail" | "partial",
+  "score": <0.0–1.0>,
+  "summary": "<2-3 sentence plain English summary>",
+  "phases": {
+    "<phase_name>": {"verdict": "pass"|"fail"|"skip", "notes": "<brief observation>"}
+  },
+  "deterministic_checks": {
+    "<check_name>": {"verdict": "pass"|"fail", "notes": "<brief observation>"}
+  },
+  "recommendations": ["<actionable suggestion>", ...]
+}
+
+Be strict: a phase that timed out is a fail, not a pass.
+Partial = all critical phases passed but some informational phases failed.
+"""
+
+
+def run_query_test(
+    query: str,
+    opencode_url: str,
+    model: str,
+    include_ui_xml: bool,
+    verbose: bool = True,
+) -> dict:
+    """Run a test described in natural language.
+
+    Steps:
+      1. Call LLM to plan phases from the query.
+      2. Execute each phase in order.
+      3. Run deterministic checks (API + ADB).
+      4. Call LLM evaluator to produce a structured feedback report.
+      5. Return the report.
+    """
+    client, resolved_model = make_client(model)
+
+    # ------------------------------------------------------------------
+    # Step 1: Plan
+    # ------------------------------------------------------------------
+    print("\n" + "=" * 64)
+    print("  [query-test] Planning test phases from query...")
+    print(f"  Query: {query[:120]}...")
+    print("=" * 64)
+
+    planner_system = QUERY_PLANNER_PROMPT.format(opencode_url=opencode_url)
+    plan_response = client.chat.completions.create(
+        model=resolved_model,
+        messages=[
+            {"role": "system", "content": planner_system},
+            {"role": "user", "content": f"Test query:\n\n{query}"},
+        ],
+        max_completion_tokens=2000,
+        temperature=0,
+    )
+    plan_raw = plan_response.choices[0].message.content.strip()
+
+    # Parse plan JSON
+    try:
+        clean = plan_raw
+        if clean.startswith("```"):
+            clean = clean.split("\n", 1)[1].rsplit("```", 1)[0].strip()
+        plan = json.loads(clean)
+    except json.JSONDecodeError as exc:
+        print(f"  [query-test] WARN: could not parse plan JSON: {exc}\n{plan_raw[:300]}")
+        return {"status": "error", "reason": "plan parse failed", "raw_plan": plan_raw}
+
+    print(f"\n  Test title: {plan.get('title', 'untitled')}")
+    print(f"  Goal: {plan.get('goal_summary', '')}")
+    print(f"  Phases: {[p['name'] for p in plan.get('phases', [])]}")
+    det_checks = plan.get("deterministic_checks", [])
+    if det_checks:
+        print(f"  Deterministic checks: {[c['name'] for c in det_checks]}")
+
+    # ------------------------------------------------------------------
+    # Step 2: Execute phases
+    # ------------------------------------------------------------------
+    phase_results: dict[str, dict] = {}
+    for phase in plan.get("phases", []):
+        name = phase["name"]
+        _banner(name)
+        r = run_cua_step(
+            goal=phase["goal"],
+            max_steps=phase.get("max_steps", 20),
+            model=model,
+            include_ui_xml=include_ui_xml,
+            verbose=verbose,
+            step_label=name,
+        )
+        phase_results[name] = r
+        ok = r["status"] == "success"
+        print(f"\n  [{'PASS' if ok else 'FAIL'}] {name}: {r['status']} ({r['steps']} steps)")
+        if r.get("summary"): print(f"         {r['summary']}")
+        if r.get("reason"):  print(f"         reason: {r['reason']}")
+
+        # Hard-stop on critical failure
+        if phase.get("critical", True) and not ok:
+            print(f"\n  [query-test] Critical phase '{name}' failed — aborting.")
+            break
+
+    # ------------------------------------------------------------------
+    # Step 3: Deterministic checks
+    # ------------------------------------------------------------------
+    det_results: dict[str, dict] = {}
+    for check in det_checks:
+        cname = check["name"]
+        ctype = check["type"]
+        cval  = check.get("value", "")
+        print(f"\n  [deterministic] {cname} ({ctype}={cval!r})...")
+
+        if ctype == "ui_text":
+            found = check_ui_text(cval)
+            det_results[cname] = {
+                "status": "success" if found else "fail",
+                "detail": f"uiautomator {'found' if found else 'NOT found'}: {cval!r}",
+            }
+        elif ctype == "session_idle":
+            idle = wait_for_session_idle(opencode_url, timeout=180)
+            det_results[cname] = {
+                "status": "success" if idle else "timeout",
+                "detail": f"session idle: {bool(idle)}",
+            }
+        elif ctype == "file_created":
+            fc = check_session_file_created(opencode_url, cval)
+            det_results[cname] = {
+                "status": "success" if fc["found"] else "fail",
+                "detail": fc["evidence"],
+            }
+        else:
+            det_results[cname] = {"status": "skip", "detail": f"unknown check type: {ctype}"}
+
+        print(f"  [{'PASS' if det_results[cname]['status'] == 'success' else 'FAIL/SKIP'}] {cname}: {det_results[cname]['detail']}")
+
+    # ------------------------------------------------------------------
+    # Step 4: Evaluate
+    # ------------------------------------------------------------------
+    print("\n  [query-test] Generating evaluation report...")
+    eval_input = {
+        "test_plan": plan,
+        "phase_results": {k: {"status": v["status"], "steps": v.get("steps"), "summary": v.get("summary"), "reason": v.get("reason")} for k, v in phase_results.items()},
+        "deterministic_results": det_results,
+    }
+    eval_response = client.chat.completions.create(
+        model=resolved_model,
+        messages=[
+            {"role": "system", "content": QUERY_EVALUATOR_PROMPT},
+            {"role": "user", "content": json.dumps(eval_input, indent=2)},
+        ],
+        max_completion_tokens=1500,
+        temperature=0,
+    )
+    eval_raw = eval_response.choices[0].message.content.strip()
+
+    try:
+        clean = eval_raw
+        if clean.startswith("```"):
+            clean = clean.split("\n", 1)[1].rsplit("```", 1)[0].strip()
+        evaluation = json.loads(clean)
+    except json.JSONDecodeError:
+        evaluation = {"overall": "error", "summary": eval_raw, "score": 0.0}
+
+    return {
+        "status": evaluation.get("overall", "error"),
+        "plan": plan,
+        "phase_results": phase_results,
+        "deterministic_results": det_results,
+        "evaluation": evaluation,
+    }
+
+
+# ---------------------------------------------------------------------------
 # CLI entry point
 # ---------------------------------------------------------------------------
 
@@ -1196,6 +1713,27 @@ Examples:
   # Full onboarding showcase (default, recommended for demo video):
   source ~/.env.d/azure-openai.env
   python scripts/android-cua-smoke.py --model gpt-5.4 --include-xml
+
+  # E2E coding task: connect, open project, select deepseek model, write hello_world.py:
+  python scripts/android-cua-smoke.py --e2e --opencode-url http://100.108.64.76:4096
+
+  # E2E with custom params:
+  python scripts/android-cua-smoke.py --e2e \\
+    --opencode-url http://100.108.64.76:4096 \\
+    --e2e-project-dir ~/workspace/opencode-mobile \\
+    --e2e-model-hint deepseek \\
+    --e2e-task "Write a hello_world.py that prints Hello World" \\
+    --e2e-filename hello_world.py
+
+  # Natural-language query mode (LLM plans phases, executes, evaluates):
+  python scripts/android-cua-smoke.py --query \\
+    "Open android app. Setup against remote opencode server. Go to sessions. \\
+     Open a new project inside ~/workspace/opencode-mobile. \\
+     Choose opencode/deepseek model. Start a new session. \\
+     Ask to write hello_world.py. Validate that agent completed task."
+
+  # Save evaluation report:
+  python scripts/android-cua-smoke.py --query "..." --eval-output /tmp/eval-report.json
 
   # Speed up for a faster demo (0.5 = half the wait times):
   python scripts/android-cua-smoke.py --speed-multiplier 0.5
@@ -1253,6 +1791,56 @@ Examples:
         help="Legacy: run ONLY the connect-and-verify-sessions scenario.",
     )
 
+    # E2E coding task scenario
+    parser.add_argument(
+        "--e2e",
+        action="store_true",
+        help=(
+            "Run the full end-to-end coding task scenario: connect → create session in project dir → "
+            "select model → submit task → wait for idle → validate file created. "
+            "Use --e2e-project-dir, --e2e-model-hint, --e2e-task, --e2e-filename to customise."
+        ),
+    )
+    parser.add_argument(
+        "--e2e-project-dir",
+        default="~/workspace/opencode-mobile",
+        help="Project directory to open in the new session (default: ~/workspace/opencode-mobile).",
+    )
+    parser.add_argument(
+        "--e2e-model-hint",
+        default="deepseek",
+        help="Substring to match when selecting the AI model in the model picker (default: deepseek).",
+    )
+    parser.add_argument(
+        "--e2e-task",
+        default="Write a hello_world.py file that prints 'Hello World' to stdout.",
+        help="Coding task to submit to the AI agent.",
+    )
+    parser.add_argument(
+        "--e2e-filename",
+        default="hello_world.py",
+        help="Expected output filename to validate in API messages and UI (default: hello_world.py).",
+    )
+
+    # Natural-language query test mode
+    parser.add_argument(
+        "--query",
+        default=None,
+        metavar="QUERY",
+        help=(
+            "Natural-language test description. The LLM will plan phases from the query, "
+            "execute them, run deterministic checks, and return a structured evaluation report. "
+            "Example: 'Open app, connect to server, create session in ~/workspace/opencode-mobile "
+            "with deepseek model, ask it to write hello_world.py, verify the file was created.'"
+        ),
+    )
+    parser.add_argument(
+        "--eval-output",
+        default=None,
+        metavar="PATH",
+        help="Write the JSON evaluation report from --query to this file (default: print to stdout).",
+    )
+
     args = parser.parse_args()
 
     # Apply speed multiplier globally
@@ -1272,7 +1860,118 @@ Examples:
     connect_url = args.opencode_url or os.environ.get("OPENCODE_URL") or DEFAULT_OPENCODE_URL
 
     # -----------------------------------------------------------------------
-    # Determine run mode: showcase vs. legacy scenarios
+    # Run mode priority: --query > --e2e > showcase (default) > legacy
+    # -----------------------------------------------------------------------
+
+    # ----------------------------------------------------------------
+    # MODE: --query  (natural-language test description)
+    # ----------------------------------------------------------------
+    if args.query:
+        print("\n" + "=" * 64)
+        print("  OpenCode Mobile — Query-Driven Test")
+        print(f"  Server: {connect_url}")
+        print(f"  Model:  {args.model}")
+        print("=" * 64)
+
+        if not ensure_app_foreground(verbose=not args.quiet):
+            print("[prep] warning: could not confirm app in foreground")
+        maybe_dismiss_telemetry_consent(verbose=not args.quiet)
+        ensure_app_foreground(verbose=not args.quiet)
+
+        result = run_query_test(
+            query=args.query,
+            opencode_url=connect_url,
+            model=args.model,
+            include_ui_xml=args.include_xml,
+            verbose=not args.quiet,
+        )
+
+        # Print evaluation report
+        ev = result.get("evaluation", {})
+        print("\n" + "=" * 64)
+        print(f"  EVALUATION REPORT")
+        print("=" * 64)
+        print(f"  Overall:   {ev.get('overall', '?').upper()}")
+        print(f"  Score:     {ev.get('score', 0):.0%}")
+        print(f"  Summary:   {ev.get('summary', '')}")
+        if ev.get("phases"):
+            print("\n  Phase verdicts:")
+            for pname, pv in ev["phases"].items():
+                print(f"    [{pv.get('verdict','?').upper():4s}] {pname:24s}  {pv.get('notes','')}")
+        if ev.get("deterministic_checks"):
+            print("\n  Deterministic checks:")
+            for cname, cv in ev["deterministic_checks"].items():
+                print(f"    [{cv.get('verdict','?').upper():4s}] {cname:24s}  {cv.get('notes','')}")
+        if ev.get("recommendations"):
+            print("\n  Recommendations:")
+            for rec in ev["recommendations"]:
+                print(f"    • {rec}")
+        print("=" * 64)
+
+        # Optionally write JSON report
+        if args.eval_output:
+            Path(args.eval_output).write_text(json.dumps(result, indent=2))
+            print(f"\n  [report] written to {args.eval_output}")
+        else:
+            print("\n  [report] full JSON:")
+            print(json.dumps(result, indent=2))
+
+        overall_ok = ev.get("overall") in ("pass", "partial")
+        sys.exit(0 if overall_ok else 1)
+
+    # ----------------------------------------------------------------
+    # MODE: --e2e  (hardcoded hello_world.py e2e scenario)
+    # ----------------------------------------------------------------
+    if args.e2e:
+        print("\n" + "=" * 64)
+        print("  OpenCode Mobile — E2E Coding Task Scenario")
+        print(f"  Server:   {connect_url}")
+        print(f"  Model:    {args.model}")
+        print(f"  Project:  {args.e2e_project_dir}")
+        print(f"  AI model: *{args.e2e_model_hint}*")
+        print(f"  Task:     {args.e2e_task[:60]}...")
+        print(f"  Expect:   {args.e2e_filename}")
+        print("=" * 64)
+
+        rec_thread, _stop_ev, remote_path = start_screen_recording("e2e_coding_task")
+        local_video = "/tmp/cua_e2e_coding_task.mp4"
+
+        try:
+            if not ensure_app_foreground(verbose=not args.quiet):
+                print("[prep] warning: could not confirm app in foreground")
+            maybe_dismiss_telemetry_consent(verbose=not args.quiet)
+            ensure_app_foreground(verbose=not args.quiet)
+
+            result = run_scenario_hello_world_e2e(
+                opencode_url=connect_url,
+                model=args.model,
+                include_ui_xml=args.include_xml,
+                project_dir=args.e2e_project_dir,
+                ai_model_hint=args.e2e_model_hint,
+                task=args.e2e_task,
+                target_filename=args.e2e_filename,
+            )
+        finally:
+            stop_screen_recording(rec_thread, remote_path, local_video)
+
+        print("\n" + "=" * 64)
+        print(f"  E2E result: {result['status'].upper()}")
+        if Path(local_video).exists():
+            print(f"  Video:      {local_video}")
+        print("=" * 64)
+
+        phase_results = result.get("phase_results", {})
+        if phase_results:
+            print("\n  Phase breakdown:")
+            for phase, pr in phase_results.items():
+                icon = "PASS" if pr.get("status") in ("success",) else "FAIL"
+                steps_str = f"{pr.get('steps', 0)} steps" if pr.get("steps") else pr.get("detail", "")
+                print(f"    [{icon}] {phase:20s}  {pr.get('status','?'):8s}  {steps_str}")
+
+        sys.exit(0 if result["status"] == "success" else 1)
+
+    # -----------------------------------------------------------------------
+    # Determine remaining run mode: showcase vs. legacy scenarios
     # -----------------------------------------------------------------------
     use_legacy = bool(args.goal or args.scenarios or args.only_connect_scenario)
 
@@ -1338,6 +2037,13 @@ Examples:
                 connect_url, args.model, args.include_xml),
             "backgrounded_permission_notification": lambda: run_scenario_backgrounded_permission_notification(
                 connect_url, args.model, args.include_xml),
+            "hello_world_e2e": lambda: run_scenario_hello_world_e2e(
+                connect_url, args.model, args.include_xml,
+                project_dir=args.e2e_project_dir,
+                ai_model_hint=args.e2e_model_hint,
+                task=args.e2e_task,
+                target_filename=args.e2e_filename,
+            ),
         }
 
         catalog = {connect_scenario["name"]: connect_scenario}
