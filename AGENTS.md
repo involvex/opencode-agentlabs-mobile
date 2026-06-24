@@ -112,12 +112,45 @@ Gradle cache: `/Volumes/Dzianis-3/macbook2020/gradle-cache` (or symlink from `/V
 
 The script `scripts/android-cua-smoke.py` drives the emulator via ADB using a vision model loop (screenshot → LLM → action → repeat).
 
-### Running locally
+### Run modes
 
+**`--showcase` (default, regression guard)**
 ```bash
 source ~/.env.d/azure-openai.env
 python3 scripts/android-cua-smoke.py --model gpt-5.4 --include-xml
 ```
+Runs: connect → sessions load (pre-created session MUST appear) → new session → sessions reload → TypeScript task → settings.
+
+**`--e2e` (full coding task, project dir, model picker)**
+```bash
+source ~/.env.d/azure-openai.env
+python3 scripts/android-cua-smoke.py --e2e \
+  --opencode-url http://100.108.64.76:4096 \
+  --e2e-project-dir ~/workspace/opencode-mobile \
+  --e2e-model-hint deepseek \
+  --e2e-task "Write a hello_world.py file that prints 'Hello World' to stdout." \
+  --e2e-filename hello_world.py
+```
+Phases: connect → long-press FAB → enter project dir → select deepseek model → submit task → **DETERMINISTIC** API poll for idle → **DETERMINISTIC** API scan for filename → **DETERMINISTIC** ADB uiautomator check.
+
+**`--query` (natural-language test description)**
+```bash
+source ~/.env.d/azure-openai.env
+python3 scripts/android-cua-smoke.py \
+  --opencode-url http://100.108.64.76:4096 \
+  --query "Open android app. Setup against remote opencode server. Go to sessions. \
+           Open a new project inside ~/workspace/opencode-mobile. \
+           Choose opencode/deepseek model. Start a new session. \
+           Ask to write hello_world.py. Validate that agent completed task." \
+  --eval-output /tmp/eval-report.json
+```
+The LLM plans phases from the query, executes them, runs deterministic checks, and prints a scored evaluation report (overall/score/phases/recommendations).
+
+### Available models on dev server (100.108.64.76:4096)
+
+Key models: `deepseek-v4-flash-free` (opencode), `claude-fable-5` (anthropic), `gpt-5.4` (github-copilot), `gemini-3.5-flash` (github-copilot)
+
+Use `--e2e-model-hint deepseek` to select `deepseek-v4-flash-free` (free quota, good for coding tasks).
 
 ### Azure OpenAI credentials
 
@@ -141,12 +174,19 @@ Secrets required: `AZURE_OPENAI_API_KEY`, `AZURE_OPENAI_ENDPOINT` (already set o
 
 **Triggers**: Runs on push to `main` (with path filters) AND on `v*` tags (releases).
 
+**Dispatch inputs** (workflow_dispatch):
+- `scenario`: `showcase` (default) | `e2e`
+- `query`: natural-language test description (enables `--query` mode, overrides scenario)
+- `opencode_url`: override server URL (use Tailscale URL for live server)
+- `e2e_project_dir`, `e2e_model_hint`, `e2e_task`, `e2e_filename`: e2e mode params
+
 ### When to run CUA test
 
 **MANDATORY**: Run the CUA smoke test before any merge to `main` or release:
 1. Before merging a PR that touches `src/**`, `app/**`, or `scripts/android-cua-smoke.py`
 2. After creating a release tag — CI runs it automatically
 3. When debugging UI issues — run locally with `--include-xml` for richer context
+4. When validating a specific AI coding task — use `--e2e` or `--query`
 
 If the CUA test fails, do NOT merge or release until fixed.
 
