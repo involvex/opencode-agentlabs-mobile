@@ -810,8 +810,10 @@ def run_onboarding_showcase(
     if precreated_title:
         session_list_goal = (
             "The connection has been saved. "
-            "Now tap on the saved connection entry to connect to the server. "
-            "Wait up to 10 seconds for the session list screen to appear. "
+            "Tap on the saved connection entry to make it active. "
+            "CRITICAL: Tapping a connection does NOT navigate away — the app stays on the Connections tab. "
+            "After tapping, look at the bottom tab bar and tap the 'Sessions' tab (a chat bubble icon). "
+            f"Wait up to 10 seconds for the session list screen to appear. "
             f"IMPORTANT: A session titled '{precreated_title}' was already created on the server "
             "before this test started — it MUST appear in the list after connecting. "
             "Report SUCCESS only if you can see at least one session entry in the list. "
@@ -822,7 +824,9 @@ def run_onboarding_showcase(
         # Server offline at pre-create time; fall back to just checking screen appears.
         session_list_goal = (
             "The connection has been saved. "
-            "Now tap on the saved connection entry to connect to the server. "
+            "Tap on the saved connection entry to make it active. "
+            "CRITICAL: Tapping a connection does NOT navigate away — the app stays on the Connections tab. "
+            "After tapping, look at the bottom tab bar and tap the 'Sessions' tab (a chat bubble icon). "
             "Wait up to 10 seconds for the session list screen to appear. "
             "Report done when you can see the session list screen."
         )
