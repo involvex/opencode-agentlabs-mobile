@@ -741,7 +741,7 @@ def run_onboarding_showcase(
     model: str = "gpt-5.4",
     include_ui_xml: bool = False,
     verbose: bool = True,
-    max_steps_per_phase: int = 20,
+    max_steps_per_phase: int = 25,
 ) -> dict:
     """Execute the full first-run onboarding journey.
 
@@ -1772,7 +1772,7 @@ Examples:
 
     # Model / verbosity
     parser.add_argument("--model", default="gpt-4o", help="Vision model deployment name.")
-    parser.add_argument("--max-steps", type=int, default=20, help="Max LLM steps per phase (showcase) or total (legacy).")
+    parser.add_argument("--max-steps", type=int, default=25, help="Max LLM steps per phase (showcase) or total (legacy).")
     parser.add_argument("--include-xml", action="store_true", help="Include UI hierarchy XML in LLM context (more accurate, more tokens).")
     parser.add_argument("--quiet", action="store_true")
 
