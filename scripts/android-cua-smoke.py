@@ -782,6 +782,7 @@ def run_onboarding_showcase(
     # -----------------------------------------------------------------------
     # Phase 1-2: Open app, configure server connection
     # -----------------------------------------------------------------------
+    host_only = opencode_url.replace("http://", "").replace(":4096", "")
     ok = _run(
         "connect",
         goal=(
@@ -789,11 +790,13 @@ def run_onboarding_showcase(
             "The screen shows either a connection screen (first launch) or an empty connections list. "
             "Your goal: add a new connection to the opencode server and verify it is saved. "
             "Step 1: Look for an 'Add Connection', '+', or 'New Connection' button and tap it. "
-            f"Step 2: In the URL / Host field type '{opencode_url}'. "
-            "Step 3: Leave username and password blank. "
-            "Step 4: Tap 'Save', 'Connect', or 'Done' to save the connection. "
-            "Step 5: IMPORTANT — after saving, you must see the connection appear in the connections list "
-            f"(showing the URL '{opencode_url}' or a name derived from it). "
+            f"Step 2: In the 'IP Address' field type '{host_only}'. Do NOT include http:// or the port — just the IP. "
+            "Step 3: The 'Port' field should already show 4096. Leave it as is. "
+            "Step 4: Leave username and password blank. "
+            "Step 5: Scroll down if needed and tap the 'Connect' button (a large dark button with a flash icon). "
+            "Step 6: Wait up to 5 seconds for the connection to save and return to the connections list. "
+            "IMPORTANT — after saving, you must see the connection appear in the connections list "
+            f"(showing the IP '{host_only}' or '{opencode_url}'). "
             "If you are back on the connections list and can see the saved connection entry, report done. "
             "If the form is still showing or the list is empty, the save did not work — try again."
         ),
