@@ -795,9 +795,9 @@ def run_onboarding_showcase(
             "Step 4: Leave username and password blank. "
             "Step 5: Scroll down if needed and tap the 'Connect' button (a large dark button with a flash icon). "
             "Step 6: Wait up to 5 seconds for the connection to save and return to the connections list. "
-            "IMPORTANT — after saving, you must see the connection appear in the connections list "
-            f"(showing the IP '{host_only}' or '{opencode_url}'). "
-            "If you are back on the connections list and can see the saved connection entry, report done. "
+            "IMPORTANT — after saving, the connection entry MUST appear in the connections list. "
+            f"The entry will show a name like 'My Server' (the URL may be too small to read). "
+            "If you are back on the connections list and see ANY connection entry, report done. "
             "If the form is still showing or the list is empty, the save did not work — try again."
         ),
         max_steps=max_steps_per_phase,
