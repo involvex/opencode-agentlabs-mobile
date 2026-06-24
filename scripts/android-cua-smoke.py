@@ -896,9 +896,11 @@ def run_onboarding_showcase(
             "Do NOT press back (it navigates away). "
             "Tap the send/arrow button (bottom-right) to submit. "
             "After sending, wait and watch — opencode will show tool calls and file writes as it works. "
+            "CRITICAL: Do NOT tap anywhere on the screen after tapping send. "
+            "Any tap will navigate away from the session and break the connection. "
             "Wait up to 90 seconds total for the session to go idle/complete "
             "(no new activity for at least 5 seconds, or a completion indicator appears). "
-            "Re-check every 15 seconds by looking at the screen. "
+            "Re-check every 15 seconds by looking at the screen — do NOT tap, just look. "
             "Report done when opencode appears to have finished (idle, no spinners, last message is a summary or file was created). "
             "Report fail only if there is a clear unrecoverable error."
         ),

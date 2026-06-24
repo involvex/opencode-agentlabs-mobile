@@ -268,7 +268,7 @@ jobs:
           CUA_QUERY: ${{ inputs.query || '' }}
           CUA_E2E_PROJECT_DIR: ${{ inputs.e2e_project_dir || '~/workspace/opencode-mobile' }}
           CUA_E2E_MODEL_HINT: ${{ inputs.e2e_model_hint || 'deepseek' }}
-          CUA_E2E_TASK: ${{ inputs.e2e_task || "Write a hello_world.py file that prints 'Hello World' to stdout." }}
+          CUA_E2E_TASK: ${{ inputs.e2e_task || 'Write a hello_world.py that prints Hello World' }}
           CUA_E2E_FILENAME: ${{ inputs.e2e_filename || 'hello_world.py' }}
         with:
           api-level: 28
