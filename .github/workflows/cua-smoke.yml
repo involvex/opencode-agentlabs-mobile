@@ -278,42 +278,20 @@ jobs:
           emulator-boot-timeout: 600
           emulator-options: -no-window -no-audio -no-boot-anim -gpu swiftshader_indirect -no-snapshot
           # NOTE: android-emulator-runner runs this script with /usr/bin/sh (dash).
+          # NOTE: Keep the script flat — the action wraps it in sh -c.
+          # if/elif/fi broke previously due to default-value quoting in GH
+          # expressions. The env vars are now clean; shell branching works.
           script: |
-            # Clear any stale app state so the test starts with a fresh connection screen.
             adb shell pm clear cc.agentlabs.opencode || true
             adb install android/app/build/outputs/apk/release/app-release.apk
             adb shell am start -n cc.agentlabs.opencode/.MainActivity
             sleep 5
-
-            # Dispatch to the requested scenario.
-            # --query overrides scenario when provided.
-            if [ -n "${CUA_QUERY}" ]; then
-              echo "Running --query mode"
-              python3 scripts/android-cua-smoke.py \
-                --query "${CUA_QUERY}" \
-                --model gpt-5.4 --include-xml \
-                --opencode-url "${OPENCODE_URL}" \
-                --eval-output /tmp/cua_eval_report.json
-            elif [ "${CUA_SCENARIO}" = "e2e" ]; then
-              echo "Running --e2e mode"
-              python3 scripts/android-cua-smoke.py \
-                --e2e \
-                --model gpt-5.4 --include-xml \
-                --opencode-url "${OPENCODE_URL}" \
-                --e2e-project-dir "${CUA_E2E_PROJECT_DIR}" \
-                --e2e-model-hint "${CUA_E2E_MODEL_HINT}" \
-                --e2e-task "${CUA_E2E_TASK}" \
-                --e2e-filename "${CUA_E2E_FILENAME}"
+            if [ "${CUA_SCENARIO}" = "e2e" ]; then
+              python3 scripts/android-cua-smoke.py --e2e --model gpt-5.4 --include-xml --opencode-url "${OPENCODE_URL}"
+            elif [ -n "${CUA_QUERY}" ]; then
+              python3 scripts/android-cua-smoke.py --query "${CUA_QUERY}" --model gpt-5.4 --include-xml --opencode-url "${OPENCODE_URL}" --eval-output /tmp/cua_eval_report.json
             else
-              echo "Running --showcase mode (default regression guard)"
-              # --showcase runs the structured onboarding flow which includes:
-              #   session_list: pre-created session MUST appear (not empty-list-ok)
-              #   sessions_reload: navigate back from session, list must be non-empty
-              # These are the regression guards for the "sessions not loading" bug.
-              python3 scripts/android-cua-smoke.py \
-                --showcase \
-                --model gpt-5.4 --include-xml \
-                --opencode-url "${OPENCODE_URL}"
+              python3 scripts/android-cua-smoke.py --showcase --model gpt-5.4 --include-xml --opencode-url "${OPENCODE_URL}"
             fi
 
       - name: opencode server log
