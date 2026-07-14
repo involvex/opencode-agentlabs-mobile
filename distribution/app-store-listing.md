@@ -171,7 +171,7 @@ OpenCode Mobile does NOT collect any of the following:
 - Browsing history, search history
 - Sensitive info
 - User content (code, prompts, AI responses are not sent to our servers)
-- Identifiers (User ID, Device ID — Sentry uses an installation-scoped anonymous ID, see below)
+- User ID (the app has no accounts or user identity)
 
 ### Data Linked to You: None
 
@@ -179,13 +179,14 @@ OpenCode Mobile does NOT collect any of the following:
 
 | Data Type | Category | Purpose | Optional? |
 |---|---|---|---|
-| Crash Data | Diagnostics | App functionality | No — always on (see note) |
-| Performance Data | Diagnostics | App functionality | No — always on (see note) |
-| Other Diagnostic Data | Diagnostics | App functionality | No |
+| Crash Data | Diagnostics | App functionality | Yes — explicit opt-in |
+| Performance Data | Diagnostics | App functionality | Yes — explicit opt-in |
+| Other Diagnostic Data | Diagnostics | App functionality | Yes — explicit opt-in |
+| Device ID | Identifiers | App functionality | Yes — Sentry installation ID with explicit opt-in |
 
 **Explanation**: Sentry crash reporting sends device model, OS version, app version, and stack traces. Sentry assigns an anonymous installation ID (not linked to any Apple ID or personal information). No user-generated content (code, prompts, responses) is ever sent.
 
-**Sentry opt-in status**: As of v0.2.3, Sentry is **always on** when a DSN is configured. If you add a settings toggle for Sentry consent (planned), change Optional? to "Yes" and add a note that users who decline are in the "Data Not Collected" category. In App Store Connect, once opt-in is implemented, this section can be removed or marked optional.
+**Sentry opt-in status**: Crash reporting is off by default. The first-launch consent prompt and Settings → Privacy toggle control it. Declining does not initialize Sentry; turning it off later closes the active SDK and stops new event capture.
 
 **"Are you or your third-party partners using this data to track users?"**: No
 
