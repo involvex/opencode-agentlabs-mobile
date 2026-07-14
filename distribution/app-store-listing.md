@@ -276,36 +276,28 @@ All icons and screenshots must be provided before submitting for review.
 
 The 1024×1024 icon must NOT have rounded corners (Apple applies them). No transparency.
 
-Current status: `assets/icon.json` is a placeholder — **real PNG required before submission**.
+Current status: **Ready.** `assets/icon.png` is 1024×1024.
 
 ### iPhone Screenshots (REQUIRED)
 
 Minimum 1 screenshot per device class. Recommended: 3–5 showing key flows.
 
-| Device | Resolution | Size name in App Store Connect |
-|---|---|---|
-| iPhone 6.7" (iPhone 16 Pro Max / 15 Plus) | 1320×2868 or 1290×2796 | 6.7" Super Retina XDR Display |
-| iPhone 6.5" (iPhone 14 Plus / 11 Pro Max) | 1242×2688 | 6.5" Super Retina XDR Display |
-| iPhone 5.5" (iPhone 8 Plus) | 1242×2208 | 5.5" Retina HD Display |
+| Device | Resolution | Size name in App Store Connect | Status |
+|---|---|---|---|
+| iPhone 6.7" (iPhone 16 Pro Max / 15 Plus) | 1320×2868 or 1290×2796 | 6.7" Super Retina XDR Display | Placeholder set exists; recapture from current iOS build |
+| iPhone 6.5" (iPhone 14 Plus / 11 Pro Max) | 1242×2688 | 6.5" Super Retina XDR Display | Placeholder set exists; recapture from current iOS build |
+| iPhone 5.5" (iPhone 8 Plus) | 1242×2208 | 5.5" Retina HD Display | Optional |
 
 Note: As of 2024, Apple only requires 6.7" and 6.5" for new submissions. 5.5" is optional but recommended for coverage.
-
-Suggested screenshot subjects:
-1. Connection setup screen (add server URL)
-2. Active chat session — streaming AI response
-3. File diff view — seeing a code change
-4. Tool approval dialog
-5. Session list / multi-session view
-6. Biometric unlock (if possible to screenshot without triggering auth)
 
 ### iPad Screenshots (REQUIRED for Universal apps)
 
 Since `supportsTablet: true`, iPad screenshots are required.
 
-| Device | Resolution | Size name in App Store Connect |
-|---|---|---|
-| iPad 12.9" (iPad Pro 6th gen) | 2048×2732 | 12.9" iPad Pro (6th gen) |
-| iPad 11" (iPad Pro M4) | 1668×2388 | 11" iPad Pro (M4) |
+| Device | Resolution | Size name in App Store Connect | Status |
+|---|---|---|---|
+| iPad 12.9" (iPad Pro 6th gen) | 2048×2732 | 12.9" iPad Pro (6th gen) | Placeholder set exists; recapture from current iOS build |
+| iPad 11" (iPad Pro M4) | 1668×2388 | 11" iPad Pro (M4) | Optional |
 
 Minimum 1 per device class required. iPad screenshots can be the same content as iPhone.
 
@@ -335,11 +327,11 @@ To use: you need opencode running somewhere accessible (local Wi-Fi, Tailscale, 
 ## Pending Before First Submission
 
 - [ ] Apple Developer Program enrollment approved (D-U-N-S 142059652, VIBE TECHNOLOGIES LLC)
-- [ ] App Store Connect app record created (bundle ID: ai.opencode.mobile)
-- [ ] App icon 1024×1024 PNG (no alpha, no rounded corners)
-- [ ] iPhone screenshots (6.7" minimum; 6.5" strongly recommended)
-- [ ] iPad screenshots (12.9" minimum)
-- [ ] Privacy policy live at https://dzianisv.github.io/opencode-mobile/privacy/
+- [ ] App Store Connect app record created (bundle ID: cc.agentlabs.opencode)
+- [x] App icon 1024×1024 PNG (no alpha, no rounded corners)
+- [ ] Capture current iPhone screenshots (6.7" minimum; 6.5" strongly recommended)
+- [ ] Capture current iPad screenshots (12.9" minimum)
+- [x] Privacy policy live at https://dzianisv.github.io/opencode-mobile/privacy/
 - [ ] App Store Connect API key created (for CI — Key ID, Issuer ID, .p8 file)
 - [ ] Apple Distribution certificate + provisioning profile (or use EAS managed signing)
 - [ ] Export compliance answered (No to custom encryption)
