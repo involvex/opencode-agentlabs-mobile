@@ -90,7 +90,7 @@ Because the answer is "No", no ERN (Encryption Registration Number) is required 
 | 9 | Export compliance | ✅ Done | `ITSAppUsesNonExemptEncryption: false` added to `app.json`. Answers + rationale in this doc (see Export Compliance section above) and `distribution/app-store-listing.md`. |
 | 10 | ATS justification in App Review notes | ✅ Done | Full justification text in `distribution/app-store-listing.md` under "App Review Notes — ATS Justification" |
 | 11 | Reviewer test instructions | ✅ Done | Updated with correct command (`opencode serve --hostname 0.0.0.0`) in `distribution/app-store-listing.md` |
-| 12 | GitHub secrets: `EXPO_TOKEN`, `APPLE_APP_STORE_CONNECT_API_KEY_ID`, `APPLE_APP_STORE_CONNECT_ISSUER_ID`, `APPLE_APP_STORE_CONNECT_API_KEY` (base64 .p8) | User | 🟡 post-enrollment — see `.github/workflows/publish-app-store.yml` header |
+| 12 | GitHub variable `EAS_PROJECT_ID`; secrets: `EXPO_TOKEN`, `APPLE_APP_STORE_CONNECT_API_KEY_ID`, `APPLE_APP_STORE_CONNECT_ISSUER_ID`, `APPLE_APP_STORE_CONNECT_API_KEY` (base64 .p8) | User | 🟡 post-enrollment — run `eas init`, then see `.github/workflows/publish-app-store.yml` |
 | 13 | Update `eas.json` placeholders: `ascAppId` + `appleTeamId` | User | 🟡 post-enrollment — see `eas.json.README.md` for click paths |
 | 14 | CI workflow validated | CI | 🟡 Linux checks pass; PR must prove the macOS Simulator build |
 | 15 | TestFlight release notes | ✅ Done | `distribution/whatsnew-ios/release-notes-en-US.txt` — polished, 1658 chars (limit 4000) |
@@ -102,7 +102,7 @@ Because the answer is "No", no ERN (Encryption Registration Number) is required 
 1. (manual) Sign in to App Store Connect, create app with bundle id `cc.agentlabs.opencode`.
 2. (manual) Generate App Store Connect API key (App Manager role) → download `.p8` → base64 encode → add as GitHub secret.
 3. (manual) Update `eas.json` placeholders (Team ID, ASC App ID).
-4. (manual) `eas login` + `eas build:configure` for first-time setup (managed signing).
+4. (manual) `eas login` + `eas init` + `eas build:configure`; add the generated project UUID as repository variable `EAS_PROJECT_ID`.
 5. (automated) Publish a GitHub Release for the version tag → CI calls EAS Build → EAS Submit → IPA lands in TestFlight.
 6. (manual, first time) Add internal testers in App Store Connect → distribute via TestFlight.
 7. (manual) After internal testing OK → submit for App Store review (production).

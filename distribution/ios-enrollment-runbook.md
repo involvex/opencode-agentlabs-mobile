@@ -141,13 +141,15 @@ While waiting for Apple's verification call and approval:
    - Note: Key ID and Issuer ID
    - Base64-encode the .p8 and store in GitHub secret `APPLE_APP_STORE_CONNECT_API_KEY`
 
-4. Configure the EAS `production` environment for optional crash reporting:
+4. Run `eas init` once, then add the generated `extra.eas.projectId` UUID as the GitHub Actions repository variable `EAS_PROJECT_ID`.
+
+5. Configure the EAS `production` environment for optional crash reporting:
    - `EXPO_PUBLIC_SENTRY_DSN`
    - `SENTRY_AUTH_TOKEN` (secret visibility)
    - `SENTRY_ORG`
    - `SENTRY_PROJECT`
 
-5. Create an internal TestFlight group and add yourself as tester
+6. Create an internal TestFlight group and add yourself as tester
 
 ---
 

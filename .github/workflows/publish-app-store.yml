@@ -7,7 +7,9 @@
 # ── HUMAN GATE (one-time, after Apple Developer Program enrollment) ──────────────
 # Complete ALL of the following before releasing. Do NOT invent any of these IDs.
 #
-# 1. Fill and commit the eas.json placeholders (see eas.json.README.md for click paths):
+# 1. Link the app to an Expo project and add its UUID as the GitHub Actions
+#    repository variable EAS_PROJECT_ID (see eas.json.README.md), then fill and
+#    commit the eas.json placeholders:
 #      submit.production.ios.ascAppId     REPLACE_WITH_APP_STORE_CONNECT_APP_ID  → numeric App Store Connect App ID
 #      submit.production.ios.appleTeamId  REPLACE_WITH_APPLE_TEAM_ID             → 10-char Apple Team ID
 #
@@ -26,7 +28,8 @@
 # SENTRY_AUTH_TOKEN, SENTRY_ORG, and SENTRY_PROJECT in Expo before releasing.
 #
 # Build number is managed remotely by EAS (eas.json: cli.appVersionSource=remote,
-# build.production.ios.autoIncrement=buildNumber). No app.json mutation happens here.
+# build.production.ios.autoIncrement=buildNumber). The workflow only injects the
+# EAS project linkage into its temporary runner copy of app.json.
 
 name: Publish to App Store (TestFlight)
 
@@ -54,6 +57,7 @@ jobs:
     env:
       EAS_CLI_VERSION: "21.0.0"
       EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
+      EAS_PROJECT_ID: ${{ vars.EAS_PROJECT_ID }}
     steps:
       - uses: actions/checkout@v6
 
@@ -80,6 +84,13 @@ jobs:
           need "APPLE_APP_STORE_CONNECT_API_KEY_ID" "${ASC_KEY_ID:-}"
           need "APPLE_APP_STORE_CONNECT_ISSUER_ID" "${ASC_ISSUER_ID:-}"
           need "APPLE_APP_STORE_CONNECT_API_KEY" "${ASC_KEY_B64:-}"
+          if [ -z "${EAS_PROJECT_ID:-}" ]; then
+            echo "::error::Missing required repository variable: EAS_PROJECT_ID"
+            fail=1
+          elif ! printf '%s' "$EAS_PROJECT_ID" | grep -Eq '^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$'; then
+            echo "::error::EAS_PROJECT_ID must be an Expo project UUID"
+            fail=1
+          fi
           asc_app_id=$(node -p "require('./eas.json').submit.production.ios.ascAppId || ''")
           team_id=$(node -p "require('./eas.json').submit.production.ios.appleTeamId || ''")
           case "$asc_app_id" in
@@ -112,6 +123,18 @@ jobs:
 
       - name: Install dependencies (deterministic)
         run: npm ci --legacy-peer-deps
+
+      - name: Configure EAS project linkage
+        run: |
+          set -euo pipefail
+          node -e "
+            const fs = require('fs');
+            const j = require('./app.json');
+            j.expo.extra = { ...j.expo.extra, eas: { ...j.expo.extra?.eas, projectId: process.env.EAS_PROJECT_ID } };
+            fs.writeFileSync('app.json', JSON.stringify(j, null, 2) + '\n');
+          "
+          test "$(node -p "require('./app.json').expo.extra.eas.projectId")" = "$EAS_PROJECT_ID"
+          echo "Linked build to Expo project $EAS_PROJECT_ID."
 
       - name: Configure App Store Connect API key
         env:

@@ -73,10 +73,12 @@ Alternatively, in App Store Connect:
 
 ## After filling in the placeholders
 
-1. Commit the updated `eas.json` to the repo.
-2. Add the `EXPO_TOKEN` and App Store Connect API GitHub Actions secrets (see `.github/workflows/publish-app-store.yml` for the exact list).
-3. Publish a GitHub Release for the version tag (or manually dispatch the App Store workflow).
-4. The release event triggers CI to build the IPA via EAS and submit that exact build to TestFlight.
+1. Run `eas init` once to create/link the Expo project.
+2. Copy the generated `extra.eas.projectId` UUID and add it as the GitHub Actions repository variable `EAS_PROJECT_ID`. The release workflow injects it into `app.json` only on the runner.
+3. Commit the updated `eas.json` to the repo.
+4. Add the `EXPO_TOKEN` and App Store Connect API GitHub Actions secrets (see `.github/workflows/publish-app-store.yml` for the exact list).
+5. Publish a GitHub Release for the version tag (or manually dispatch the App Store workflow).
+6. The release event triggers CI to build the IPA via EAS and submit that exact build to TestFlight.
 
 ---
 

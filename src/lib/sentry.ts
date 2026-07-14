@@ -50,6 +50,8 @@ export function initSentry() {
         return scrubEvent(event)
       },
       beforeBreadcrumb(crumb) {
+        // Console output can contain malformed server payloads, prompts, or code.
+        if (crumb.category === "console") return null
         if (crumb.data && typeof crumb.data === "object") {
           crumb.data = redactObject(crumb.data as Record<string, unknown>)
         }
@@ -149,6 +151,7 @@ function scrubEvent<T extends Sentry.Event>(event: T): T {
     }
   }
   if (event.breadcrumbs) {
+    event.breadcrumbs = event.breadcrumbs.filter((crumb) => crumb.category !== "console")
     for (const crumb of event.breadcrumbs) {
       if (typeof crumb.message === "string") crumb.message = redactString(crumb.message)
       if (crumb.data && typeof crumb.data === "object") {

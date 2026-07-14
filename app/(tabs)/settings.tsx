@@ -21,6 +21,7 @@ import {
 } from "../../src/lib/notifications"
 import type { Category } from "../../src/lib/notifications"
 import { hasTelemetryConsent, setTelemetryConsent } from "../../src/lib/telemetry"
+import { PRIVACY_POLICY_URL } from "../../src/lib/links"
 
 function SettingRow({
   icon,
@@ -215,7 +216,7 @@ export default function SettingsScreen() {
           label="Privacy Policy"
           description="What data we collect and how"
           isDark={isDark}
-          onPress={() => Linking.openURL("https://agentlabs.cc/opencode/privacy")}
+          onPress={() => Linking.openURL(PRIVACY_POLICY_URL)}
           right={<Ionicons name="open-outline" size={20} color={isDark ? "#666666" : "#999999"} />}
         />
       </SettingSection>
