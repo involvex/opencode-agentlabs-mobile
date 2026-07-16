@@ -59,8 +59,13 @@ async function recordSuccessfulSessionInternal(): Promise<void> {
     const available = await StoreReview.isAvailableAsync()
     if (!available) return
 
-    await StoreReview.requestReview()
+    // Mark as asked BEFORE requesting: on iOS requestReview() can throw
+    // (e.g. MissingCurrentWindowSceneException while backgrounded — likely,
+    // since sessions often complete in the background). A failed attempt
+    // consumes the one shot; that beats retrying and violating the
+    // "at most once, ever" contract.
     await SecureStore.setItemAsync(ASKED_KEY, "true")
+    await StoreReview.requestReview()
   } catch {
     // A review-prompt failure must never affect session handling.
   }

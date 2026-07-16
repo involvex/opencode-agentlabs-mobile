@@ -52,6 +52,12 @@ interface EventsState {
 let controller: AbortController | null = null
 let reconnectTimer: ReturnType<typeof setTimeout> | null = null
 
+// Sessions that emitted session.error since they last went busy. SessionStatus
+// has no error variant — an errored session still ends with a busy -> idle
+// transition — so without this mark an errored run would count as a success
+// toward the once-ever store review prompt.
+const erroredSessions = new Set<string>()
+
 const RECONNECT_DELAYS_MS = [1000, 2000, 4000, 8000, 15000] as const
 const STABLE_CONNECTION_MS = 10_000
 const PROLONGED_DISCONNECT_MS = 30_000
@@ -161,6 +167,9 @@ export const useEvents = create<EventsState>((set, get) => ({
               const previous = get().sessionStatus[sessionID]
               const completed = previous?.type === "busy" && status.type === "idle"
 
+              // A new run starts — forget any error from the previous one
+              if (status.type === "busy") erroredSessions.delete(sessionID)
+
               set((state) => ({
                 sessionStatus: { ...state.sessionStatus, [sessionID]: status },
                 // Clear status text when idle
@@ -187,9 +196,11 @@ export const useEvents = create<EventsState>((set, get) => ({
                   body: sanitizeBody(match?.title, "Session finished processing"),
                   sessionId: sessionID,
                 })
-                // Genuinely positive moment (never fired on error) — count it
-                // toward the one-time store review prompt.
-                void recordSuccessfulSession()
+                // Genuinely positive moment — count it toward the one-time
+                // store review prompt, but only if this run never errored
+                // (session.error doesn't touch sessionStatus, so an errored
+                // session still lands here via busy -> idle).
+                if (!erroredSessions.has(sessionID)) void recordSuccessfulSession()
               }
               break
             }
@@ -240,6 +251,9 @@ export const useEvents = create<EventsState>((set, get) => ({
               const error = props.error as { message?: string } | undefined
               const sessionID = props.sessionID as string
               if (!sessionID) break
+              // Mark so the eventual busy -> idle transition is not counted
+              // as a success for the store review prompt
+              erroredSessions.add(sessionID)
               // Clear sending state unconditionally — SSE is truth
               useSessions.setState((state) => ({
                 sending: { ...state.sending, [sessionID]: false },
@@ -361,6 +375,7 @@ export const useEvents = create<EventsState>((set, get) => ({
     }
     controller?.abort()
     controller = null
+    erroredSessions.clear()
     set({
       connected: false,
       reconnectAttempts: 0,
