@@ -3,6 +3,7 @@ import { ActivityIndicator, StyleSheet, Text, TouchableOpacity, View } from "rea
 import { Ionicons } from "@expo/vector-icons"
 import BottomSheet, { BottomSheetBackdrop, BottomSheetFlatList, BottomSheetTextInput } from "@gorhom/bottom-sheet"
 import type { Client, FileEntry } from "../../lib/sdk"
+import { parentOf, nameOf } from "../../lib/path-utils"
 
 interface Props {
   sheetRef: React.RefObject<BottomSheet | null>
@@ -13,32 +14,18 @@ interface Props {
   isDark: boolean
   // Called with the chosen absolute directory when the user taps "Use this folder".
   onSelect: (directory: string) => void
+  // Called whenever the sheet fully closes (selection or cancel).
+  onDismiss?: () => void
 }
 
-// Absolute-path helpers. Server working directories can be POSIX (/a/b) or
-// Windows (C:\a\b, D:/a/b) since the mobile app can point at either kind of
-// opencode server, so both separators are handled.
-function stripTrailingSlash(dir: string): string {
-  return dir.replace(/[\\/]+$/, "") || dir
-}
-
-function parentOf(dir: string): string | null {
-  const trimmed = stripTrailingSlash(dir)
-  const lastSlash = Math.max(trimmed.lastIndexOf("/"), trimmed.lastIndexOf("\\"))
-  if (lastSlash < 0) return null
-  const head = trimmed.slice(0, lastSlash)
-  if (!head) return trimmed[0] === "\\" ? "\\" : "/" // reached posix root
-  if (/^[a-zA-Z]:$/.test(head)) return `${head}\\` // reached a windows drive root
-  return head
-}
-
-function nameOf(dir: string): string {
-  const trimmed = stripTrailingSlash(dir)
-  const lastSlash = Math.max(trimmed.lastIndexOf("/"), trimmed.lastIndexOf("\\"))
-  return lastSlash >= 0 ? trimmed.slice(lastSlash + 1) || trimmed : trimmed
-}
-
-export function DirectoryBrowserSheet({ sheetRef, startDirectory, clientForDirectory, isDark, onSelect }: Props) {
+export function DirectoryBrowserSheet({
+  sheetRef,
+  startDirectory,
+  clientForDirectory,
+  isDark,
+  onSelect,
+  onDismiss,
+}: Props) {
   const [browseDir, setBrowseDir] = useState<string | null>(null)
   const [entries, setEntries] = useState<FileEntry[]>([])
   const [loading, setLoading] = useState(false)
@@ -84,14 +71,32 @@ export function DirectoryBrowserSheet({ sheetRef, startDirectory, clientForDirec
     [load],
   )
 
-  // Reset to the starting directory every time the sheet opens.
+  // Reset to the starting directory when the sheet transitions from closed
+  // to open (not on drags between snap points), and notify on full close.
+  const wasOpen = useRef(false)
   const handleSheetChange = useCallback(
     (index: number) => {
-      if (index < 0) return
+      if (index < 0) {
+        wasOpen.current = false
+        onDismiss?.()
+        return
+      }
+      if (wasOpen.current) return // snap-point change while already open
+      wasOpen.current = true
       setJumpPath("")
-      if (startDirectory) enter(startDirectory)
+      if (startDirectory) {
+        enter(startDirectory)
+      } else {
+        // No starting directory known (e.g. server home not loaded yet):
+        // show an explicit empty state instead of a previous open's entries.
+        loadToken.current++
+        setBrowseDir(null)
+        setEntries([])
+        setError(null)
+        setLoading(false)
+      }
     },
-    [startDirectory, enter],
+    [startDirectory, enter, onDismiss],
   )
 
   const goUp = useCallback(() => {
@@ -196,7 +201,11 @@ export function DirectoryBrowserSheet({ sheetRef, startDirectory, clientForDirec
           ) : null
         }
         ListEmptyComponent={
-          !loading && !error ? <Text style={[s.emptyText, isDark && s.dimDark]}>No subfolders here</Text> : null
+          !loading && !error ? (
+            <Text style={[s.emptyText, isDark && s.dimDark]}>
+              {browseDir ? "No subfolders here" : "Enter a path above to start browsing"}
+            </Text>
+          ) : null
         }
       />
 

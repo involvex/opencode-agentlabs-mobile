@@ -275,17 +275,28 @@ export default function SessionsScreen() {
     }
   }
 
+  // The browser sheet is a sibling of the New Session <Modal>. A native RN
+  // Modal layers above everything in the React root (including bottom-sheet
+  // portals), so the modal must be closed before the sheet is shown; this ref
+  // remembers to bring it back if the user cancels without picking a folder.
+  const restoreNewSessionOnDismiss = useRef(false)
+
   const openBrowser = useCallback(
     (startDir: string | null, mode: "create" | "switch") => {
       setBrowseStartDir(startDir || serverHome || null)
       setBrowseMode(mode)
+      if (mode === "create" && showNewSession) {
+        restoreNewSessionOnDismiss.current = true
+        setShowNewSession(false)
+      }
       browserSheetRef.current?.expand()
     },
-    [serverHome],
+    [serverHome, showNewSession],
   )
 
   const onBrowserSelect = useCallback(
     (directory: string) => {
+      restoreNewSessionOnDismiss.current = false
       if (browseMode === "switch") {
         handleSwitchDirectory(directory)
         dirSheetRef.current?.close()
@@ -295,6 +306,13 @@ export default function SessionsScreen() {
     },
     [browseMode, handleSwitchDirectory, onCreateInDirectory],
   )
+
+  const onBrowserDismiss = useCallback(() => {
+    if (restoreNewSessionOnDismiss.current) {
+      restoreNewSessionOnDismiss.current = false
+      setShowNewSession(true)
+    }
+  }, [])
 
   const onFabPress = () => {
     // Quick create in current project
@@ -666,6 +684,7 @@ export default function SessionsScreen() {
         clientForDirectory={clientForDirectory}
         isDark={isDark}
         onSelect={onBrowserSelect}
+        onDismiss={onBrowserDismiss}
       />
     </View>
   )
