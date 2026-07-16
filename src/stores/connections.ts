@@ -4,6 +4,7 @@ import * as Crypto from "expo-crypto"
 import type { ServerConnection, ConnectionType } from "../lib/types"
 import { createClient, type Client, type Project } from "../lib/sdk"
 import { addBreadcrumb } from "../lib/sentry"
+import { AnalyticsEvent, classifyConnectionError, track } from "../lib/analytics"
 import { buildAuth } from "../lib/auth"
 
 const CONNECTIONS_KEY = "opencode_connections"
@@ -243,6 +244,7 @@ export const useConnections = create<ConnectionsState>((set, get) => ({
   },
 
   testConnection: async (connection, password) => {
+    track(AnalyticsEvent.ConnectionAttempted)
     try {
       const client = createClient({
         baseUrl: connection.url,
@@ -251,9 +253,12 @@ export const useConnections = create<ConnectionsState>((set, get) => ({
       })
 
       await client.global.health()
+      track(AnalyticsEvent.ConnectionSucceeded)
       return { ok: true }
     } catch (error) {
-      return { ok: false, error: error instanceof Error ? error.message : String(error) }
+      const message = error instanceof Error ? error.message : String(error)
+      track(AnalyticsEvent.ConnectionFailed, { error_class: classifyConnectionError(message) })
+      return { ok: false, error: message }
     }
   },
 

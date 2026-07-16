@@ -18,6 +18,7 @@ import type { ConnectionType } from "../../src/lib/types"
 import { probeConnection, shareReport } from "../../src/lib/diagnostics"
 import { captureDiagnostic } from "../../src/lib/sentry"
 import { parseUrl } from "../../src/lib/diagnostics-classify"
+import { AnalyticsEvent, track } from "../../src/lib/analytics"
 
 export default function AddConnectionScreen() {
   const colorScheme = useColorScheme()
@@ -67,6 +68,7 @@ export default function AddConnectionScreen() {
       return
     }
 
+    track(AnalyticsEvent.ConnectionFormSubmitted, { mode: "quick" })
     setIsConnecting(true)
 
     // Test connection first
@@ -127,6 +129,11 @@ export default function AddConnectionScreen() {
       return
     }
 
+    track(AnalyticsEvent.ConnectionFormSubmitted, { mode: "advanced" })
+    // Advanced mode saves directly without a pre-flight health check (see
+    // useConnections.addConnection), so unlike quick-connect there is no
+    // success/failure signal to report here — only that an attempt was made.
+    track(AnalyticsEvent.ConnectionAttempted)
     setIsConnecting(true)
     await addConnection(
       {

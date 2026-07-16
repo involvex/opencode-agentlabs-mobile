@@ -3,6 +3,7 @@ import type { Session, Message, Part, Event, MessageWithParts, Client } from "..
 import { useConnections } from "./connections"
 import { useSettings } from "./settings"
 import { addBreadcrumb } from "../lib/sentry"
+import { AnalyticsEvent, track } from "../lib/analytics"
 
 // Helper to convert API response to our internal format
 function parseMessages(response: MessageWithParts[]): { messages: Message[]; parts: Record<string, Part[]> } {
@@ -223,6 +224,7 @@ export const useSessions = create<SessionsState>((set, get) => ({
 
     try {
       set((state) => ({ sending: { ...state.sending, [session.id]: true }, error: null }))
+      track(AnalyticsEvent.MessageSent)
 
       // Add user message optimistically
       const ts = Date.now()

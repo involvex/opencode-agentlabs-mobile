@@ -16,6 +16,7 @@ import { TelemetryConsentModal } from "../src/components/TelemetryConsentModal"
 import * as notifications from "../src/lib/notifications"
 import { addBreadcrumb, wrap } from "../src/lib/sentry"
 import { loadTelemetryConsent, setTelemetryConsent } from "../src/lib/telemetry"
+import { initAnalytics, trackAppOpened } from "../src/lib/analytics"
 
 const queryClient = new QueryClient()
 
@@ -51,6 +52,8 @@ function RootLayout() {
             initSentry()
             addBreadcrumb({ category: "app.lifecycle", message: "app started" })
           })
+          initAnalytics()
+          trackAppOpened()
           setConsentState("decided")
         } else if (state === "denied") {
           addBreadcrumb({ category: "app.lifecycle", message: "app started (telemetry off)" })

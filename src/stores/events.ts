@@ -5,6 +5,7 @@ import { send as notify } from "../lib/notifications"
 import { sanitizeBody } from "../lib/notify-format"
 import { statusFromPart } from "../lib/status-labels"
 import { addBreadcrumb } from "../lib/sentry"
+import { AnalyticsEvent, track } from "../lib/analytics"
 import type { Client, Part, Session, Message } from "../lib/sdk"
 
 // Session status from the server
@@ -179,6 +180,7 @@ export const useEvents = create<EventsState>((set, get) => ({
               }
 
               if (completed) {
+                track(AnalyticsEvent.ResponseReceived)
                 const match = useSessions.getState().sessions.find((s) => s.id === sessionID)
                 notify({
                   category: "completed",

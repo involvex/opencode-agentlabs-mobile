@@ -1,19 +1,21 @@
 /**
  * Telemetry consent + initialisation gate.
  *
- * Wraps sentry.ts so that initSentry() is only called when the user has
- * explicitly opted in. Consent state is persisted in expo-secure-store so
- * it survives app restarts.
+ * Wraps sentry.ts AND analytics.ts so that initSentry()/initAnalytics() are
+ * only called when the user has explicitly opted in. Both crash reporting
+ * and activation-funnel analytics share this single consent flag — there is
+ * no separate toggle for analytics. Consent state is persisted in
+ * expo-secure-store so it survives app restarts.
  *
  * Usage:
  *   import { loadTelemetryConsent, setTelemetryConsent, hasTelemetryConsent } from './telemetry'
  *
- *   // On app start — call BEFORE trying to initialise Sentry.
+ *   // On app start — call BEFORE trying to initialise Sentry/analytics.
  *   const state = await loadTelemetryConsent()   // 'granted' | 'denied' | 'unknown'
- *   if (state === 'granted') initSentry()
+ *   if (state === 'granted') { initSentry(); initAnalytics() }
  *
  *   // After the user taps "Allow" in the consent modal:
- *   await setTelemetryConsent(true)   // persists + calls initSentry() if not already done
+ *   await setTelemetryConsent(true)   // persists + calls initSentry()/initAnalytics() if not already done
  *
  *   // Check in Settings screen:
  *   const current = hasTelemetryConsent()   // boolean | null (null = not yet decided)
@@ -21,6 +23,7 @@
 
 import * as SecureStore from "expo-secure-store"
 import { disableSentry, initSentry, sentryEnabled } from "./sentry"
+import { initAnalytics, shutdownAnalytics, analyticsEnabled } from "./analytics"
 
 const CONSENT_KEY = "opencode_telemetry_consent"
 
@@ -78,11 +81,13 @@ async function applyTelemetryConsent(granted: boolean): Promise<void> {
     await SecureStore.setItemAsync(CONSENT_KEY, "granted")
     _resolved = true
     if (!sentryEnabled()) initSentry()
+    if (!analyticsEnabled()) initAnalytics()
     return
   }
 
   _resolved = false
   await disableSentry()
+  await shutdownAnalytics()
   try {
     await SecureStore.setItemAsync(CONSENT_KEY, "denied")
   } catch (error) {
