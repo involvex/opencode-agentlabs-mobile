@@ -143,6 +143,14 @@ export interface Project {
   }
 }
 
+export interface FileEntry {
+  name: string
+  path: string
+  absolute: string
+  type: "file" | "directory"
+  ignored: boolean
+}
+
 export interface Event {
   type: string
   properties: Record<string, unknown>
@@ -248,6 +256,17 @@ export function createClient(config: ClientConfig) {
     project: {
       list: () => request<Project[]>(config, "/project"),
       current: () => request<Project>(config, "/project/current"),
+    },
+
+    // Server-side filesystem browsing, scoped to this client's directory
+    // (see ClientConfig.directory / x-opencode-directory header). Use
+    // clientForDirectory(dir) to get a client rooted at a specific folder,
+    // then list("." ) to enumerate its immediate children.
+    file: {
+      list: (params: { path?: string } = {}) => {
+        const query = new URLSearchParams({ path: params.path ?? "." })
+        return request<FileEntry[]>(config, `/file?${query.toString()}`)
+      },
     },
 
     path: {
