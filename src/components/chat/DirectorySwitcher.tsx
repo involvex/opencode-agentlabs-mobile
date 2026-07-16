@@ -10,9 +10,12 @@ interface Props {
   serverHome: string | null
   isDark: boolean
   onSwitch: (directory?: string) => void
+  // Opens a browsable folder picker rooted at the server's filesystem, as an
+  // alternative to typing a path. Optional so existing callers keep working.
+  onBrowse?: () => void
 }
 
-export function DirectorySwitcher({ sheetRef, current, recents, serverHome, isDark, onSwitch }: Props) {
+export function DirectorySwitcher({ sheetRef, current, recents, serverHome, isDark, onSwitch, onBrowse }: Props) {
   const [custom, setCustom] = useState("")
 
   const handleSelect = useCallback(
@@ -100,14 +103,30 @@ export function DirectorySwitcher({ sheetRef, current, recents, serverHome, isDa
       </View>
 
       {/* Quick path chips */}
-      {serverHome && (
+      {(serverHome || onBrowse) && (
         <View style={s.chips}>
-          <TouchableOpacity style={[s.chip, isDark && s.chipDark]} onPress={() => setCustom(serverHome)}>
-            <Text style={[s.chipText, isDark && s.chipTextDark]}>~</Text>
-          </TouchableOpacity>
-          <TouchableOpacity style={[s.chip, isDark && s.chipDark]} onPress={() => setCustom(serverHome + "/")}>
-            <Text style={[s.chipText, isDark && s.chipTextDark]}>~/</Text>
-          </TouchableOpacity>
+          {serverHome && (
+            <>
+              <TouchableOpacity style={[s.chip, isDark && s.chipDark]} onPress={() => setCustom(serverHome)}>
+                <Text style={[s.chipText, isDark && s.chipTextDark]}>~</Text>
+              </TouchableOpacity>
+              <TouchableOpacity style={[s.chip, isDark && s.chipDark]} onPress={() => setCustom(serverHome + "/")}>
+                <Text style={[s.chipText, isDark && s.chipTextDark]}>~/</Text>
+              </TouchableOpacity>
+            </>
+          )}
+          {onBrowse && (
+            <TouchableOpacity
+              style={[s.chip, s.chipBrowse, isDark && s.chipDark]}
+              onPress={() => {
+                sheetRef.current?.close()
+                onBrowse()
+              }}
+            >
+              <Ionicons name="folder-open-outline" size={14} color={isDark ? "#8b5cf6" : "#6d28d9"} />
+              <Text style={[s.chipText, isDark && s.chipTextDark]}>Browse…</Text>
+            </TouchableOpacity>
+          )}
         </View>
       )}
 
@@ -187,6 +206,11 @@ const s = StyleSheet.create({
   },
   chipDark: {
     backgroundColor: "#2a2040",
+  },
+  chipBrowse: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 4,
   },
   chipText: {
     fontSize: 13,

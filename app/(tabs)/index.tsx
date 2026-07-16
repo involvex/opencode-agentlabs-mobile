@@ -22,7 +22,7 @@ import { useConnections } from "../../src/stores/connections"
 import { useCatalog } from "../../src/stores/catalog"
 import type BottomSheet from "@gorhom/bottom-sheet"
 import type { Session, Project } from "../../src/lib/sdk"
-import { DirectorySwitcher } from "../../src/components/chat"
+import { DirectorySwitcher, DirectoryBrowserSheet } from "../../src/components/chat"
 
 function formatTime(timestamp: number): string {
   const date = new Date(timestamp)
@@ -129,6 +129,11 @@ export default function SessionsScreen() {
   } = useConnections()
   const loadCatalog = useCatalog((s) => s.load)
   const dirSheetRef = useRef<BottomSheet>(null)
+  const browserSheetRef = useRef<BottomSheet>(null)
+  const [browseStartDir, setBrowseStartDir] = useState<string | null>(null)
+  // Shared folder browser is opened either to pick a directory for a new
+  // session, or to switch the active connection's directory.
+  const [browseMode, setBrowseMode] = useState<"create" | "switch">("create")
   const [refreshing, setRefreshing] = useState(false)
 
   // Fetch server-known projects when the new session modal opens
@@ -269,6 +274,45 @@ export default function SessionsScreen() {
       })
     }
   }
+
+  // The browser sheet is a sibling of the New Session <Modal>. A native RN
+  // Modal layers above everything in the React root (including bottom-sheet
+  // portals), so the modal must be closed before the sheet is shown; this ref
+  // remembers to bring it back if the user cancels without picking a folder.
+  const restoreNewSessionOnDismiss = useRef(false)
+
+  const openBrowser = useCallback(
+    (startDir: string | null, mode: "create" | "switch") => {
+      setBrowseStartDir(startDir || serverHome || null)
+      setBrowseMode(mode)
+      if (mode === "create" && showNewSession) {
+        restoreNewSessionOnDismiss.current = true
+        setShowNewSession(false)
+      }
+      browserSheetRef.current?.expand()
+    },
+    [serverHome, showNewSession],
+  )
+
+  const onBrowserSelect = useCallback(
+    (directory: string) => {
+      restoreNewSessionOnDismiss.current = false
+      if (browseMode === "switch") {
+        handleSwitchDirectory(directory)
+        dirSheetRef.current?.close()
+      } else {
+        onCreateInDirectory(directory)
+      }
+    },
+    [browseMode, handleSwitchDirectory, onCreateInDirectory],
+  )
+
+  const onBrowserDismiss = useCallback(() => {
+    if (restoreNewSessionOnDismiss.current) {
+      restoreNewSessionOnDismiss.current = false
+      setShowNewSession(true)
+    }
+  }, [])
 
   const onFabPress = () => {
     // Quick create in current project
@@ -478,6 +522,24 @@ export default function SessionsScreen() {
                 </>
               )}
 
+              {/* Browse the server's filesystem instead of typing a path */}
+              <TouchableOpacity
+                style={[styles.projectRow, isDark && styles.projectRowDark, { marginTop: 16 }]}
+                onPress={() =>
+                  openBrowser(currentProject?.path?.absolute || activeConnection?.directory || null, "create")
+                }
+                disabled={isCreating}
+              >
+                <Ionicons name="folder-open-outline" size={18} color={isDark ? "#8b5cf6" : "#6d28d9"} />
+                <View style={styles.projectRowContent}>
+                  <Text style={[styles.projectRowName, isDark && styles.textDark]}>Browse Folders…</Text>
+                  <Text style={[styles.projectRowPath, isDark && styles.metaDark]}>
+                    Explore the server's filesystem
+                  </Text>
+                </View>
+                <Ionicons name="chevron-forward" size={16} color={isDark ? "#666666" : "#999999"} />
+              </TouchableOpacity>
+
               {/* Manual path input fallback */}
               <Text style={[styles.modalLabel, isDark && styles.metaDark, { marginTop: 16 }]}>
                 Enter Path Manually
@@ -609,6 +671,20 @@ export default function SessionsScreen() {
         serverHome={serverHome}
         isDark={isDark}
         onSwitch={handleSwitchDirectory}
+        onBrowse={() =>
+          openBrowser(activeConnection?.directory || currentProject?.path?.absolute || null, "switch")
+        }
+      />
+
+      {/* Browsable folder picker — used for both "new session in..." and
+          "switch project directory" flows (see browseMode). */}
+      <DirectoryBrowserSheet
+        sheetRef={browserSheetRef}
+        startDirectory={browseStartDir}
+        clientForDirectory={clientForDirectory}
+        isDark={isDark}
+        onSelect={onBrowserSelect}
+        onDismiss={onBrowserDismiss}
       />
     </View>
   )
