@@ -1,6 +1,6 @@
 import { create } from "zustand"
 import { useConnections } from "./connections"
-import { useSessions } from "./sessions"
+import { useSessions, abortedSessions } from "./sessions"
 import { send as notify } from "../lib/notifications"
 import { sanitizeBody } from "../lib/notify-format"
 import { statusFromPart } from "../lib/status-labels"
@@ -168,8 +168,11 @@ export const useEvents = create<EventsState>((set, get) => ({
               const previous = get().sessionStatus[sessionID]
               const completed = previous?.type === "busy" && status.type === "idle"
 
-              // A new run starts — forget any error from the previous one
-              if (status.type === "busy") erroredSessions.delete(sessionID)
+              // A new run starts — forget any error/abort from the previous one
+              if (status.type === "busy") {
+                erroredSessions.delete(sessionID)
+                abortedSessions.delete(sessionID)
+              }
 
               set((state) => ({
                 sessionStatus: { ...state.sessionStatus, [sessionID]: status },
@@ -190,7 +193,10 @@ export const useEvents = create<EventsState>((set, get) => ({
               }
 
               if (completed) {
-                track(AnalyticsEvent.ResponseReceived)
+                // A user-cancelled run still ends busy -> idle; don't count it
+                // as a received response or a review-worthy success.
+                const aborted = abortedSessions.has(sessionID)
+                if (!aborted) track(AnalyticsEvent.ResponseReceived)
                 const match = useSessions.getState().sessions.find((s) => s.id === sessionID)
                 notify({
                   category: "completed",
@@ -201,8 +207,8 @@ export const useEvents = create<EventsState>((set, get) => ({
                 // Genuinely positive moment — count it toward the one-time
                 // store review prompt, but only if this run never errored
                 // (session.error doesn't touch sessionStatus, so an errored
-                // session still lands here via busy -> idle).
-                if (!erroredSessions.has(sessionID)) void recordSuccessfulSession()
+                // session still lands here via busy -> idle) and wasn't aborted.
+                if (!aborted && !erroredSessions.has(sessionID)) void recordSuccessfulSession()
               }
               break
             }
@@ -378,6 +384,7 @@ export const useEvents = create<EventsState>((set, get) => ({
     controller?.abort()
     controller = null
     erroredSessions.clear()
+    abortedSessions.clear()
     set({
       connected: false,
       reconnectAttempts: 0,

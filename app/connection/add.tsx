@@ -80,6 +80,7 @@ export default function AddConnectionScreen() {
         url: serverUrl,
         username: username.trim() || undefined,
       },
+      "onboarding",
       password || undefined,
     )
 
@@ -133,7 +134,7 @@ export default function AddConnectionScreen() {
     // Advanced mode saves directly without a pre-flight health check (see
     // useConnections.addConnection), so unlike quick-connect there is no
     // success/failure signal to report here — only that an attempt was made.
-    track(AnalyticsEvent.ConnectionAttempted)
+    track(AnalyticsEvent.ConnectionAttempted, { source: "onboarding" })
     setIsConnecting(true)
     await addConnection(
       {

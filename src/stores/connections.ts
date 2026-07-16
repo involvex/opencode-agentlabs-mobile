@@ -4,7 +4,7 @@ import * as Crypto from "expo-crypto"
 import type { ServerConnection, ConnectionType } from "../lib/types"
 import { createClient, type Client, type Project } from "../lib/sdk"
 import { addBreadcrumb } from "../lib/sentry"
-import { AnalyticsEvent, classifyConnectionError, track } from "../lib/analytics"
+import { AnalyticsEvent, classifyConnectionError, track, type ConnectionTestSource } from "../lib/analytics"
 import { buildAuth } from "../lib/auth"
 
 const CONNECTIONS_KEY = "opencode_connections"
@@ -34,7 +34,13 @@ interface ConnectionsState {
   addConnection: (connection: Omit<ServerConnection, "id">, password?: string) => Promise<void>
   removeConnection: (id: string) => Promise<void>
   setActiveConnection: (id: string) => Promise<void>
-  testConnection: (connection: ServerConnection, password?: string) => Promise<{ ok: boolean; error?: string }>
+  // `source` distinguishes the activation funnel (onboarding) from the edit
+  // screen's Test button (edit_test) in analytics.
+  testConnection: (
+    connection: ServerConnection,
+    source: ConnectionTestSource,
+    password?: string,
+  ) => Promise<{ ok: boolean; error?: string }>
   updateConnection: (id: string, updates: Partial<ServerConnection>) => Promise<void>
   refreshProject: () => Promise<void>
   // Create a one-off client pointing at a specific directory (for cross-project operations)
@@ -243,8 +249,8 @@ export const useConnections = create<ConnectionsState>((set, get) => ({
     })
   },
 
-  testConnection: async (connection, password) => {
-    track(AnalyticsEvent.ConnectionAttempted)
+  testConnection: async (connection, source, password) => {
+    track(AnalyticsEvent.ConnectionAttempted, { source })
     try {
       const client = createClient({
         baseUrl: connection.url,
@@ -253,11 +259,11 @@ export const useConnections = create<ConnectionsState>((set, get) => ({
       })
 
       await client.global.health()
-      track(AnalyticsEvent.ConnectionSucceeded)
+      track(AnalyticsEvent.ConnectionSucceeded, { source })
       return { ok: true }
     } catch (error) {
       const message = error instanceof Error ? error.message : String(error)
-      track(AnalyticsEvent.ConnectionFailed, { error_class: classifyConnectionError(message) })
+      track(AnalyticsEvent.ConnectionFailed, { source, error_class: classifyConnectionError(message) })
       return { ok: false, error: message }
     }
   },

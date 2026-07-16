@@ -23,7 +23,7 @@
 
 import * as SecureStore from "expo-secure-store"
 import { disableSentry, initSentry, sentryEnabled } from "./sentry"
-import { initAnalytics, shutdownAnalytics, analyticsEnabled } from "./analytics"
+import { initAnalytics, shutdownAnalytics, analyticsEnabled, trackAppOpened } from "./analytics"
 
 const CONSENT_KEY = "opencode_telemetry_consent"
 
@@ -82,6 +82,13 @@ async function applyTelemetryConsent(granted: boolean): Promise<void> {
     _resolved = true
     if (!sentryEnabled()) initSentry()
     if (!analyticsEnabled()) initAnalytics()
+    // First-ever session reaches here via the consent modal's "Allow" (app
+    // start skipped init because consent was still unknown), so app_opened
+    // must also fire on the grant transition — otherwise the true first
+    // session emits nothing and session 2 gets mislabeled is_first_open.
+    // trackAppOpened() is internally once-per-session, so a mid-session
+    // revoke -> re-grant cannot double-count.
+    void trackAppOpened()
     return
   }
 

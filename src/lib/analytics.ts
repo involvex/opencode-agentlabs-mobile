@@ -6,7 +6,16 @@
 //      module never calls PostHog.init/capture on its own; it is only ever
 //      driven by ./telemetry.ts, which gates BOTH Sentry and analytics behind
 //      the exact same "opencode_telemetry_consent" flag.
-//   3. No PII in event properties: never pass server URLs, tokens, prompts,
+//   3. On consent REVOCATION, buffered-but-unsent events are DROPPED, not
+//      flushed: PostHog's shutdown() normally drains the queue over the
+//      network, and optOut() only blocks NEW captures (already-queued events
+//      would still be sent by the next flush). So ConsentGatedPostHog
+//      overrides the client's public fetch() transport; once revoked it
+//      answers every SDK request with a synthetic 200 without touching the
+//      network. shutdown() then "drains" the queue into that stub — clearing
+//      the persisted queue and stopping timers — while zero bytes leave the
+//      device.
+//   4. No PII in event properties: never pass server URLs, tokens, prompts,
 //      or file contents. Only coarse, enumerated event names + small typed
 //      properties (booleans, enums, counts).
 //
@@ -18,6 +27,8 @@ import PostHog from "posthog-react-native"
 import * as SecureStore from "expo-secure-store"
 import { log } from "./logbuffer"
 
+export { classifyConnectionError, type ConnectionErrorClass } from "./analytics-classify"
+
 const API_KEY = process.env.EXPO_PUBLIC_POSTHOG_KEY
 // EU by default (GDPR-friendly region for opencode's mostly-EU/self-hosted user base).
 // Override with EXPO_PUBLIC_POSTHOG_HOST for a self-hosted instance.
@@ -25,25 +36,41 @@ const HOST = process.env.EXPO_PUBLIC_POSTHOG_HOST || "https://eu.i.posthog.com"
 
 const FIRST_OPEN_KEY = "opencode_analytics_first_open_done"
 
-let client: PostHog | null = null
-let enabled = false
+// When true (set on consent revocation), the transport answers with a
+// synthetic 200 instead of hitting the network, so queued events are
+// discarded rather than uploaded. Reset when a new client is created.
+let dropNetwork = false
 
-/** Coarse, non-identifying failure buckets — never include the raw error string
- *  (it may embed hostnames/tokens/paths). Reuses the vocabulary already
- *  established by diagnostics-classify.ts's Classification type. */
-export type ConnectionErrorClass =
-  | "malformed-url"
-  | "no-internet"
-  | "server-unreachable"
-  | "unauthorized"
-  | "tls-error"
-  | "timeout"
-  | "unknown"
+/** PostHog client whose transport is consent-gated: after revocation every
+ *  request short-circuits to a fake success so nothing reaches the network.
+ *  (Types derived from the base class to avoid importing the transitive
+ *  @posthog/core package directly.) */
+class ConsentGatedPostHog extends PostHog {
+  fetch(url: string, options: Parameters<PostHog["fetch"]>[1]): ReturnType<PostHog["fetch"]> {
+    if (dropNetwork) {
+      return Promise.resolve({
+        status: 200,
+        text: async () => "",
+        json: async () => ({ status: 1 }),
+      })
+    }
+    return super.fetch(url, options)
+  }
+}
+
+let client: ConsentGatedPostHog | null = null
+let enabled = false
+// app_opened must fire at most once per JS session, whichever path enables
+// analytics first (cold start with prior consent, or the consent modal /
+// Settings toggle mid-session). Also prevents a revoke -> re-grant in the
+// same session from double-counting.
+let appOpenedTracked = false
 
 /** Activation-funnel events. Keep this list in 1:1 sync with the funnel steps
  *  tracked in the product analytics dashboard. */
 export enum AnalyticsEvent {
-  /** App process started and the user has an existing telemetry decision of "granted". */
+  /** Fired once per app session, as soon as analytics is enabled (either at
+   *  cold start with prior consent, or right after consent is granted). */
   AppOpened = "app_opened",
   /** User tapped Connect/Save with a non-empty server URL (quick or advanced mode). */
   ConnectionFormSubmitted = "connection_form_submitted",
@@ -55,9 +82,16 @@ export enum AnalyticsEvent {
   ConnectionFailed = "connection_failed",
   /** User sent a prompt/message to an agent session (excludes slash commands). */
   MessageSent = "message_sent",
-  /** An agent response finished streaming (session transitioned busy -> idle). */
+  /** An agent response finished streaming (session transitioned busy -> idle),
+   *  excluding user-aborted runs. */
   ResponseReceived = "response_received",
 }
+
+/** Where a connection test was initiated from. The activation funnel filters
+ *  to source=onboarding; edit_test covers the Test button on the existing-
+ *  connection edit screen, which would otherwise pollute the funnel with
+ *  repeat-tester noise. */
+export type ConnectionTestSource = "onboarding" | "edit_test"
 
 export function initAnalytics() {
   if (enabled) return
@@ -66,11 +100,15 @@ export function initAnalytics() {
     return
   }
   try {
-    client = new PostHog(API_KEY, {
+    dropNetwork = false
+    client = new ConsentGatedPostHog(API_KEY, {
       host: HOST,
       // We call track() explicitly at each funnel step — no implicit capture.
       captureAppLifecycleEvents: false,
     })
+    // A previous revoke persisted the SDK-level opt-out flag; clear it so the
+    // re-granted client can enqueue again. No-op on a fresh install.
+    void client.optIn()
     enabled = true
     log.info("analytics", "initialized", `host=${HOST}`)
   } catch (e) {
@@ -78,17 +116,24 @@ export function initAnalytics() {
   }
 }
 
+/** Consent revoked: block new captures, DROP anything buffered (see header
+ *  note 3 — the gated fetch turns shutdown's drain into a no-network discard),
+ *  and tear the client down. */
 export async function shutdownAnalytics() {
   if (!enabled || !client) return
   enabled = false
   const c = client
   client = null
+  dropNetwork = true
   try {
+    // Persist SDK-level opt-out first so even a re-created client (without
+    // consent) could not capture, then let shutdown clear queue + timers.
+    await c.optOut()
     await c.shutdown()
   } catch (e) {
     log.warn("analytics", "shutdown failed", String(e))
   }
-  log.info("analytics", "disabled by user")
+  log.info("analytics", "disabled by user — buffered events dropped")
 }
 
 export function analyticsEnabled(): boolean {
@@ -110,11 +155,15 @@ export function track(event: AnalyticsEvent, props?: AnalyticsProps) {
   }
 }
 
-/** Fire AppOpened with `is_first_open`. The "seen before" flag is only ever
- *  read/written once consent is granted (this function is itself a no-op
- *  without consent), so nothing is recorded locally pre-consent either. */
+/** Fire AppOpened with `is_first_open`, at most once per JS session.
+ *  Called both from app start (consent already granted) and from the
+ *  consent-grant transition (modal "Allow" / Settings toggle) — the session
+ *  guard makes whichever happens first win. The "seen before" flag is only
+ *  ever read/written once consent is granted (this function is itself a
+ *  no-op without consent), so nothing is recorded locally pre-consent. */
 export async function trackAppOpened() {
-  if (!enabled) return
+  if (!enabled || appOpenedTracked) return
+  appOpenedTracked = true
   let isFirstOpen = false
   try {
     const seen = await SecureStore.getItemAsync(FIRST_OPEN_KEY)
@@ -124,16 +173,4 @@ export async function trackAppOpened() {
     // SecureStore unavailable — still fire the event, just without the flag.
   }
   track(AnalyticsEvent.AppOpened, { is_first_open: isFirstOpen })
-}
-
-/** Classify a connection failure into a coarse bucket without leaking the
- *  raw error message (which can contain hostnames/IPs). */
-export function classifyConnectionError(message: string | undefined): ConnectionErrorClass {
-  const m = (message || "").toLowerCase()
-  if (/401|unauthoriz/.test(m)) return "unauthorized"
-  if (/ssl|tls|certificate|handshake/.test(m)) return "tls-error"
-  if (/timeout|timed out/.test(m)) return "timeout"
-  if (/network request failed|unreachable|econnrefused|fetch failed/.test(m)) return "server-unreachable"
-  if (/malformed|invalid url/.test(m)) return "malformed-url"
-  return "unknown"
 }

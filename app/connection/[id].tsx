@@ -84,6 +84,7 @@ export default function EditConnectionScreen() {
         directory: directory.trim() || undefined,
         username: username.trim() || undefined,
       },
+      "edit_test",
       password || undefined,
     )
 

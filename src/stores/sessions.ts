@@ -53,6 +53,14 @@ interface SessionsState {
   handleEvent: (event: Event) => void
 }
 
+// Sessions the user aborted since they last went busy. Mirrors events.ts's
+// erroredSessions: SessionStatus has no "aborted" variant — an aborted run
+// still ends with a busy -> idle transition — so without this mark a
+// user-cancelled run would count as response_received in analytics and as a
+// success toward the store review prompt. events.ts (which already imports
+// this module) clears entries on busy and checks them on busy -> idle.
+export const abortedSessions = new Set<string>()
+
 // Get the right client for a session's directory
 function clientFor(directory?: string): Client | null {
   const connState = useConnections.getState()
@@ -310,6 +318,9 @@ export const useSessions = create<SessionsState>((set, get) => ({
 
     try {
       await client.session.abort(session.id)
+      // Mark only after the abort request succeeded — if it failed, the run
+      // continues and any eventual completion is a genuine response.
+      abortedSessions.add(session.id)
       set((state) => ({ sending: { ...state.sending, [session.id]: false } }))
     } catch {
       set({ error: "Failed to abort session" })
