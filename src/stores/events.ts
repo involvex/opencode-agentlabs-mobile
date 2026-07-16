@@ -5,6 +5,7 @@ import { send as notify } from "../lib/notifications"
 import { sanitizeBody } from "../lib/notify-format"
 import { statusFromPart } from "../lib/status-labels"
 import { addBreadcrumb } from "../lib/sentry"
+import { recordSuccessfulSession } from "../lib/store-review"
 import type { Client, Part, Session, Message } from "../lib/sdk"
 
 // Session status from the server
@@ -186,6 +187,9 @@ export const useEvents = create<EventsState>((set, get) => ({
                   body: sanitizeBody(match?.title, "Session finished processing"),
                   sessionId: sessionID,
                 })
+                // Genuinely positive moment (never fired on error) — count it
+                // toward the one-time store review prompt.
+                void recordSuccessfulSession()
               }
               break
             }
