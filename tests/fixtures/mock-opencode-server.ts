@@ -1,0 +1,324 @@
+// Minimal opencode-server protocol stub used by the Maestro activation E2E flows
+// (.maestro/flows/activation-*.yaml). It is NOT a real opencode server — it
+// implements just enough of the REST + Server-Sent-Events surface that the
+// mobile client (src/lib/sdk.ts) actually talks to, so the app can genuinely
+// go through connect -> create session -> send message -> receive a streamed
+// reply against something real instead of a live server.
+//
+// Protocol notes (read from src/lib/sdk.ts / src/stores/connections.ts /
+// src/stores/events.ts — NOT guessed):
+//   - There is no WebSocket anywhere in the client. "Connect" = one GET
+//     /global/health call (src/stores/connections.ts testConnection()).
+//   - Real-time updates (including the assistant's streamed reply) arrive via
+//     a single long-lived SSE connection: GET /global/event, framed as
+//     `data: <json>\n\n` lines (see src/lib/sse.ts SSEParser).
+//   - Sending a message is fire-and-forget: POST /session/:id/prompt_async
+//     returns immediately; the actual reply is delivered as
+//     `message.updated` + `message.part.updated` + `session.status` (idle)
+//     events on the SSE stream (src/stores/events.ts).
+//
+// Two modes:
+//   - Normal mode: implements the endpoints above so the app can connect,
+//     open a session, send a message, and render a canned assistant reply.
+//   - `--fail-auth` mode: every request returns 401, simulating a
+//     connect-time auth failure (GitHub issue #76's failure class). Used by
+//     .maestro/flows/activation-negative-401.yaml to assert the app surfaces
+//     a visible, actionable error instead of failing silently.
+//
+// Usage:
+//   node tests/fixtures/mock-opencode-server.ts --port 4096
+//   node tests/fixtures/mock-opencode-server.ts --port 4097 --fail-auth
+
+import http from "node:http"
+import { randomUUID } from "node:crypto"
+
+export interface MockServerOptions {
+  port: number
+  /** When true, ALL requests return 401 (simulates issue #76's connect-time auth failure). */
+  failAuth?: boolean
+  /** Canned assistant reply text streamed back after a prompt is submitted. */
+  replyText?: string
+  /** Delay before the canned reply is pushed over SSE, in ms. */
+  replyDelayMs?: number
+}
+
+interface StoredSession {
+  id: string
+  slug: string
+  projectID: string
+  directory: string
+  title: string
+  version: string
+  time: { created: number; updated: number }
+}
+
+interface StoredPart {
+  id: string
+  sessionID: string
+  messageID: string
+  type: string
+  text?: string
+}
+
+interface StoredMessageInfo {
+  id: string
+  sessionID: string
+  role: "user" | "assistant"
+  time: { created: number; completed?: number }
+  modelID?: string
+  providerID?: string
+}
+
+interface StoredMessage {
+  info: StoredMessageInfo
+  parts: StoredPart[]
+}
+
+export const DEFAULT_REPLY_TEXT = "Hello from the mock opencode server — activation e2e canned reply."
+
+export function createMockOpencodeServer(opts: MockServerOptions) {
+  const { port, failAuth = false, replyText = DEFAULT_REPLY_TEXT, replyDelayMs = 300 } = opts
+
+  const sessions = new Map<string, StoredSession>()
+  const messagesBySession = new Map<string, StoredMessage[]>()
+  const sseClients = new Set<http.ServerResponse>()
+
+  function broadcast(type: string, properties: Record<string, unknown>) {
+    const line = `data: ${JSON.stringify({ type, properties })}\n\n`
+    for (const res of sseClients) {
+      try {
+        res.write(line)
+      } catch {
+        sseClients.delete(res)
+      }
+    }
+  }
+
+  function json(res: http.ServerResponse, status: number, body: unknown) {
+    const data = JSON.stringify(body)
+    res.writeHead(status, {
+      "Content-Type": "application/json",
+      "Content-Length": Buffer.byteLength(data),
+    })
+    res.end(data)
+  }
+
+  function unauthorized(res: http.ServerResponse) {
+    json(res, 401, {
+      error: "Unauthorized",
+      message: "mock-opencode-server: running in --fail-auth mode (simulates GitHub issue #76)",
+    })
+  }
+
+  function scheduleReply(sessionID: string) {
+    const list = messagesBySession.get(sessionID)
+    if (!list) return
+
+    setTimeout(() => {
+      broadcast("session.status", { sessionID, status: { type: "busy" } })
+
+      const now = Date.now()
+      const messageID = randomUUID()
+      const info: StoredMessageInfo = {
+        id: messageID,
+        sessionID,
+        role: "assistant",
+        time: { created: now },
+        modelID: "mock-model",
+        providerID: "mock",
+      }
+      broadcast("message.updated", { info })
+
+      const part: StoredPart = {
+        id: randomUUID(),
+        sessionID,
+        messageID,
+        type: "text",
+        text: replyText,
+      }
+      broadcast("message.part.updated", { part })
+
+      list.push({ info: { ...info, time: { created: now, completed: Date.now() } }, parts: [part] })
+
+      broadcast("session.status", { sessionID, status: { type: "idle" } })
+    }, replyDelayMs)
+  }
+
+  const server = http.createServer((req, res) => {
+    const url = new URL(req.url || "/", `http://localhost:${port}`)
+    const path = url.pathname
+    const method = req.method || "GET"
+
+    if (failAuth) {
+      unauthorized(res)
+      return
+    }
+
+    if (method === "GET" && path === "/global/health") {
+      return json(res, 200, { healthy: true, version: "0.0.0-mock" })
+    }
+
+    if (method === "GET" && path === "/project/current") {
+      return json(res, 200, {
+        id: "mock-project",
+        name: "mock-project",
+        path: { cwd: "/mock/project", root: "/mock/project", absolute: "/mock/project" },
+      })
+    }
+    if (method === "GET" && path === "/project") {
+      return json(res, 200, [])
+    }
+    if (method === "GET" && path === "/path") {
+      return json(res, 200, {
+        home: "/mock/home",
+        state: "/mock/home/.local/state/opencode",
+        config: "/mock/home/.config/opencode",
+        worktree: "/mock/project",
+        directory: "/mock/project",
+      })
+    }
+
+    if (method === "GET" && path === "/agent") {
+      return json(res, 200, [{ name: "build", mode: "primary", options: {} }])
+    }
+    if (method === "GET" && path === "/command") {
+      return json(res, 200, [])
+    }
+    if (method === "GET" && path === "/provider") {
+      return json(res, 200, {
+        all: [
+          {
+            id: "mock",
+            name: "Mock Provider",
+            models: {
+              "mock-model": {
+                id: "mock-model",
+                name: "Mock Model",
+                attachment: false,
+                reasoning: false,
+                tool_call: false,
+                limit: { context: 8000, output: 2000 },
+                status: "active",
+              },
+            },
+          },
+        ],
+        default: { mock: "mock-model" },
+        connected: ["mock"],
+      })
+    }
+    if (method === "GET" && path === "/permission") {
+      return json(res, 200, [])
+    }
+    if (method === "GET" && path === "/question") {
+      return json(res, 200, [])
+    }
+
+    // SSE event stream — kept open for the lifetime of the connection.
+    if (method === "GET" && path === "/global/event") {
+      res.writeHead(200, {
+        "Content-Type": "text/event-stream",
+        "Cache-Control": "no-cache",
+        Connection: "keep-alive",
+      })
+      res.write(": connected\n\n")
+      sseClients.add(res)
+      req.on("close", () => sseClients.delete(res))
+      return
+    }
+
+    if (method === "POST" && path === "/session") {
+      const id = randomUUID()
+      const now = Date.now()
+      const session: StoredSession = {
+        id,
+        slug: id.slice(0, 8),
+        projectID: "mock-project",
+        directory: "/mock/project",
+        title: "Mock Session",
+        version: "0.0.0-mock",
+        time: { created: now, updated: now },
+      }
+      sessions.set(id, session)
+      messagesBySession.set(id, [])
+      return json(res, 200, session)
+    }
+    if (method === "GET" && path === "/session") {
+      return json(res, 200, Array.from(sessions.values()))
+    }
+
+    const sessionMessageMatch = path.match(/^\/session\/([^/]+)\/message$/)
+    if (method === "GET" && sessionMessageMatch) {
+      const sid = sessionMessageMatch[1]
+      return json(res, 200, messagesBySession.get(sid) || [])
+    }
+
+    const promptMatch = path.match(/^\/session\/([^/]+)\/prompt_async$/)
+    if (method === "POST" && promptMatch) {
+      const sid = promptMatch[1]
+      let body = ""
+      req.on("data", (chunk) => (body += chunk))
+      req.on("end", () => {
+        if (!sessions.has(sid)) {
+          return json(res, 404, { error: `unknown session ${sid}` })
+        }
+        json(res, 200, { ok: true })
+        scheduleReply(sid)
+      })
+      return
+    }
+
+    const abortMatch = path.match(/^\/session\/([^/]+)\/abort$/)
+    if (method === "POST" && abortMatch) {
+      return json(res, 200, true)
+    }
+
+    json(res, 404, { error: `mock-opencode-server: no handler for ${method} ${path}` })
+  })
+
+  return {
+    server,
+    url: `http://localhost:${port}`,
+    listen(): Promise<void> {
+      return new Promise((resolve) => server.listen(port, "0.0.0.0", () => resolve()))
+    },
+    close(): Promise<void> {
+      for (const res of sseClients) {
+        try {
+          res.end()
+        } catch {
+          // ignore
+        }
+      }
+      sseClients.clear()
+      return new Promise((resolve, reject) => {
+        server.close((err) => (err ? reject(err) : resolve()))
+      })
+    },
+  }
+}
+
+function parseArgs(argv: string[]): { port: number; failAuth: boolean } {
+  const opts = { port: 4096, failAuth: false }
+  for (let i = 0; i < argv.length; i++) {
+    if (argv[i] === "--port") opts.port = Number(argv[++i])
+    else if (argv[i] === "--fail-auth") opts.failAuth = true
+  }
+  return opts
+}
+
+const invokedDirectly =
+  typeof process !== "undefined" && process.argv[1] && import.meta.url === `file://${process.argv[1]}`
+
+if (invokedDirectly) {
+  const opts = parseArgs(process.argv.slice(2))
+  const mock = createMockOpencodeServer(opts)
+  mock.listen().then(() => {
+    console.log(`[mock-opencode-server] listening on ${mock.url} (failAuth=${opts.failAuth})`)
+  })
+  const shutdown = () => {
+    mock.close().then(() => process.exit(0))
+  }
+  process.on("SIGINT", shutdown)
+  process.on("SIGTERM", shutdown)
+}

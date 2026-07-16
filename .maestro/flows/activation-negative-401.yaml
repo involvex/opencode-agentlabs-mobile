@@ -1,0 +1,68 @@
+appId: cc.agentlabs.opencode
+name: Activation - negative path (connect-time 401 must surface a visible error)
+---
+# Negative activation flow — regression test for the GitHub issue #76 failure
+# class: a connect-time 401 from the server must produce a visible, actionable
+# error, never a silent failure.
+#
+# Quick Connect (app/connection/add.tsx handleQuickConnect) calls
+# testConnection() -> client.global.health() BEFORE saving the connection.
+# When that call fails (any thrown error, including a 401 API error), the
+# screen runs probeConnection() and shows a native Alert titled
+# "Connection Failed" with the underlying error text — this is the CURRENT,
+# already-correct behavior we are locking in with this test.
+#
+# Known gap (see report): Advanced-mode "Save Connection" (handleAdvancedSave)
+# does NOT call testConnection() at all — it saves the connection and
+# navigates back regardless of server reachability, so a 401 there is
+# currently silent. That gap is not covered by this flow (Quick Connect is the
+# only entry point that already does the right thing) — flagged in the E2E
+# report as follow-up work, not silently fixed here.
+#
+# The CI job starts `node tests/fixtures/mock-opencode-server.ts --port 4097
+# --fail-auth` on the runner host BEFORE this flow runs, so every request the
+# app makes to it (including /global/health) returns HTTP 401.
+
+- launchApp:
+    clearState: true
+- assertVisible:
+    id: "telemetry-consent-card"
+- tapOn:
+    id: "telemetry-decline-button"
+- takeScreenshot: negative-S1_consent_dismissed
+
+- assertVisible:
+    text: "No Connection"
+- tapOn:
+    id: "add-connection-button"
+- takeScreenshot: negative-S2_add_connection_form
+
+- tapOn:
+    id: "connect-ip-input"
+- inputText: "10.0.2.2"
+- tapOn:
+    id: "connect-port-input"
+- eraseText
+- inputText: "4097"
+- hideKeyboard
+- takeScreenshot: negative-S3_401_server_url_entered
+- tapOn:
+    id: "connect-submit-button"
+
+- extendedWaitUntil:
+    visible:
+      text: "Connection Failed"
+    timeout: 20000
+- assertVisible:
+    text: "Connection Failed"
+- assertVisible:
+    text: "401"
+- takeScreenshot: negative-S4_visible_error_alert
+
+# The connection must NOT have been silently saved: dismiss the alert and
+# confirm we are still on the empty/no-connection state, not a fake
+# "connected" screen.
+- tapOn: "OK"
+- assertVisible:
+    text: "No Connection"
+- takeScreenshot: negative-S5_still_disconnected_after_dismiss

@@ -290,6 +290,7 @@ export default function SessionsScreen() {
         <TouchableOpacity
           style={[styles.addButton, isDark && styles.addButtonDark]}
           onPress={() => router.push("/connection/add")}
+          testID="add-connection-button"
         >
           <Text style={[styles.addButtonText, isDark && styles.addButtonTextDark]}>Add Connection</Text>
         </TouchableOpacity>
@@ -307,9 +308,10 @@ export default function SessionsScreen() {
         onPress={() => dirSheetRef.current?.expand()}
         onLongPress={() => router.push("/(tabs)/connections")}
         activeOpacity={0.7}
+        testID="connection-status-bar"
       >
         <View style={styles.connectionInfo}>
-          <View style={[styles.connectionDot, { backgroundColor: "#22c55e" }]} />
+          <View style={[styles.connectionDot, { backgroundColor: "#22c55e" }]} testID="connection-status-dot" />
           <Text style={[styles.connectionName, isDark && styles.textDark]} numberOfLines={1}>
             {activeConnection.name}
           </Text>
@@ -365,6 +367,7 @@ export default function SessionsScreen() {
         onPress={onFabPress}
         onLongPress={onFabLongPress}
         delayLongPress={500}
+        testID="new-session-fab"
       >
         <Ionicons name="add" size={28} color={isDark ? "#0a0a0a" : "#ffffff"} />
       </TouchableOpacity>

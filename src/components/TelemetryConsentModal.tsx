@@ -22,7 +22,7 @@ export function TelemetryConsentModal({ visible, onAllow, onDecline }: Props) {
   return (
     <Modal visible={visible} transparent animationType="fade" statusBarTranslucent onRequestClose={onDecline}>
       <View style={styles.overlay}>
-        <View style={[styles.card, isDark && styles.cardDark]}>
+        <View style={[styles.card, isDark && styles.cardDark]} testID="telemetry-consent-card">
           {/* Icon */}
           <View style={[styles.iconWrap, isDark && styles.iconWrapDark]}>
             <Ionicons name="bug-outline" size={40} color="#3b82f6" />
@@ -56,6 +56,7 @@ export function TelemetryConsentModal({ visible, onAllow, onDecline }: Props) {
               style={[styles.btn, styles.btnDecline, isDark && styles.btnDeclineDark]}
               onPress={onDecline}
               accessibilityLabel="No thanks, decline crash reporting"
+              testID="telemetry-decline-button"
             >
               <Text style={[styles.btnDeclineText, isDark && styles.btnDeclineTextDark]}>No thanks</Text>
             </TouchableOpacity>
@@ -63,6 +64,7 @@ export function TelemetryConsentModal({ visible, onAllow, onDecline }: Props) {
               style={[styles.btn, styles.btnAllow]}
               onPress={onAllow}
               accessibilityLabel="Allow anonymous crash reports"
+              testID="telemetry-allow-button"
             >
               <Text style={styles.btnAllowText}>Allow</Text>
             </TouchableOpacity>

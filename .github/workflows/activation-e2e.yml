@@ -1,0 +1,148 @@
+name: Activation E2E (Maestro)
+
+# Deterministic regression coverage for the activation flow (first open ->
+# telemetry consent -> server URL entry -> connect -> send first message ->
+# receive reply), including the connect-time-401 negative case tied to the
+# 0%-7-day-retention / GitHub issue #76 investigation.
+#
+# Runs against tests/fixtures/mock-opencode-server.ts (a small dependency-free
+# HTTP+SSE stub matching the REAL client protocol read from src/lib/sdk.ts —
+# NOT a live opencode server, NOT a WebSocket), so the suite is fast and fully
+# self-contained: no external server, no LLM provider, no network flakiness.
+#
+# This is intentionally separate from cua-smoke.yml (the existing
+# vision-driven CUA harness): that one needs a live opencode server + an Azure
+# LLM and is exploratory/non-deterministic by design, so it isn't suited to
+# tight regression assertions like "a 401 must show a visible error."
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "app/**"
+      - "src/**"
+      - "tests/fixtures/**"
+      - ".maestro/**"
+      - ".github/workflows/activation-e2e.yml"
+  pull_request:
+    branches: [main]
+    paths:
+      - "app/**"
+      - "src/**"
+      - "tests/fixtures/**"
+      - ".maestro/**"
+      - ".github/workflows/activation-e2e.yml"
+  workflow_dispatch: {}
+
+jobs:
+  activation-e2e:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v6
+
+      - uses: actions/setup-node@v6
+        with:
+          node-version: 24
+          cache: npm
+
+      - uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: 17
+
+      - name: Setup Android SDK
+        uses: android-actions/setup-android@v4
+
+      - name: Add emulator to PATH
+        run: echo "$ANDROID_HOME/emulator" >> $GITHUB_PATH
+
+      - name: Enable KVM
+        run: |
+          echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' | sudo tee /etc/udev/rules.d/99-kvm4all.rules
+          sudo udevadm control --reload-rules
+          sudo udevadm trigger --name-match=kvm
+
+      - name: Cache Gradle
+        uses: actions/cache@v5
+        with:
+          path: |
+            ~/.gradle/caches
+            ~/.gradle/wrapper
+            android/.gradle
+          key: ${{ runner.os }}-gradle-${{ hashFiles('android/**/*.gradle*', 'android/gradle/wrapper/gradle-wrapper.properties') }}
+          restore-keys: |
+            ${{ runner.os }}-gradle-
+
+      - name: Install Maestro CLI
+        run: |
+          curl -Ls "https://get.maestro.mobile.dev" | bash
+          echo "$HOME/.maestro/bin" >> $GITHUB_PATH
+
+      - name: Install dependencies & build APK
+        env:
+          SENTRY_DISABLE_AUTO_UPLOAD: "true"
+        run: |
+          npm install --legacy-peer-deps
+          npx expo prebuild --platform android --no-install
+          keytool -genkey -v -keystore android/app/debug.keystore -storepass android -alias androiddebugkey -keypass android -keyalg RSA -keysize 2048 -validity 10000 -dname "CN=Android Debug,O=Android,C=US"
+          cd android && ./gradlew assembleRelease
+
+      - name: Start mock opencode servers
+        run: |
+          set -x
+          mkdir -p artifacts/screenshots
+          # Normal mode on 4096 (positive flow) and --fail-auth on 4097 (negative flow).
+          # Both bind 0.0.0.0 so the emulator can reach them via 10.0.2.2.
+          nohup node tests/fixtures/mock-opencode-server.ts --port 4096 > /tmp/mock-4096.log 2>&1 &
+          nohup node tests/fixtures/mock-opencode-server.ts --port 4097 --fail-auth > /tmp/mock-4097.log 2>&1 &
+          for port in 4096 4097; do
+            for i in $(seq 1 30); do
+              if curl -sf --connect-timeout 1 -m 3 "http://127.0.0.1:${port}/global/health" > /dev/null 2>&1; then
+                echo "mock server on ${port} responded (may be 401, that's expected on 4097)"
+                break
+              fi
+              # 4097 always 401s -> curl -sf treats that as failure, so also accept "connection made"
+              if curl -s --connect-timeout 1 -m 3 -o /dev/null -w '%{http_code}' "http://127.0.0.1:${port}/global/health" 2>/dev/null | grep -qE '^[0-9]+$'; then
+                echo "mock server on ${port} is up (got an HTTP response)"
+                break
+              fi
+              if [ "$i" = "30" ]; then
+                echo "::error::mock server on port ${port} did not come up in 30s"
+                cat "/tmp/mock-${port}.log" || true
+                exit 1
+              fi
+              sleep 1
+            done
+          done
+
+      - name: Run activation E2E flows on emulator
+        uses: reactivecircus/android-emulator-runner@v2
+        with:
+          api-level: 28
+          arch: x86_64
+          target: default
+          disable-animations: true
+          emulator-boot-timeout: 600
+          emulator-options: -no-window -no-audio -no-boot-anim -gpu swiftshader_indirect -no-snapshot
+          script: |
+            adb install android/app/build/outputs/apk/release/app-release.apk
+            cd artifacts/screenshots
+            echo "--- positive activation flow (connect -> send -> reply) ---"
+            maestro test ../../.maestro/flows/activation-positive.yaml
+            echo "--- negative activation flow (connect-time 401 must show a visible error) ---"
+            maestro test ../../.maestro/flows/activation-negative-401.yaml
+
+      - name: Mock server logs
+        if: always()
+        run: |
+          echo "--- 4096 (normal) ---"; cat /tmp/mock-4096.log || true
+          echo "--- 4097 (fail-auth) ---"; cat /tmp/mock-4097.log || true
+
+      - name: Upload screenshots
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: activation-e2e-screenshots-${{ github.run_number }}
+          path: artifacts/screenshots/*.png
+          if-no-files-found: warn

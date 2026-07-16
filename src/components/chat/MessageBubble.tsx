@@ -39,6 +39,7 @@ export const MessageBubble = memo(
           isUser && isDark && s.userDark,
           !isUser && isDark && s.assistantDark,
         ]}
+        testID={`chat-bubble-${message.role}`}
       >
         {/* Role indicator */}
         <View style={s.header}>

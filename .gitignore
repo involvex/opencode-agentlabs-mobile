@@ -20,3 +20,11 @@ __pycache__/
 expo-env.d.ts
 # @end expo-cli
 android/app/src/main/assets/index.android.bundle
+
+# Maestro `takeScreenshot` output (.maestro/flows/activation-*.yaml). Maestro
+# writes <name>.png to the CLI's current working directory at invocation time,
+# not a fixed subdirectory. CI invokes `maestro test` from artifacts/screenshots/
+# so uploads stay tidy; these are never committed, only attached as CI artifacts.
+artifacts/screenshots/
+positive-S*.png
+negative-S*.png

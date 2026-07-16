@@ -640,6 +640,7 @@ export default function SessionScreen() {
               editable={!speech.listening}
               multiline
               maxLength={10000}
+              testID="chat-message-input"
             />
             {/* Stop button: only when busy and no input */}
             {isSending && !input.trim() && attachments.length === 0 && !speech.listening && (
@@ -661,7 +662,7 @@ export default function SessionScreen() {
             )}
             {/* Send button: when there's input */}
             {!speech.listening && (input.trim() || attachments.length > 0) && (
-              <TouchableOpacity style={s.sendBtn} onPress={handleSend}>
+              <TouchableOpacity style={s.sendBtn} onPress={handleSend} testID="chat-send-button">
                 <Ionicons name="send" size={20} color="#ffffff" />
               </TouchableOpacity>
             )}

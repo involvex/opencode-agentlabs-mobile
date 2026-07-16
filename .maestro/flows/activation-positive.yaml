@@ -1,0 +1,74 @@
+appId: cc.agentlabs.opencode
+name: Activation - positive path (consent -> connect -> send -> reply)
+---
+# Positive activation flow: first launch -> telemetry consent -> quick connect
+# to the mock opencode server (tests/fixtures/mock-opencode-server.ts, run
+# normally on the port below) -> connected indicator -> new session -> send a
+# message -> assert the streamed canned reply renders.
+#
+# The CI job starts `node tests/fixtures/mock-opencode-server.ts --port 4096`
+# on the runner host BEFORE this flow runs. The Android emulator reaches the
+# runner host via the standard emulator alias 10.0.2.2.
+
+- launchApp:
+    clearState: true
+- takeScreenshot: positive-S1_launch_consent_modal
+- assertVisible:
+    id: "telemetry-consent-card"
+- tapOn:
+    id: "telemetry-decline-button"
+
+- assertVisible:
+    text: "No Connection"
+- takeScreenshot: positive-S2_empty_state
+- tapOn:
+    id: "add-connection-button"
+
+- assertVisible:
+    id: "connect-ip-input"
+- takeScreenshot: positive-S3_add_connection_form
+- tapOn:
+    id: "connect-ip-input"
+- inputText: "10.0.2.2"
+- tapOn:
+    id: "connect-port-input"
+- eraseText
+- inputText: "4096"
+- hideKeyboard
+- takeScreenshot: positive-S4_server_url_entered
+- tapOn:
+    id: "connect-submit-button"
+
+- extendedWaitUntil:
+    visible:
+      id: "connection-status-dot"
+    timeout: 20000
+- assertVisible:
+    id: "connection-status-dot"
+- takeScreenshot: positive-S5_connected
+
+- tapOn:
+    id: "new-session-fab"
+- extendedWaitUntil:
+    visible:
+      id: "chat-message-input"
+    timeout: 15000
+- takeScreenshot: positive-S6_session_opened
+
+- tapOn:
+    id: "chat-message-input"
+- inputText: "Hello from the activation e2e test"
+- hideKeyboard
+- takeScreenshot: positive-S7_message_typed
+- tapOn:
+    id: "chat-send-button"
+
+- extendedWaitUntil:
+    visible:
+      text: "Hello from the mock opencode server"
+    timeout: 20000
+- assertVisible:
+    id: "chat-bubble-assistant"
+- assertVisible:
+    text: "Hello from the mock opencode server"
+- takeScreenshot: positive-S8_reply_received
