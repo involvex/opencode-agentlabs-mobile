@@ -23,9 +23,10 @@
 #    provisioning profile so CI never needs to prompt):
 #      eas login && eas build --platform ios --profile production
 #
-# Optional crash reporting belongs in the EAS `production` environment because the
-# iOS bundle is built on a remote EAS worker. Configure EXPO_PUBLIC_SENTRY_DSN,
-# SENTRY_AUTH_TOKEN, SENTRY_ORG, and SENTRY_PROJECT in Expo before releasing.
+# Optional crash reporting + analytics belong in the EAS `production` environment
+# because the iOS bundle is built on a remote EAS worker. Configure
+# EXPO_PUBLIC_SENTRY_DSN, SENTRY_AUTH_TOKEN, SENTRY_ORG, SENTRY_PROJECT, and
+# EXPO_PUBLIC_POSTHOG_KEY (PostHog project API key) in Expo before releasing.
 #
 # Build number is managed remotely by EAS (eas.json: cli.appVersionSource=remote,
 # build.production.ios.autoIncrement=buildNumber). The workflow only injects the
