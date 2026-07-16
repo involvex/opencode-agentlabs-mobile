@@ -84,6 +84,21 @@ jobs:
           node -e "const f='app.json';const j=require('./'+f);j.expo.android=j.expo.android||{};j.expo.android.versionCode=${{ github.run_number }}+100;require('fs').writeFileSync(f,JSON.stringify(j,null,2)+'\n')"
           echo "versionCode now: $(node -p "require('./app.json').expo.android.versionCode")"
 
+      - name: Set Sentry release identifiers
+        # sentry.gradle (applied from android/app/build.gradle) defaults the
+        # upload's --release/--dist to `${applicationId}@${versionName}+${versionCode}`,
+        # which does NOT match the release/dist Sentry.init() reports at runtime
+        # (`opencode-mobile@${app.json version}`, see src/lib/sentry.ts). That
+        # mismatch made every uploaded source map land under a release Sentry
+        # never looks up, so symbolication silently failed. Pin the Gradle-side
+        # values to exactly what the app reports. (Only expo.version matters
+        # here, not the android.versionCode bumped above.)
+        run: |
+          VERSION=$(node -p "require('./app.json').expo.version")
+          echo "SENTRY_RELEASE=opencode-mobile@${VERSION}" >> "$GITHUB_ENV"
+          echo "SENTRY_DIST=${VERSION}" >> "$GITHUB_ENV"
+          echo "Sentry release=opencode-mobile@${VERSION} dist=${VERSION}"
+
       - name: Purge stale generated sources
         # The Android build cache (restore-keys prefix fallback) can restore a
         # generated autolinking tree from a previous package id. Gradle then

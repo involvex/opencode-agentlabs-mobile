@@ -45,6 +45,20 @@ jobs:
       - name: Install dependencies
         run: npm install --legacy-peer-deps
 
+      - name: Set Sentry release identifiers
+        # sentry.gradle (applied from android/app/build.gradle) defaults the
+        # upload's --release/--dist to `${applicationId}@${versionName}+${versionCode}`,
+        # which does NOT match the release/dist Sentry.init() reports at runtime
+        # (`opencode-mobile@${app.json version}`, see src/lib/sentry.ts). That
+        # mismatch made every uploaded source map land under a release Sentry
+        # never looks up, so symbolication silently failed. Pin the Gradle-side
+        # values to exactly what the app reports.
+        run: |
+          VERSION=$(node -p "require('./app.json').expo.version")
+          echo "SENTRY_RELEASE=opencode-mobile@${VERSION}" >> "$GITHUB_ENV"
+          echo "SENTRY_DIST=${VERSION}" >> "$GITHUB_ENV"
+          echo "Sentry release=opencode-mobile@${VERSION} dist=${VERSION}"
+
       - name: Expo prebuild
         run: npx expo prebuild --platform android --no-install
 
