@@ -2,6 +2,9 @@ name: Daily Product Intelligence
 
 on:
   workflow_dispatch:
+  schedule:
+    # 06:00 UTC daily
+    - cron: "0 6 * * *"
 
 permissions:
   actions: read
