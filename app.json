@@ -50,7 +50,13 @@
       "expo-router",
       "expo-secure-store",
       "expo-local-authentication",
-      "@sentry/react-native/expo",
+      [
+        "@sentry/react-native/expo",
+        {
+          "organization": "vibetechnologies",
+          "project": "opencode-mobile"
+        }
+      ],
       [
         "expo-notifications",
         {
