@@ -109,7 +109,7 @@ def create_issue(review: dict):
 
 ---
 
-*This issue was automatically created by the [monitor-reviews workflow](/.github/workflows/monitor-reviews.yml). 
+*This issue was automatically created by the [triage-reviews workflow](/.github/workflows/triage-reviews.yml).
 Reply to the user in Play Console if applicable.*
 
 **Labels**: `user-feedback`, `play-store-review`
