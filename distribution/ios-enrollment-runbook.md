@@ -17,16 +17,16 @@ Reference: https://developer.apple.com/programs/enroll/
 | Legal Entity Type | LLC (Limited Liability Company) | |
 | Primary Contact / Authorized Agent | Dzianis Vashchuk | Governor of LLC |
 | Primary Contact Phone | (use a number reachable for Apple's verification call) | |
-| Primary Contact Email | support@agentlabs.cc | |
+| Primary Contact Email | vibeteaichnologies@gmail.com | |
 | Website | https://agentlabs.cc/opencode | |
 
 ---
 
 ## Apple ID to Use
 
-**DECIDED 2026-05-24**: Use `support@agentlabs.cc` — mailbox already exists (was verified during Play Console signup, confirmed receiving Google verification codes).
+**DECIDED 2026-05-24, REVISED 2026-07-17 (owner)**: Use `vibeteaichnologies@gmail.com` — same Google account as the Play Console, keeping store operations on one identity.
 
-- If no Apple ID exists yet for `support@agentlabs.cc`: create at https://appleid.apple.com/account
+- If no Apple ID exists yet for `vibeteaichnologies@gmail.com`: create at https://appleid.apple.com/account
 - 2FA: enable immediately, trusted phone = Dzianis's mobile
 - Bitwarden item naming: store as `APPLE_ID_VIBE_TECHNOLOGIES` (email + password + 2FA recovery codes)
 
