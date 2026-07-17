@@ -4,9 +4,13 @@
 import { Platform, Share } from "react-native"
 import * as Clipboard from "expo-clipboard"
 import * as Device from "expo-device"
+import * as SecureStore from "expo-secure-store"
 import appJson from "../../app.json"
 import { log, formatLogLines } from "./logbuffer"
 import { type Classification, type ProbeAttempt, type ParsedUrl, parseUrl, classify } from "./diagnostics-classify"
+import { chatwootConfigured, sendSupportReport } from "./chatwoot"
+import { hasTelemetryConsent, loadTelemetryConsent } from "./telemetry"
+import { redactHostAndUrls } from "./scrub"
 
 export type { Classification, ProbeAttempt } from "./diagnostics-classify"
 
@@ -55,8 +59,14 @@ async function timedFetch(name: string, target: string, init?: RequestInit): Pro
   }
 }
 
+// Every host probed this session. Log lines mention hosts without a scheme
+// (so URL-based scrubbing misses them), and a crash report has no host of its
+// own — this set lets formatReportForSupport redact them all regardless.
+const seenHosts = new Set<string>()
+
 export async function probeConnection(url: string, auth?: { username: string; password: string }): Promise<DiagnosticReport> {
   const parsed = parseUrl(url)
+  if (parsed.host) seenHosts.add(parsed.host)
   log.info("diag", "probe start", url, "parsed", JSON.stringify(parsed))
 
   const headers: Record<string, string> = {}
@@ -160,10 +170,42 @@ export function buildCrashReport(error: unknown, source: "react-boundary" | "glo
   }
 }
 
+// Variant of formatReport for sending off-device: the user's server address
+// must never leave the phone, so every URL and every occurrence of the target
+// host is redacted. Classification, probe outcomes, device info and (URL-
+// scrubbed) logs survive — that is what support needs.
+export function formatReportForSupport(report: DiagnosticReport): string {
+  return redactHostAndUrls(formatReport(report), [report.host, ...seenHosts])
+}
+
+const CHATWOOT_SOURCE_KEY = "opencode_chatwoot_source_id"
+
+// Best-effort delivery of the scrubbed report to the Chatwoot support inbox.
+// Only runs when the user has granted telemetry consent (same flag that
+// gates Sentry/analytics) and the inbox is configured for this build.
+async function sendReportToSupport(report: DiagnosticReport): Promise<void> {
+  // Consent may not be loaded yet if a crash happens very early in startup —
+  // resolve it from the store rather than silently dropping the report.
+  if (hasTelemetryConsent() === null) await loadTelemetryConsent()
+  if (hasTelemetryConsent() !== true || !chatwootConfigured()) return
+  try {
+    await sendSupportReport(formatReportForSupport(report), {
+      loadSourceId: () => SecureStore.getItemAsync(CHATWOOT_SOURCE_KEY),
+      saveSourceId: (id) => SecureStore.setItemAsync(CHATWOOT_SOURCE_KEY, id),
+    })
+    log.info("diag", "report delivered to support inbox")
+  } catch (e) {
+    log.warn("diag", "support delivery failed", String(e))
+  }
+}
+
 // Copy the report to the clipboard and open the native share sheet.
-// Works fully offline (unlike the Sentry auto-upload).
+// Works fully offline (unlike the Sentry auto-upload). When telemetry
+// consent is granted, a scrubbed copy is also delivered to the support
+// inbox so reports reach us even if the user cancels the share sheet.
 export async function shareReport(report: DiagnosticReport): Promise<void> {
   const text = formatReport(report)
+  void sendReportToSupport(report)
   try {
     await Clipboard.setStringAsync(text)
   } catch {

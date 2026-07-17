@@ -15,6 +15,19 @@ export function scrubString(s: string): string {
   return s.replace(/https?:\/\/\S+/g, (m) => scrubUrl(m))
 }
 
+// Harder redaction for text that leaves the device (support inbox): drop
+// every URL wholesale, erase every known server host (bare `host=…` fragments
+// and log lines carry hosts without a scheme, which the URL regex misses),
+// and blank bare IPv4 addresses as a catch-all for hosts we never parsed.
+export function redactHostAndUrls(text: string, hosts?: Array<string | undefined>): string {
+  let out = text.replace(/https?:\/\/[^\s)\]}"']+/gi, "<redacted-url>")
+  for (const host of hosts ?? []) {
+    if (host) out = out.split(host).join("<redacted-host>")
+  }
+  out = out.replace(/\b(?:\d{1,3}\.){3}\d{1,3}\b/g, "<redacted-ip>")
+  return out
+}
+
 export function scrubObject(obj: Record<string, unknown>): Record<string, unknown> {
   const out: Record<string, unknown> = {}
   for (const [k, v] of Object.entries(obj)) {
