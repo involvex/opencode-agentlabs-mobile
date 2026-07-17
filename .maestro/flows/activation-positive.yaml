@@ -71,4 +71,12 @@ name: Activation - positive path (consent -> connect -> send -> reply)
     id: "chat-bubble-assistant"
 - assertVisible:
     text: "Hello from the mock opencode server"
+# The USER's message must still be in the transcript after the reply lands.
+# Regression guard: any message.updated event strips optimistic temp-
+# messages (src/stores/sessions.ts handleEvent), so if the server never
+# persisted/broadcast the user's message, it would vanish here.
+- assertVisible:
+    id: "chat-bubble-user"
+- assertVisible:
+    text: "Hello from the activation e2e test"
 - takeScreenshot: positive-S8_reply_received

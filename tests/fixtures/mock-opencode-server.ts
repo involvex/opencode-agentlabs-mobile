@@ -16,6 +16,14 @@
 //     returns immediately; the actual reply is delivered as
 //     `message.updated` + `message.part.updated` + `session.status` (idle)
 //     events on the SSE stream (src/stores/events.ts).
+//   - The real server ALSO persists and broadcasts the USER's message. The
+//     app relies on this: any `message.updated` event strips optimistic
+//     `temp-` messages (src/stores/sessions.ts handleEvent), so if the mock
+//     only broadcast the assistant reply, the user's sent message would
+//     vanish from the transcript. The mock therefore stores the user message
+//     from the prompt_async body and broadcasts it (message.updated +
+//     message.part.updated) before the canned assistant reply, and returns
+//     it from GET /session/:id/message.
 //
 // Two modes:
 //   - Normal mode: implements the endpoints above so the app can connect,
@@ -108,6 +116,39 @@ export function createMockOpencodeServer(opts: MockServerOptions) {
       error: "Unauthorized",
       message: "mock-opencode-server: running in --fail-auth mode (simulates GitHub issue #76)",
     })
+  }
+
+  // Persist the user's message (parsed from the prompt_async body) and
+  // broadcast it over SSE, mirroring the real server. This is what lets the
+  // app replace its optimistic `temp-` user message with the real one instead
+  // of losing it when the assistant's message.updated arrives.
+  function storeUserMessage(sessionID: string, promptParts: Array<{ type?: string; text?: string }>) {
+    const list = messagesBySession.get(sessionID)
+    if (!list) return
+
+    const now = Date.now()
+    const messageID = randomUUID()
+    const info: StoredMessageInfo = {
+      id: messageID,
+      sessionID,
+      role: "user",
+      time: { created: now, completed: now },
+    }
+    const parts: StoredPart[] = promptParts
+      .filter((p) => p.type === "text" && typeof p.text === "string")
+      .map((p) => ({
+        id: randomUUID(),
+        sessionID,
+        messageID,
+        type: "text",
+        text: p.text,
+      }))
+
+    list.push({ info, parts })
+    broadcast("message.updated", { info })
+    for (const part of parts) {
+      broadcast("message.part.updated", { part })
+    }
   }
 
   function scheduleReply(sessionID: string) {
@@ -262,7 +303,15 @@ export function createMockOpencodeServer(opts: MockServerOptions) {
         if (!sessions.has(sid)) {
           return json(res, 404, { error: `unknown session ${sid}` })
         }
+        let promptParts: Array<{ type?: string; text?: string }> = []
+        try {
+          const parsed = JSON.parse(body || "{}")
+          if (Array.isArray(parsed.parts)) promptParts = parsed.parts
+        } catch {
+          // malformed body — still ack like a fire-and-forget endpoint would
+        }
         json(res, 200, { ok: true })
+        storeUserMessage(sid, promptParts)
         scheduleReply(sid)
       })
       return

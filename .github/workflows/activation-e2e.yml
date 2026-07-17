@@ -37,7 +37,11 @@ on:
 jobs:
   activation-e2e:
     runs-on: ubuntu-latest
-    timeout-minutes: 15
+    # Same npm install + expo prebuild + assembleRelease + emulator pipeline as
+    # cua-smoke.yml, which budgets 60 min (emulator-boot-timeout alone is 10 min).
+    # Typical runs finish well under this; the ceiling just avoids flaky kills
+    # on cold Gradle caches.
+    timeout-minutes: 60
     steps:
       - uses: actions/checkout@v6
 
@@ -73,6 +77,15 @@ jobs:
           key: ${{ runner.os }}-gradle-${{ hashFiles('android/**/*.gradle*', 'android/gradle/wrapper/gradle-wrapper.properties') }}
           restore-keys: |
             ${{ runner.os }}-gradle-
+
+      - name: Purge stale generated sources
+        # Same mitigation as cua-smoke.yml (whose Gradle cache entries this job
+        # shares — the cache key/restore-keys are identical): the restore-keys
+        # prefix fallback can restore a generated autolinking tree from a
+        # previous package id, making compileReleaseJavaWithJavac fail against
+        # the old package (ai.opencode.mobile vs cc.agentlabs.opencode). Delete
+        # generated sources so prebuild + Gradle regenerate them.
+        run: rm -rf android/app/build/generated android/build/generated android/app/build/intermediates
 
       - name: Install Maestro CLI
         run: |

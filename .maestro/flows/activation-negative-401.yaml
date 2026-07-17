@@ -60,9 +60,11 @@ name: Activation - negative path (connect-time 401 must surface a visible error)
 - takeScreenshot: negative-S4_visible_error_alert
 
 # The connection must NOT have been silently saved: dismiss the alert and
-# confirm we are still on the empty/no-connection state, not a fake
-# "connected" screen.
+# confirm we are still on the add-connection screen, not a fake "connected"
+# screen. (handleQuickConnect's failure branch never calls router.back(), so
+# the app stays on this modal — the Sessions-tab "No Connection" empty state
+# is NOT visible here.)
 - tapOn: "OK"
 - assertVisible:
-    text: "No Connection"
-- takeScreenshot: negative-S5_still_disconnected_after_dismiss
+    id: "connect-submit-button"
+- takeScreenshot: negative-S5_still_on_add_connection_after_dismiss
