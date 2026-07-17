@@ -185,6 +185,7 @@ export default function AddConnectionScreen() {
             autoCapitalize="none"
             autoCorrect={false}
             keyboardType="url"
+            testID="connect-ip-input"
           />
           <Text style={[styles.ipColon, isDark && styles.textDark]}>:</Text>
           <TextInput
@@ -194,6 +195,7 @@ export default function AddConnectionScreen() {
             value={port}
             onChangeText={setPort}
             keyboardType="number-pad"
+            testID="connect-port-input"
           />
         </View>
 
@@ -216,6 +218,7 @@ export default function AddConnectionScreen() {
           value={password}
           onChangeText={setPassword}
           secureTextEntry
+          testID="connect-password-input"
         />
         <Text style={[styles.usernameHint, isDark && styles.hintDark]}>
           Username defaults to <Text style={styles.code}>opencode</Text>. Custom username? Use{" "}
@@ -230,6 +233,7 @@ export default function AddConnectionScreen() {
           style={[styles.connectButton, isDark && styles.connectButtonDark]}
           onPress={handleQuickConnect}
           disabled={isConnecting}
+          testID="connect-submit-button"
         >
           {isConnecting ? (
             <ActivityIndicator size="small" color={isDark ? "#0a0a0a" : "#ffffff"} />
