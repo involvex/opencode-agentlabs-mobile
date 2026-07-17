@@ -1,9 +1,10 @@
 import { create } from "zustand"
-import type { Session, Message, Part, Event, MessageWithParts, Client } from "../lib/sdk"
+import { ApiError, type Session, type Message, type Part, type Event, type MessageWithParts, type Client } from "../lib/sdk"
 import { useConnections } from "./connections"
 import { useSettings } from "./settings"
 import { addBreadcrumb } from "../lib/sentry"
 import { AnalyticsEvent, track } from "../lib/analytics"
+import { extractPromptFromParts, type PromptFromParts } from "../lib/prompt-from-parts"
 
 // Helper to convert API response to our internal format
 function parseMessages(response: MessageWithParts[]): { messages: Message[]; parts: Record<string, Part[]> } {
@@ -50,9 +51,15 @@ interface SessionsState {
   abortSession: () => Promise<void>
   refreshMessages: () => Promise<void>
 
+  // Revert (edit sent message) / unrevert (undo the pending revert)
+  revertToMessage: (messageID: string) => Promise<RevertResult>
+  unrevertSession: () => Promise<void>
+
   // Event handling
   handleEvent: (event: Event) => void
 }
+
+export type RevertResult = ({ ok: true } & PromptFromParts) | { ok: false; reason: "unsupported" | "auth" | "error" }
 
 // Sessions the user aborted since they last went busy. Mirrors events.ts's
 // erroredSessions: SessionStatus has no "aborted" variant — an aborted run
@@ -338,6 +345,54 @@ export const useSessions = create<SessionsState>((set, get) => ({
       set({ messages, parts })
     } catch (error) {
       set({ error: "Failed to refresh messages" })
+    }
+  },
+
+  // Marks messageID (and everything after it) as pending revert, so the
+  // user can re-edit and resend it. The server keeps the underlying
+  // messages until the next prompt runs cleanup, or unrevertSession() below
+  // undoes it — so this only flips session.revert, it doesn't delete
+  // anything itself. Returns the reverted message's text/files so the
+  // caller can prefill the composer.
+  revertToMessage: async (messageID) => {
+    const client = clientFor(get().currentSession?.directory)
+    const session = get().currentSession
+    if (!client || !session) return { ok: false, reason: "error" }
+
+    try {
+      const updated = await client.session.revert(session.id, messageID)
+      set((state) => ({
+        currentSession: state.currentSession?.id === session.id ? updated : state.currentSession,
+      }))
+      return { ok: true, ...extractPromptFromParts(get().parts[messageID]) }
+    } catch (err) {
+      if (err instanceof ApiError) {
+        // Older servers (pre session.revert) 404 on this route — degrade
+        // gracefully instead of surfacing a generic error.
+        if (err.status === 404) return { ok: false, reason: "unsupported" }
+        // Expired/invalid credentials — distinct from a generic failure so
+        // the caller can point the user at reconnecting rather than "retry".
+        if (err.status === 401 || err.status === 403) return { ok: false, reason: "auth" }
+      }
+      console.error("Failed to revert message:", err)
+      set({ error: "Failed to revert message" })
+      return { ok: false, reason: "error" }
+    }
+  },
+
+  unrevertSession: async () => {
+    const client = clientFor(get().currentSession?.directory)
+    const session = get().currentSession
+    if (!client || !session) return
+
+    try {
+      const updated = await client.session.unrevert(session.id)
+      set((state) => ({
+        currentSession: state.currentSession?.id === session.id ? updated : state.currentSession,
+      }))
+    } catch (err) {
+      console.error("Failed to unrevert session:", err)
+      set({ error: "Failed to restore reverted messages" })
     }
   },
 
