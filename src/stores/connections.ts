@@ -43,8 +43,9 @@ interface ConnectionsState {
   ) => Promise<{ ok: boolean; error?: string }>
   updateConnection: (id: string, updates: Partial<ServerConnection>) => Promise<void>
   refreshProject: () => Promise<void>
-  // Create a one-off client pointing at a specific directory (for cross-project operations)
-  clientForDirectory: (directory: string) => Client | null
+  // Create a one-off client pointing at a specific directory (for cross-project operations).
+  // Pass undefined to get a directory-less client that queries the server without project scope.
+  clientForDirectory: (directory?: string) => Client | null
   // Switch the active connection's directory and reload
   switchDirectory: (directory?: string) => Promise<void>
   // Record a directory as recently used
