@@ -418,6 +418,7 @@ export function createClient(config: ClientConfig) {
                 cost?: { input: number; output: number }
                 limit: { context: number; output: number }
                 status?: "alpha" | "beta" | "deprecated" | "active"
+                variants?: Record<string, { reasoningEffort?: string }>
               }
             >
           }>
