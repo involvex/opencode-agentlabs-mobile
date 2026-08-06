@@ -2,41 +2,14 @@
   "expo": {
     "name": "OpenCode",
     "slug": "opencode-mobile",
-    "version": "0.4.12",
+    "version": "0.4.13",
     "orientation": "portrait",
     "scheme": "opencode",
     "userInterfaceStyle": "automatic",
     "icon": "./assets/icon.png",
-    "splash": {
-      "image": "./assets/splash-icon.png",
-      "resizeMode": "contain",
-      "backgroundColor": "#0F172A"
-    },
-    "ios": {
-      "supportsTablet": true,
-      "bundleIdentifier": "cc.agentlabs.opencode",
-      "buildNumber": "1",
-      "entitlements": {
-        "aps-environment": "production"
-      },
-      "infoPlist": {
-        "NSFaceIDUsageDescription": "Use Face ID to unlock OpenCode and access your sessions securely.",
-        "NSSpeechRecognitionUsageDescription": "OpenCode uses speech recognition so you can dictate prompts to your AI coding agent hands-free.",
-        "NSMicrophoneUsageDescription": "OpenCode uses the microphone to capture your voice when using speech-to-text input.",
-        "NSPhotoLibraryUsageDescription": "OpenCode can attach images from your photo library to messages to your AI coding agent.",
-        "NSCameraUsageDescription": "OpenCode can capture images with your camera and attach them to messages to your AI coding agent.",
-        "NSLocalNetworkUsageDescription": "OpenCode uses your local network to connect to self-hosted OpenCode servers running on your LAN.",
-        "NSAppTransportSecurity": {
-          "NSAllowsArbitraryLoads": true,
-          "NSAllowsArbitraryLoadsInWebContent": false
-        },
-        "ITSAppUsesNonExemptEncryption": false
-      }
-    },
     "android": {
       "package": "cc.agentlabs.opencode",
-      "versionCode": 39,
-      "usesCleartextTraffic": true,
+      "versionCode": 40,
       "adaptiveIcon": {
         "foregroundImage": "./assets/adaptive-icon.png",
         "backgroundColor": "#0F172A"
@@ -50,13 +23,6 @@
       "expo-router",
       "expo-secure-store",
       "expo-local-authentication",
-      [
-        "@sentry/react-native/expo",
-        {
-          "organization": "vibetechnologies",
-          "project": "opencode-mobile"
-        }
-      ],
       [
         "expo-notifications",
         {
@@ -80,7 +46,9 @@
           "speechRecognitionPermission": "OpenCode uses speech recognition so you can dictate prompts to your AI coding agent hands-free."
         }
       ],
-      "expo-localization"
+      "expo-localization",
+      "expo-font",
+      "expo-status-bar"
     ],
     "experiments": {
       "typedRoutes": true,

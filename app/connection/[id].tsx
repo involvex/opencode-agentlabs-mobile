@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react"
+import { useEffect, useState } from "react";
 import {
   View,
   Text,
@@ -9,79 +9,90 @@ import {
   useColorScheme,
   ActivityIndicator,
   Alert,
-} from "react-native"
-import { router, useLocalSearchParams } from "expo-router"
-import { Ionicons } from "@expo/vector-icons"
-import { useTranslation } from "react-i18next"
-import { useConnections } from "../../src/stores/connections"
-import { useEvents } from "../../src/stores/events"
-import type { ConnectionType } from "../../src/lib/types"
-import { probeConnection, shareReport } from "../../src/lib/diagnostics"
-import { captureDiagnostic } from "../../src/lib/sentry"
-import { parseUrl } from "../../src/lib/diagnostics-classify"
-import { buildAuth } from "../../src/lib/auth"
+} from "react-native";
+import { router, useLocalSearchParams } from "expo-router";
+import { Ionicons } from "@expo/vector-icons";
+import { useTranslation } from "react-i18next";
+import { useConnections } from "../../src/stores/connections";
+import { useEvents } from "../../src/stores/events";
+import type { ConnectionType } from "../../src/lib/types";
+import { probeConnection, shareReport } from "../../src/lib/diagnostics";
+import { parseUrl } from "../../src/lib/diagnostics-classify";
+import { buildAuth } from "../../src/lib/auth";
 
 // labelKey (not literal text): this is a module-level constant evaluated
 // before i18next is guaranteed ready, so the label is resolved with t() at
 // render time — same pattern as categoryMeta in src/lib/notifications.ts.
 const CONNECTION_TYPES: Array<{
-  type: ConnectionType
-  labelKey: string
-  icon: keyof typeof Ionicons.glyphMap
+  type: ConnectionType;
+  labelKey: string;
+  icon: keyof typeof Ionicons.glyphMap;
 }> = [
   { type: "local", labelKey: "connection.shared.types.local", icon: "wifi" },
   { type: "tunnel", labelKey: "connection.shared.types.tunnel", icon: "globe" },
   { type: "cloud", labelKey: "connection.shared.types.cloud", icon: "cloud" },
-]
+];
 
 export default function EditConnectionScreen() {
-  const { id } = useLocalSearchParams<{ id: string }>()
-  const colorScheme = useColorScheme()
-  const isDark = colorScheme === "dark"
-  const { t } = useTranslation()
+  const { id } = useLocalSearchParams<{ id: string }>();
+  const colorScheme = useColorScheme();
+  const isDark = colorScheme === "dark";
+  const { t } = useTranslation();
 
-  const { connections, updateConnection, removeConnection, testConnection } = useConnections()
+  const { connections, updateConnection, removeConnection, testConnection } =
+    useConnections();
 
-  const connection = connections.find((c) => c.id === id)
+  const connection = connections.find((c) => c.id === id);
 
-  const [type, setType] = useState<ConnectionType>(connection?.type || "local")
-  const [name, setName] = useState(connection?.name || "")
-  const [url, setUrl] = useState(connection?.url || "")
-  const [directory, setDirectory] = useState(connection?.directory || "")
-  const [username, setUsername] = useState(connection?.username || "")
-  const [password, setPassword] = useState("")
-  const [isTesting, setIsTesting] = useState(false)
-  const [isSaving, setIsSaving] = useState(false)
+  const [type, setType] = useState<ConnectionType>(connection?.type || "local");
+  const [name, setName] = useState(connection?.name || "");
+  const [url, setUrl] = useState(connection?.url || "");
+  const [directory, setDirectory] = useState(connection?.directory || "");
+  const [username, setUsername] = useState(connection?.username || "");
+  const [password, setPassword] = useState("");
+  const [isTesting, setIsTesting] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
 
   useEffect(() => {
     if (connection) {
-      setType(connection.type)
-      setName(connection.name)
-      setUrl(connection.url)
-      setDirectory(connection.directory || "")
-      setUsername(connection.username || "")
+      setType(connection.type);
+      setName(connection.name);
+      setUrl(connection.url);
+      setDirectory(connection.directory || "");
+      setUsername(connection.username || "");
     }
-  }, [connection])
+  }, [connection]);
 
   if (!connection) {
     return (
-      <View style={[styles.container, isDark && styles.containerDark, styles.center]}>
-        <Text style={[styles.errorText, isDark && styles.textDark]}>{t("connection.edit.notFound")}</Text>
+      <View
+        style={[
+          styles.container,
+          isDark && styles.containerDark,
+          styles.center,
+        ]}
+      >
+        <Text style={[styles.errorText, isDark && styles.textDark]}>
+          {t("connection.edit.notFound")}
+        </Text>
       </View>
-    )
+    );
   }
 
   const handleTest = async () => {
     if (!url.trim()) {
-      Alert.alert(t("common.error"), t("connection.shared.alerts.enterUrl"))
-      return
+      Alert.alert(t("common.error"), t("connection.shared.alerts.enterUrl"));
+      return;
     }
     if (!parseUrl(url).valid) {
-      Alert.alert(t("connection.shared.alerts.invalidUrlTitle"), t("connection.shared.alerts.invalidUrlMessage"))
-      return
+      Alert.alert(
+        t("connection.shared.alerts.invalidUrlTitle"),
+        t("connection.shared.alerts.invalidUrlMessage"),
+      );
+      return;
     }
 
-    setIsTesting(true)
+    setIsTesting(true);
     const result = await testConnection(
       {
         id: connection.id,
@@ -93,18 +104,23 @@ export default function EditConnectionScreen() {
       },
       "edit_test",
       password || undefined,
-    )
+    );
 
     if (result.ok) {
-      setIsTesting(false)
-      Alert.alert(t("connection.edit.alerts.successTitle"), t("connection.edit.alerts.successMessage"))
-      return
+      setIsTesting(false);
+      Alert.alert(
+        t("connection.edit.alerts.successTitle"),
+        t("connection.edit.alerts.successMessage"),
+      );
+      return;
     }
 
-    // Failed: run active diagnostics, capture to Sentry, offer a shareable report.
-    const report = await probeConnection(url.trim(), buildAuth(username, password))
-    captureDiagnostic(report)
-    setIsTesting(false)
+    // Failed: run active diagnostics, offer a shareable report.
+    const report = await probeConnection(
+      url.trim(),
+      buildAuth(username, password),
+    );
+    setIsTesting(false);
 
     Alert.alert(
       t("connection.shared.alerts.connectionFailedTitle"),
@@ -116,24 +132,27 @@ export default function EditConnectionScreen() {
         { text: t("common.ok"), style: "cancel" },
         { text: t("common.shareReport"), onPress: () => shareReport(report) },
       ],
-    )
-  }
+    );
+  };
 
   const handleSave = async () => {
     if (!name.trim()) {
-      Alert.alert(t("common.error"), t("connection.shared.alerts.enterName"))
-      return
+      Alert.alert(t("common.error"), t("connection.shared.alerts.enterName"));
+      return;
     }
     if (!url.trim()) {
-      Alert.alert(t("common.error"), t("connection.shared.alerts.enterUrl"))
-      return
+      Alert.alert(t("common.error"), t("connection.shared.alerts.enterUrl"));
+      return;
     }
     if (!parseUrl(url).valid) {
-      Alert.alert(t("connection.shared.alerts.invalidUrlTitle"), t("connection.shared.alerts.invalidUrlMessage"))
-      return
+      Alert.alert(
+        t("connection.shared.alerts.invalidUrlTitle"),
+        t("connection.shared.alerts.invalidUrlMessage"),
+      );
+      return;
     }
 
-    setIsSaving(true)
+    setIsSaving(true);
     try {
       await updateConnection(
         connection.id,
@@ -147,38 +166,42 @@ export default function EditConnectionScreen() {
         // Empty = keep existing password (the field loads blank); a typed value
         // rotates it in SecureStore.
         password || undefined,
-      )
+      );
       // If this was the active connection, the SSE loop may have stopped
       // retrying after a prior 401 (see events.ts) — reconnect now with the
       // freshly saved credentials instead of leaving the user stuck until
       // they relaunch the app.
       if (useConnections.getState().activeConnection?.id === connection.id) {
-        useEvents.getState().connect()
+        useEvents.getState().connect();
       }
-      setIsSaving(false)
-      router.back()
+      setIsSaving(false);
+      router.back();
     } catch {
-      setIsSaving(false)
+      setIsSaving(false);
       Alert.alert(
         t("connection.shared.alerts.saveFailedTitle"),
         t("connection.shared.alerts.saveFailedMessage"),
-      )
+      );
     }
-  }
+  };
 
   const handleDelete = () => {
-    Alert.alert(t("connection.edit.alerts.deleteTitle"), t("connection.edit.alerts.deleteMessage", { name: connection.name }), [
-      { text: t("common.cancel"), style: "cancel" },
-      {
-        text: t("common.delete"),
-        style: "destructive",
-        onPress: async () => {
-          await removeConnection(connection.id)
-          router.back()
+    Alert.alert(
+      t("connection.edit.alerts.deleteTitle"),
+      t("connection.edit.alerts.deleteMessage", { name: connection.name }),
+      [
+        { text: t("common.cancel"), style: "cancel" },
+        {
+          text: t("common.delete"),
+          style: "destructive",
+          onPress: async () => {
+            await removeConnection(connection.id);
+            router.back();
+          },
         },
-      },
-    ])
-  }
+      ],
+    );
+  };
 
   return (
     <ScrollView
@@ -187,7 +210,9 @@ export default function EditConnectionScreen() {
       keyboardShouldPersistTaps="handled"
     >
       {/* Connection Type */}
-      <Text style={[styles.label, isDark && styles.labelDark]}>{t("connection.shared.connectionType")}</Text>
+      <Text style={[styles.label, isDark && styles.labelDark]}>
+        {t("connection.shared.connectionType")}
+      </Text>
       <View style={styles.typeContainer}>
         {CONNECTION_TYPES.map((opt) => (
           <TouchableOpacity
@@ -203,7 +228,15 @@ export default function EditConnectionScreen() {
             <Ionicons
               name={opt.icon}
               size={20}
-              color={type === opt.type ? (isDark ? "#0a0a0a" : "#ffffff") : isDark ? "#888888" : "#666666"}
+              color={
+                type === opt.type
+                  ? isDark
+                    ? "#0a0a0a"
+                    : "#ffffff"
+                  : isDark
+                    ? "#888888"
+                    : "#666666"
+              }
             />
             <Text
               style={[
@@ -220,7 +253,9 @@ export default function EditConnectionScreen() {
       </View>
 
       {/* Name */}
-      <Text style={[styles.label, isDark && styles.labelDark]}>{t("connection.shared.name")}</Text>
+      <Text style={[styles.label, isDark && styles.labelDark]}>
+        {t("connection.shared.name")}
+      </Text>
       <TextInput
         style={[styles.input, isDark && styles.inputDark]}
         placeholder={t("connection.shared.namePlaceholder")}
@@ -230,7 +265,9 @@ export default function EditConnectionScreen() {
       />
 
       {/* URL */}
-      <Text style={[styles.label, isDark && styles.labelDark]}>{t("connection.shared.serverUrl")}</Text>
+      <Text style={[styles.label, isDark && styles.labelDark]}>
+        {t("connection.shared.serverUrl")}
+      </Text>
       <TextInput
         style={[styles.input, isDark && styles.inputDark]}
         placeholder="http://192.168.1.100:4096"
@@ -243,7 +280,9 @@ export default function EditConnectionScreen() {
       />
 
       {/* Directory */}
-      <Text style={[styles.label, isDark && styles.labelDark]}>{t("connection.shared.directoryOptional")}</Text>
+      <Text style={[styles.label, isDark && styles.labelDark]}>
+        {t("connection.shared.directoryOptional")}
+      </Text>
       <TextInput
         style={[styles.input, isDark && styles.inputDark]}
         placeholder="/path/to/project"
@@ -253,12 +292,18 @@ export default function EditConnectionScreen() {
         autoCapitalize="none"
         autoCorrect={false}
       />
-      <Text style={[styles.hint, isDark && styles.hintDark]}>{t("connection.edit.directoryHint")}</Text>
+      <Text style={[styles.hint, isDark && styles.hintDark]}>
+        {t("connection.edit.directoryHint")}
+      </Text>
 
       {/* Auth */}
-      <Text style={[styles.sectionTitle, isDark && styles.textDark]}>{t("connection.shared.authentication")}</Text>
+      <Text style={[styles.sectionTitle, isDark && styles.textDark]}>
+        {t("connection.shared.authentication")}
+      </Text>
 
-      <Text style={[styles.label, isDark && styles.labelDark]}>{t("connection.shared.username")}</Text>
+      <Text style={[styles.label, isDark && styles.labelDark]}>
+        {t("connection.shared.username")}
+      </Text>
       <TextInput
         style={[styles.input, isDark && styles.inputDark]}
         placeholder="admin"
@@ -269,7 +314,9 @@ export default function EditConnectionScreen() {
         autoCorrect={false}
       />
 
-      <Text style={[styles.label, isDark && styles.labelDark]}>{t("connection.edit.passwordLabel")}</Text>
+      <Text style={[styles.label, isDark && styles.labelDark]}>
+        {t("connection.edit.passwordLabel")}
+      </Text>
       <TextInput
         style={[styles.input, isDark && styles.inputDark]}
         placeholder="••••••••"
@@ -287,11 +334,20 @@ export default function EditConnectionScreen() {
           disabled={isTesting}
         >
           {isTesting ? (
-            <ActivityIndicator size="small" color={isDark ? "#ffffff" : "#0a0a0a"} />
+            <ActivityIndicator
+              size="small"
+              color={isDark ? "#ffffff" : "#0a0a0a"}
+            />
           ) : (
             <>
-              <Ionicons name="pulse" size={20} color={isDark ? "#ffffff" : "#0a0a0a"} />
-              <Text style={[styles.testButtonText, isDark && styles.textDark]}>{t("connection.edit.testButton")}</Text>
+              <Ionicons
+                name="pulse"
+                size={20}
+                color={isDark ? "#ffffff" : "#0a0a0a"}
+              />
+              <Text style={[styles.testButtonText, isDark && styles.textDark]}>
+                {t("connection.edit.testButton")}
+              </Text>
             </>
           )}
         </TouchableOpacity>
@@ -302,9 +358,17 @@ export default function EditConnectionScreen() {
           disabled={isSaving}
         >
           {isSaving ? (
-            <ActivityIndicator size="small" color={isDark ? "#0a0a0a" : "#ffffff"} />
+            <ActivityIndicator
+              size="small"
+              color={isDark ? "#0a0a0a" : "#ffffff"}
+            />
           ) : (
-            <Text style={[styles.saveButtonText, isDark && styles.saveButtonTextDark]}>
+            <Text
+              style={[
+                styles.saveButtonText,
+                isDark && styles.saveButtonTextDark,
+              ]}
+            >
               {t("connection.edit.saveButton")}
             </Text>
           )}
@@ -312,11 +376,13 @@ export default function EditConnectionScreen() {
 
         <TouchableOpacity style={styles.deleteButton} onPress={handleDelete}>
           <Ionicons name="trash-outline" size={20} color="#ef4444" />
-          <Text style={styles.deleteButtonText}>{t("connection.edit.deleteButton")}</Text>
+          <Text style={styles.deleteButtonText}>
+            {t("connection.edit.deleteButton")}
+          </Text>
         </TouchableOpacity>
       </View>
     </ScrollView>
-  )
+  );
 }
 
 const styles = StyleSheet.create({
@@ -467,4 +533,4 @@ const styles = StyleSheet.create({
     fontWeight: "600",
     color: "#ef4444",
   },
-})
+});
