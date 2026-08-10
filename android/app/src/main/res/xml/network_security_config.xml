@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Allow cleartext (HTTP) traffic to private/LAN IP ranges.
+     Required for connecting to self-hosted opencode servers on the local network,
+     which typically run on HTTP without TLS certificates. -->
+<network-security-config>
+    <!-- Allow cleartext for all private IP ranges (RFC 1918) -->
+    <domain-config cleartextTrafficPermitted="true">
+        <domain includeSubdomains="true">10.0.0.0</domain>
+        <domain includeSubdomains="true">172.16.0.0</domain>
+        <domain includeSubdomains="true">192.168.0.0</domain>
+        <domain includeSubdomains="true">localhost</domain>
+    </domain-config>
+    <!-- Allow cleartext for mDNS (.local) hostnames -->
+    <domain-config cleartextTrafficPermitted="true">
+        <domain includeSubdomains="true">local</domain>
+    </domain-config>
+    <!-- Allow cleartext for arbitrary IP addresses entered by the user -->
+    <base-config cleartextTrafficPermitted="true">
+        <trust-anchors>
+            <certificates src="system" />
+            <certificates src="user" />
+        </trust-anchors>
+    </base-config>
+</network-security-config>
