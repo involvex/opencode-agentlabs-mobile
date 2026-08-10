@@ -2,13 +2,13 @@
 // so it's unit-testable with plain `node --test` (same split as
 // settings-merge.ts / store-review-policy.ts).
 
-export const SUPPORTED_LOCALES = ["en", "zh-Hans"] as const
-export type SupportedLocale = (typeof SUPPORTED_LOCALES)[number]
+export const SUPPORTED_LOCALES = ["en", "zh-Hans"] as const;
+export type SupportedLocale = (typeof SUPPORTED_LOCALES)[number];
 
-export const FALLBACK_LOCALE: SupportedLocale = "en"
+export const FALLBACK_LOCALE: SupportedLocale = "en";
 
 // User-facing preference: "system" defers to the device's locale list.
-export type LocalePreference = "system" | SupportedLocale
+export type LocalePreference = "system" | SupportedLocale;
 
 /**
  * Map one device locale tag (e.g. "zh-Hans-CN", "zh-CN", "en-US", "fr-FR") to
@@ -16,10 +16,10 @@ export type LocalePreference = "system" | SupportedLocale
  * ship per-region variants. Returns null if we have no catalog for it.
  */
 export function matchSupportedLocale(tag: string): SupportedLocale | null {
-  const lower = tag.toLowerCase()
-  if (lower.startsWith("zh")) return "zh-Hans"
-  if (lower.startsWith("en")) return "en"
-  return null
+  const lower = tag.toLowerCase();
+  if (lower.startsWith("zh")) return "zh-Hans";
+  if (lower.startsWith("en")) return "en";
+  return null;
 }
 
 /**
@@ -31,13 +31,16 @@ export function matchSupportedLocale(tag: string): SupportedLocale | null {
  *   we have a catalog for.
  * - If nothing matches (or the list is empty), falls back to FALLBACK_LOCALE.
  */
-export function resolveLocale(preference: LocalePreference, deviceTags: readonly string[]): SupportedLocale {
-  if (preference !== "system") return preference
+export function resolveLocale(
+  preference: LocalePreference,
+  deviceTags: readonly string[],
+): SupportedLocale {
+  if (preference !== "system") return preference;
 
   for (const tag of deviceTags) {
-    const match = matchSupportedLocale(tag)
-    if (match) return match
+    const match = matchSupportedLocale(tag);
+    if (match) return match;
   }
 
-  return FALLBACK_LOCALE
+  return FALLBACK_LOCALE;
 }

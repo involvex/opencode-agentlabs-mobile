@@ -4,7 +4,7 @@
 // pulling in zustand / expo-secure-store.
 
 export function clampPageSize(size: number): number {
-  return Math.max(10, Math.min(200, size))
+  return Math.max(10, Math.min(200, size));
 }
 
 /**
@@ -13,13 +13,12 @@ export function clampPageSize(size: number): number {
  * user upgrading to a build with a new setting gets that setting's default rather
  * than `undefined`. Defaults are passed in to keep this module dependency-free.
  */
-export function mergeStoredSettings<T extends { notifications: Record<string, boolean> }>(
-  defaults: T,
-  parsed: Partial<T>,
-): T {
+export function mergeStoredSettings<
+  T extends { notifications: Record<string, boolean> },
+>(defaults: T, parsed: Partial<T>): T {
   return {
     ...defaults,
     ...parsed,
     notifications: { ...defaults.notifications, ...parsed.notifications },
-  }
+  };
 }

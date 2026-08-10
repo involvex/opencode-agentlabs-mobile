@@ -1,18 +1,30 @@
-import { useCallback, useEffect, useMemo, useState } from "react"
-import { View, Text, ScrollView, TouchableOpacity, StyleSheet, useColorScheme, Linking } from "react-native"
-import { Stack, useRouter } from "expo-router"
-import { Ionicons } from "@expo/vector-icons"
-import { useTranslation } from "react-i18next"
-import { MessageBubble, PermissionPrompt } from "../src/components/chat"
-import { buildDemoScript, buildDemoCompletionMessage, buildDemoDenialMessage } from "../src/lib/demo-script"
-import { SETUP_GUIDE_URL } from "../src/lib/links"
-import { track, AnalyticsEvent } from "../src/lib/analytics"
+import { useCallback, useEffect, useMemo, useState } from "react";
+import {
+  View,
+  Text,
+  ScrollView,
+  TouchableOpacity,
+  StyleSheet,
+  useColorScheme,
+  Linking,
+} from "react-native";
+import { Stack, useRouter } from "expo-router";
+import { Ionicons } from "@expo/vector-icons";
+import { useTranslation } from "react-i18next";
+import { MessageBubble, PermissionPrompt } from "../src/components/chat";
+import {
+  buildDemoScript,
+  buildDemoCompletionMessage,
+  buildDemoDenialMessage,
+} from "../src/lib/demo-script";
+import { SETUP_GUIDE_URL } from "../src/lib/links";
+import { track, AnalyticsEvent } from "../src/lib/analytics";
 import {
   demoStepAdvancedProps,
   demoCompletedOutcome,
   demoExitedToConnectProps,
   type DemoPermissionReply,
-} from "../src/lib/demo-analytics"
+} from "../src/lib/demo-analytics";
 
 // Fully offline, scripted walkthrough for installers with no self-hosted
 // opencode server. ISOLATION: every message/part below is hardcoded local
@@ -22,62 +34,100 @@ import {
 // permission "reply" only flips local component state (below); it never
 // calls sessionClient.permission.reply the way app/session/[id].tsx does.
 export default function DemoScreen() {
-  const router = useRouter()
-  const colorScheme = useColorScheme()
-  const isDark = colorScheme === "dark"
-  const { t } = useTranslation()
+  const router = useRouter();
+  const colorScheme = useColorScheme();
+  const isDark = colorScheme === "dark";
+  const { t } = useTranslation();
 
   // Built once per mount from pure, hardcoded data (src/lib/demo-script.ts).
-  const script = useMemo(() => buildDemoScript(), [])
-  const [reply, setReply] = useState<DemoPermissionReply | null>(null)
+  const script = useMemo(() => buildDemoScript(), []);
+  const [reply, setReply] = useState<DemoPermissionReply | null>(null);
 
   // Fires once per screen mount — this is a fully offline, consent-gated
   // event (track() is a no-op without telemetry consent, same as every
   // other analytics call site).
   useEffect(() => {
-    track(AnalyticsEvent.DemoStarted)
-  }, [])
+    track(AnalyticsEvent.DemoStarted);
+  }, []);
 
   const handleReply = useCallback((r: DemoPermissionReply) => {
-    setReply(r)
-    track(AnalyticsEvent.DemoStepAdvanced, demoStepAdvancedProps(r))
-    track(AnalyticsEvent.DemoCompleted, { outcome: demoCompletedOutcome(r) })
-  }, [])
+    setReply(r);
+    track(AnalyticsEvent.DemoStepAdvanced, demoStepAdvancedProps(r));
+    track(AnalyticsEvent.DemoCompleted, { outcome: demoCompletedOutcome(r) });
+  }, []);
 
   const handleConnectPress = useCallback(() => {
-    track(AnalyticsEvent.DemoExitedToConnect, demoExitedToConnectProps(reply !== null))
-    router.push("/connection/add")
-  }, [reply, router])
+    track(
+      AnalyticsEvent.DemoExitedToConnect,
+      demoExitedToConnectProps(reply !== null),
+    );
+    router.push("/connection/add");
+  }, [reply, router]);
 
   const completion = useMemo(() => {
-    if (!reply) return null
-    return reply === "reject" ? buildDemoDenialMessage() : buildDemoCompletionMessage()
-  }, [reply])
+    if (!reply) return null;
+    return reply === "reject"
+      ? buildDemoDenialMessage()
+      : buildDemoCompletionMessage();
+  }, [reply]);
 
-  const [userMessage, assistantMessage] = script.messages
+  const [userMessage, assistantMessage] = script.messages;
 
   return (
     <>
-      <Stack.Screen options={{ title: t("demo.title"), presentation: "card" }} />
-      <View style={[s.container, isDark && s.containerDark]} testID="demo-screen">
+      <Stack.Screen
+        options={{ title: t("demo.title"), presentation: "card" }}
+      />
+      <View
+        style={[s.container, isDark && s.containerDark]}
+        testID="demo-screen"
+      >
         <View style={[s.banner, isDark && s.bannerDark]} testID="demo-banner">
           <Ionicons name="play-circle-outline" size={16} color="#8b5cf6" />
           <Text style={s.bannerText}>{t("demo.banner")}</Text>
         </View>
 
-        <ScrollView contentContainerStyle={s.scrollContent} keyboardShouldPersistTaps="handled">
-          <MessageBubble message={userMessage} parts={script.parts[userMessage.id] || []} isDark={isDark} />
-          <MessageBubble message={assistantMessage} parts={script.parts[assistantMessage.id] || []} isDark={isDark} />
+        <ScrollView
+          contentContainerStyle={s.scrollContent}
+          keyboardShouldPersistTaps="handled"
+        >
+          <MessageBubble
+            message={userMessage}
+            parts={script.parts[userMessage.id] || []}
+            isDark={isDark}
+          />
+          <MessageBubble
+            message={assistantMessage}
+            parts={script.parts[assistantMessage.id] || []}
+            isDark={isDark}
+          />
 
-          {!reply && <PermissionPrompt permission={script.permission} isDark={isDark} onReply={handleReply} />}
-
-          {completion && (
-            <MessageBubble message={completion.message} parts={completion.parts} isDark={isDark} />
+          {!reply && (
+            <PermissionPrompt
+              permission={script.permission}
+              isDark={isDark}
+              onReply={handleReply}
+            />
           )}
 
-          <View style={[s.ctaCard, isDark && s.ctaCardDark]} testID="demo-cta-card">
-            <Text style={[s.ctaTitle, isDark && s.textWhite]}>{t("demo.ctaTitle")}</Text>
-            <Text style={[s.ctaSubtitle, isDark && s.metaDark]}>{t("demo.ctaSubtitle")}</Text>
+          {completion && (
+            <MessageBubble
+              message={completion.message}
+              parts={completion.parts}
+              isDark={isDark}
+            />
+          )}
+
+          <View
+            style={[s.ctaCard, isDark && s.ctaCardDark]}
+            testID="demo-cta-card"
+          >
+            <Text style={[s.ctaTitle, isDark && s.textWhite]}>
+              {t("demo.ctaTitle")}
+            </Text>
+            <Text style={[s.ctaSubtitle, isDark && s.metaDark]}>
+              {t("demo.ctaSubtitle")}
+            </Text>
             <TouchableOpacity
               style={s.connectButton}
               onPress={handleConnectPress}
@@ -97,13 +147,15 @@ export default function DemoScreen() {
               onPress={() => Linking.openURL(SETUP_GUIDE_URL)}
               testID="demo-setup-guide-link"
             >
-              <Text style={s.setupGuideLinkText}>{t("demo.setupGuideLink")}</Text>
+              <Text style={s.setupGuideLinkText}>
+                {t("demo.setupGuideLink")}
+              </Text>
             </TouchableOpacity>
           </View>
         </ScrollView>
       </View>
     </>
-  )
+  );
 }
 
 const s = StyleSheet.create({
@@ -135,8 +187,19 @@ const s = StyleSheet.create({
     alignItems: "center",
   },
   ctaCardDark: { backgroundColor: "#1a1a1a" },
-  ctaTitle: { fontSize: 17, fontWeight: "700", color: "#0a0a0a", textAlign: "center" },
-  ctaSubtitle: { fontSize: 13, color: "#666666", marginTop: 6, textAlign: "center", lineHeight: 18 },
+  ctaTitle: {
+    fontSize: 17,
+    fontWeight: "700",
+    color: "#0a0a0a",
+    textAlign: "center",
+  },
+  ctaSubtitle: {
+    fontSize: 13,
+    color: "#666666",
+    marginTop: 6,
+    textAlign: "center",
+    lineHeight: 18,
+  },
   connectButton: {
     marginTop: 16,
     backgroundColor: "#0a0a0a",
@@ -148,7 +211,12 @@ const s = StyleSheet.create({
   },
   connectButtonText: { color: "#ffffff", fontWeight: "600", fontSize: 15 },
   hostedCtaLink: { marginTop: 14 },
-  hostedCtaLinkText: { fontSize: 14, fontWeight: "600", color: "#8b5cf6", textAlign: "center" },
+  hostedCtaLinkText: {
+    fontSize: 14,
+    fontWeight: "600",
+    color: "#8b5cf6",
+    textAlign: "center",
+  },
   setupGuideLink: { marginTop: 14 },
   setupGuideLinkText: { fontSize: 14, fontWeight: "600", color: "#6366f1" },
-})
+});

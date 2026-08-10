@@ -9,40 +9,66 @@
  * Matches the app's existing Settings screen visual conventions.
  */
 
-import { View, Text, TouchableOpacity, StyleSheet, useColorScheme, Modal, Linking } from "react-native"
-import { Ionicons } from "@expo/vector-icons"
-import { useTranslation } from "react-i18next"
-import { PRIVACY_POLICY_URL } from "../lib/links"
+import {
+  View,
+  Text,
+  TouchableOpacity,
+  StyleSheet,
+  useColorScheme,
+  Modal,
+  Linking,
+} from "react-native";
+import { Ionicons } from "@expo/vector-icons";
+import { useTranslation } from "react-i18next";
+import { PRIVACY_POLICY_URL } from "../lib/links";
 
 interface Props {
-  visible: boolean
-  onAllow: () => void
-  onDecline: () => void
+  visible: boolean;
+  onAllow: () => void;
+  onDecline: () => void;
 }
 
 export function TelemetryConsentModal({ visible, onAllow, onDecline }: Props) {
-  const colorScheme = useColorScheme()
-  const isDark = colorScheme === "dark"
-  const { t } = useTranslation()
+  const colorScheme = useColorScheme();
+  const isDark = colorScheme === "dark";
+  const { t } = useTranslation();
 
   return (
-    <Modal visible={visible} transparent animationType="fade" statusBarTranslucent onRequestClose={onDecline}>
+    <Modal
+      visible={visible}
+      transparent
+      animationType="fade"
+      statusBarTranslucent
+      onRequestClose={onDecline}
+    >
       <View style={styles.overlay}>
-        <View style={[styles.card, isDark && styles.cardDark]} testID="telemetry-consent-card">
+        <View
+          style={[styles.card, isDark && styles.cardDark]}
+          testID="telemetry-consent-card"
+        >
           {/* Icon */}
           <View style={[styles.iconWrap, isDark && styles.iconWrapDark]}>
             <Ionicons name="bug-outline" size={40} color="#3b82f6" />
           </View>
 
           {/* Title */}
-          <Text style={[styles.title, isDark && styles.textDark]}>{t("telemetryConsent.title")}</Text>
+          <Text style={[styles.title, isDark && styles.textDark]}>
+            {t("telemetryConsent.title")}
+          </Text>
 
           {/* Body */}
-          <Text style={[styles.body, isDark && styles.bodyDark]}>{t("telemetryConsent.body")}</Text>
+          <Text style={[styles.body, isDark && styles.bodyDark]}>
+            {t("telemetryConsent.body")}
+          </Text>
 
           {/* Detail bullets */}
           <View style={styles.bullets}>
-            <BulletRow icon="checkmark-circle" text={t("telemetryConsent.bullets.deviceInfo")} isDark={isDark} positive />
+            <BulletRow
+              icon="checkmark-circle"
+              text={t("telemetryConsent.bullets.deviceInfo")}
+              isDark={isDark}
+              positive
+            />
             <BulletRow
               icon="checkmark-circle"
               text={t("telemetryConsent.bullets.stackTraces")}
@@ -71,18 +97,29 @@ export function TelemetryConsentModal({ visible, onAllow, onDecline }: Props) {
 
           {/* Privacy policy link */}
           <TouchableOpacity onPress={() => Linking.openURL(PRIVACY_POLICY_URL)}>
-            <Text style={styles.privacyLink}>{t("telemetryConsent.privacyLink")}</Text>
+            <Text style={styles.privacyLink}>
+              {t("telemetryConsent.privacyLink")}
+            </Text>
           </TouchableOpacity>
 
           {/* Actions */}
           <View style={styles.actions}>
             <TouchableOpacity
-              style={[styles.btn, styles.btnDecline, isDark && styles.btnDeclineDark]}
+              style={[
+                styles.btn,
+                styles.btnDecline,
+                isDark && styles.btnDeclineDark,
+              ]}
               onPress={onDecline}
               accessibilityLabel={t("telemetryConsent.declineA11yLabel")}
               testID="telemetry-decline-button"
             >
-              <Text style={[styles.btnDeclineText, isDark && styles.btnDeclineTextDark]}>
+              <Text
+                style={[
+                  styles.btnDeclineText,
+                  isDark && styles.btnDeclineTextDark,
+                ]}
+              >
                 {t("telemetryConsent.declineButton")}
               </Text>
             </TouchableOpacity>
@@ -92,15 +129,19 @@ export function TelemetryConsentModal({ visible, onAllow, onDecline }: Props) {
               accessibilityLabel={t("telemetryConsent.allowA11yLabel")}
               testID="telemetry-allow-button"
             >
-              <Text style={styles.btnAllowText}>{t("telemetryConsent.allowButton")}</Text>
+              <Text style={styles.btnAllowText}>
+                {t("telemetryConsent.allowButton")}
+              </Text>
             </TouchableOpacity>
           </View>
 
-          <Text style={[styles.footnote, isDark && styles.footnoteDark]}>{t("telemetryConsent.footnote")}</Text>
+          <Text style={[styles.footnote, isDark && styles.footnoteDark]}>
+            {t("telemetryConsent.footnote")}
+          </Text>
         </View>
       </View>
     </Modal>
-  )
+  );
 }
 
 function BulletRow({
@@ -109,10 +150,10 @@ function BulletRow({
   isDark,
   positive,
 }: {
-  icon: "checkmark-circle" | "close-circle"
-  text: string
-  isDark: boolean
-  positive: boolean
+  icon: "checkmark-circle" | "close-circle";
+  text: string;
+  isDark: boolean;
+  positive: boolean;
 }) {
   return (
     <View style={styles.bulletRow}>
@@ -124,7 +165,7 @@ function BulletRow({
       />
       <Text style={[styles.bulletText, isDark && styles.bodyDark]}>{text}</Text>
     </View>
-  )
+  );
 }
 
 const styles = StyleSheet.create({
@@ -251,4 +292,4 @@ const styles = StyleSheet.create({
   footnoteDark: {
     color: "#64748b",
   },
-})
+});

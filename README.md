@@ -25,9 +25,11 @@ There are **three working ways** to install OpenCode Mobile today, all for Andro
 1. **Google Play** — **https://play.google.com/store/apps/details?id=cc.agentlabs.opencode**
 
 2. **F-Droid (self-hosted repo)** — add our self-hosted repo to any F-Droid client, then install/update from there:
+
    ```
    https://dzianisv.github.io/opencode-mobile/fdroid/repo
    ```
+
    In the F-Droid app: **Settings → Repositories → + (add)** and paste the URL above. Current version: **v0.4.7**.
 
 3. **Direct signed APK** — download the latest release and install it manually:
@@ -66,13 +68,13 @@ OpenCode Mobile is a React Native / Expo app that brings the power of the [openc
 
 Package: `cc.agentlabs.opencode` · Android only · current version v0.4.7
 
-| Channel | Status | How |
-|---|---|---|
-| **Google Play** | **Live** | [play.google.com/store/apps/details?id=cc.agentlabs.opencode](https://play.google.com/store/apps/details?id=cc.agentlabs.opencode) |
-| **F-Droid (self-hosted repo)** | **Live** | Add [`https://dzianisv.github.io/opencode-mobile/fdroid/repo`](https://dzianisv.github.io/opencode-mobile/fdroid/repo) in your F-Droid client |
-| **Direct APK** | **Live** | [github.com/dzianisv/opencode-mobile/releases/latest](https://github.com/dzianisv/opencode-mobile/releases/latest) |
-| IzzyOnDroid | Submission pending | Not live yet |
-| Apple App Store / iOS | Not available | See [Roadmap](#roadmap) |
+| Channel                        | Status             | How                                                                                                                                           |
+| ------------------------------ | ------------------ | --------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Google Play**                | **Live**           | [play.google.com/store/apps/details?id=cc.agentlabs.opencode](https://play.google.com/store/apps/details?id=cc.agentlabs.opencode)            |
+| **F-Droid (self-hosted repo)** | **Live**           | Add [`https://dzianisv.github.io/opencode-mobile/fdroid/repo`](https://dzianisv.github.io/opencode-mobile/fdroid/repo) in your F-Droid client |
+| **Direct APK**                 | **Live**           | [github.com/dzianisv/opencode-mobile/releases/latest](https://github.com/dzianisv/opencode-mobile/releases/latest)                            |
+| IzzyOnDroid                    | Submission pending | Not live yet                                                                                                                                  |
+| Apple App Store / iOS          | Not available      | See [Roadmap](#roadmap)                                                                                                                       |
 
 > The three live, supported install channels are **Google Play**, the **F-Droid self-hosted repo**, and the **direct signed APK**, all Android. IzzyOnDroid is pending, and there is no iOS build.
 
@@ -101,7 +103,7 @@ Open the app, tap **Add Connection**, and choose your connection type:
 - **Local network** — your machine's LAN IP, e.g. `http://192.168.1.100:4096`
 - **Tunnel** — a Cloudflare Tunnel or ngrok URL, e.g. `https://my-opencode.trycloudflare.com`
 - **Tailscale** — your machine's Tailscale IP, e.g. `http://100.x.x.x:4096`
-- **opencode Cloud** *(planned — not yet shipped)* — one-tap managed hosting, no server to run
+- **opencode Cloud** _(planned — not yet shipped)_ — one-tap managed hosting, no server to run
 
 Enter the password you set in Step 1, tap **Connect**, and you're in.
 
@@ -139,21 +141,21 @@ OpenCode Mobile is a thin client. It speaks the opencode HTTP + SSE API: listing
 
 **Current version: v0.4.7**
 
-| Feature | Status |
-|---|---|
-| Offline demo mode | Stable |
-| First-run onboarding clarity | Stable |
-| Multi-connection management | Stable |
-| Session list + creation | Stable |
-| Streaming chat | Stable |
-| Diff viewer | Stable |
-| Biometric unlock | Stable |
-| Tool call approval UI | Stable |
-| Sentry crash reporting (opt-in) | Stable |
-| Cloudflare / ngrok tunnel wizard | Beta |
-| opencode Cloud one-tap connect | Planned |
-| iPad / tablet layout | Planned |
-| Offline session history | Planned |
+| Feature                          | Status  |
+| -------------------------------- | ------- |
+| Offline demo mode                | Stable  |
+| First-run onboarding clarity     | Stable  |
+| Multi-connection management      | Stable  |
+| Session list + creation          | Stable  |
+| Streaming chat                   | Stable  |
+| Diff viewer                      | Stable  |
+| Biometric unlock                 | Stable  |
+| Tool call approval UI            | Stable  |
+| Sentry crash reporting (opt-in)  | Stable  |
+| Cloudflare / ngrok tunnel wizard | Beta    |
+| opencode Cloud one-tap connect   | Planned |
+| iPad / tablet layout             | Planned |
+| Offline session history          | Planned |
 
 ---
 
@@ -165,11 +167,11 @@ If OpenCode Mobile saves you time, consider sponsoring:
 
 **[github.com/sponsors/VibeTechnologies](https://github.com/sponsors/VibeTechnologies)**
 
-| Tier | Price | Perk |
-|---|---|---|
-| Supporter | $5/mo | Your name in `SUPPORTERS.md` |
-| Backer | $15/mo | Name + early access to opencode Cloud beta |
-| Business | $50/mo | Logo on [agentlabs.cc/opencode](https://agentlabs.cc/opencode) + quarterly support call |
+| Tier      | Price  | Perk                                                                                    |
+| --------- | ------ | --------------------------------------------------------------------------------------- |
+| Supporter | $5/mo  | Your name in `SUPPORTERS.md`                                                            |
+| Backer    | $15/mo | Name + early access to opencode Cloud beta                                              |
+| Business  | $50/mo | Logo on [agentlabs.cc/opencode](https://agentlabs.cc/opencode) + quarterly support call |
 
 Questions or private support: [support@agentlabs.cc](mailto:support@agentlabs.cc)
 
@@ -180,6 +182,7 @@ Questions or private support: [support@agentlabs.cc](mailto:support@agentlabs.cc
 Tracked on the [GitHub Projects board](https://github.com/dzianisv/opencode-mobile/projects) and in the [open milestones](https://github.com/dzianisv/opencode-mobile/milestones).
 
 Near-term priorities:
+
 - opencode Cloud one-tap connect + managed hosting
 - F-Droid mainline acceptance (FCM audit + reproducible build verification)
 - Tunnel setup wizard (Cloudflare / ngrok / Tailscale)

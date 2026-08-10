@@ -12,15 +12,21 @@ const expectedCode = app.expo.android.versionCode;
 const errors = [];
 
 if (pkg.version !== expectedName) {
-  errors.push(`package.json version ${pkg.version} != app.json version ${expectedName}`);
+  errors.push(
+    `package.json version ${pkg.version} != app.json version ${expectedName}`,
+  );
 }
 
 if (name !== expectedName) {
-  errors.push(`Gradle versionName ${name ?? "missing"} != app.json version ${expectedName}`);
+  errors.push(
+    `Gradle versionName ${name ?? "missing"} != app.json version ${expectedName}`,
+  );
 }
 
 if (code !== expectedCode) {
-  errors.push(`Gradle versionCode ${Number.isNaN(code) ? "missing" : code} != app.json versionCode ${expectedCode}`);
+  errors.push(
+    `Gradle versionCode ${Number.isNaN(code) ? "missing" : code} != app.json versionCode ${expectedCode}`,
+  );
 }
 
 if (errors.length) {

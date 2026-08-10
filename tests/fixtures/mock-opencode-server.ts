@@ -169,7 +169,7 @@ function requestDirectory(req: http.IncomingMessage): string {
 // map is keyed by absolute directory, not by the literal query string.
 // Root has two subdirectories (for the picker + Up-navigation flow) plus one
 // regular file (to exercise DirectoryBrowserSheet's type === "directory" filter).
-export const FAKE_FILE_TREE: Record<string, Array<{ name: string; path: string; absolute: string; type: "file" | "directory"; ignored: boolean }>> = {
+export const FAKE_FILE_TREE: Record<string, { name: string; path: string; absolute: string; type: "file" | "directory"; ignored: boolean }[]> = {
   "/mock/project": [
     { name: "frontend", path: "frontend", absolute: "/mock/project/frontend", type: "directory", ignored: false },
     { name: "backend", path: "backend", absolute: "/mock/project/backend", type: "directory", ignored: false },
@@ -340,7 +340,7 @@ export function createMockOpencodeServer(opts: MockServerOptions) {
   // broadcast it over SSE, mirroring the real server. This is what lets the
   // app replace its optimistic `temp-` user message with the real one instead
   // of losing it when the assistant's message.updated arrives.
-  function storeUserMessage(sessionID: string, promptParts: Array<{ type?: string; text?: string }>) {
+  function storeUserMessage(sessionID: string, promptParts: { type?: string; text?: string }[]) {
     const list = messagesBySession.get(sessionID)
     if (!list) return
 
@@ -616,7 +616,7 @@ export function createMockOpencodeServer(opts: MockServerOptions) {
         if (!sessions.has(sid)) {
           return json(res, 404, { error: `unknown session ${sid}` })
         }
-        let promptParts: Array<{ type?: string; text?: string }> = []
+        let promptParts: { type?: string; text?: string }[] = []
         try {
           const parsed = JSON.parse(body || "{}")
           if (Array.isArray(parsed.parts)) promptParts = parsed.parts

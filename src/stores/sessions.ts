@@ -63,12 +63,12 @@ interface SessionsState {
     text: string,
     model?: { providerID: string; modelID: string },
     agent?: string,
-    files?: Array<{
+    files?: {
       uri: string;
       mime: string;
       filename?: string;
       base64?: string;
-    }>,
+    }[],
     variant?: string,
   ) => Promise<void>;
   abortSession: () => Promise<void>;
@@ -136,7 +136,7 @@ export const useSessions = create<SessionsState>((set, get) => ({
       // its own directory into the session route so subsequent operations stay scoped.
       const sessions = await client.session.list({ roots: true, limit: 50 });
       set({ sessions, isLoading: false });
-    } catch (error) {
+    } catch {
       set({ error: "Failed to load sessions", isLoading: false });
     }
   },
@@ -256,7 +256,7 @@ export const useSessions = create<SessionsState>((set, get) => ({
         loadingMore: false,
       });
       return created;
-    } catch (error) {
+    } catch {
       set({ error: "Failed to create session" });
       return null;
     }
@@ -279,7 +279,7 @@ export const useSessions = create<SessionsState>((set, get) => ({
         messages: state.currentSession?.id === sessionID ? [] : state.messages,
         parts: state.currentSession?.id === sessionID ? {} : state.parts,
       }));
-    } catch (error) {
+    } catch {
       set({ error: "Failed to delete session" });
     }
   },
@@ -338,10 +338,10 @@ export const useSessions = create<SessionsState>((set, get) => ({
       }));
 
       // Build prompt parts - images are already converted to JPEG with base64 by toJpeg()
-      const promptParts: Array<
+      const promptParts: (
         | { type: "text"; text: string }
         | { type: "file"; mime: string; url: string; filename?: string }
-      > = [];
+      )[] = [];
       if (text) {
         promptParts.push({ type: "text", text });
       }
@@ -403,7 +403,7 @@ export const useSessions = create<SessionsState>((set, get) => ({
       const response = await client.session.messages(session.id);
       const { messages, parts } = parseMessages(response);
       set({ messages, parts });
-    } catch (error) {
+    } catch {
       set({ error: "Failed to refresh messages" });
     }
   },

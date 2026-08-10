@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import {
   View,
   Text,
@@ -23,11 +23,11 @@ import { buildAuth } from "../../src/lib/auth";
 // labelKey (not literal text): this is a module-level constant evaluated
 // before i18next is guaranteed ready, so the label is resolved with t() at
 // render time — same pattern as categoryMeta in src/lib/notifications.ts.
-const CONNECTION_TYPES: Array<{
+const CONNECTION_TYPES: {
   type: ConnectionType;
   labelKey: string;
   icon: keyof typeof Ionicons.glyphMap;
-}> = [
+}[] = [
   { type: "local", labelKey: "connection.shared.types.local", icon: "wifi" },
   { type: "tunnel", labelKey: "connection.shared.types.tunnel", icon: "globe" },
   { type: "cloud", labelKey: "connection.shared.types.cloud", icon: "cloud" },
@@ -53,15 +53,20 @@ export default function EditConnectionScreen() {
   const [isTesting, setIsTesting] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
 
-  useEffect(() => {
-    if (connection) {
-      setType(connection.type);
-      setName(connection.name);
-      setUrl(connection.url);
-      setDirectory(connection.directory || "");
-      setUsername(connection.username || "");
-    }
-  }, [connection]);
+  // Reset local form state when the connection prop changes (e.g. list
+  // updated).  Calling setState during render is the React-recommended
+  // pattern for "adjusting state when a prop changes" — it avoids the
+  // extra render cycle a useEffect would cause.
+  // See: https://react.dev/learn/you-might-not-need-an-effect#adjusting-some-state-when-a-prop-changes
+  const [prevId, setPrevId] = useState(id);
+  if (prevId !== id && connection) {
+    setPrevId(id);
+    setType(connection.type);
+    setName(connection.name);
+    setUrl(connection.url);
+    setDirectory(connection.directory || "");
+    setUsername(connection.username || "");
+  }
 
   if (!connection) {
     return (

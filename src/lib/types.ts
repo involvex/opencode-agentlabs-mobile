@@ -1,32 +1,39 @@
 // Connection types for multiple server support
-export type ConnectionType = "local" | "tunnel" | "cloud"
+export type ConnectionType = "local" | "tunnel" | "cloud";
 
 export interface ServerConnection {
-  id: string
-  name: string
-  type: ConnectionType
-  url: string
+  id: string;
+  name: string;
+  type: ConnectionType;
+  url: string;
   // For auth
-  username?: string
+  username?: string;
   // Password stored separately in SecureStore
   // Directory to use for this connection
-  directory?: string
+  directory?: string;
   // When last successfully connected
-  lastConnected?: number
+  lastConnected?: number;
   // Is this the active connection?
-  active?: boolean
+  active?: boolean;
 }
 
 export interface AppSettings {
   // Require biometric auth to open app
-  requireBiometric: boolean
+  requireBiometric: boolean;
   // Require biometric to send messages
-  requireBiometricForMessages: boolean
+  requireBiometricForMessages: boolean;
   // Theme preference
-  theme: "light" | "dark" | "system"
+  theme: "light" | "dark" | "system";
   // Show notifications for task completion
-  notifications: boolean
+  notifications: boolean;
 }
 
 // Re-export SDK types we'll use frequently
-export type { Session, Message, Part, Project, Event, HealthResponse } from "./sdk"
+export type {
+  Session,
+  Message,
+  Part,
+  Project,
+  Event,
+  HealthResponse,
+} from "./sdk";

@@ -31,29 +31,29 @@ interface EventsState {
   // Permissions & questions (pending per session)
   permissions: Record<
     string,
-    Array<{
+    {
       id: string;
       sessionID: string;
       permission: string;
       patterns: string[];
       metadata: Record<string, unknown>;
       tool?: { messageID: string; callID: string };
-    }>
+    }[]
   >;
   questions: Record<
     string,
-    Array<{
+    {
       id: string;
       sessionID: string;
-      questions: Array<{
+      questions: {
         question: string;
         header: string;
-        options: Array<{ label: string; description: string }>;
+        options: { label: string; description: string }[];
         multiple?: boolean;
         custom?: boolean;
-      }>;
+      }[];
       tool?: { messageID: string; callID: string };
-    }>
+    }[]
   >;
 
   connect: () => void;

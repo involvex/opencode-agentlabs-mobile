@@ -9,7 +9,6 @@ import { log, formatLogLines } from "./logbuffer";
 import {
   type Classification,
   type ProbeAttempt,
-  type ParsedUrl,
   parseUrl,
   classify,
 } from "./diagnostics-classify";

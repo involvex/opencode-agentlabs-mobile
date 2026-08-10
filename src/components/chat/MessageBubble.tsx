@@ -1,44 +1,56 @@
-import { memo } from "react"
-import { View, Text, Image, StyleSheet, ScrollView, TouchableOpacity, Dimensions } from "react-native"
-import { Ionicons } from "@expo/vector-icons"
-import { Markdown } from "../markdown"
-import { ToolCallCard } from "./ToolCallCard"
-import { ReasoningBlock } from "./ReasoningBlock"
-import type { Message, Part } from "../../lib/sdk"
+import { memo } from "react";
+import {
+  View,
+  Text,
+  Image,
+  StyleSheet,
+  ScrollView,
+  TouchableOpacity,
+  Dimensions,
+} from "react-native";
+import { Ionicons } from "@expo/vector-icons";
+import { Markdown } from "../markdown";
+import { ToolCallCard } from "./ToolCallCard";
+import { ReasoningBlock } from "./ReasoningBlock";
+import type { Message, Part } from "../../lib/sdk";
 
-const SCREEN_WIDTH = Dimensions.get("window").width
+const SCREEN_WIDTH = Dimensions.get("window").width;
 
 function isImageMime(mime?: string): boolean {
-  return !!mime && mime.startsWith("image/")
+  return !!mime && mime.startsWith("image/");
 }
 
 interface Props {
-  message: Message
-  parts: Part[]
-  isDark: boolean
+  message: Message;
+  parts: Part[];
+  isDark: boolean;
   // Only wired up for user messages — long-press opens the "Edit message" /
   // revert action sheet. Identified by messageID (not a closure over parts)
   // so it stays correct even if the memo below bails on a stale render.
-  onLongPress?: (messageID: string) => void
+  onLongPress?: (messageID: string) => void;
 }
 
 // TODO: Replace with streamdown-rn once React 19 types PR lands - it has
 // built-in block-level memoization that eliminates re-renders for stable blocks
 export const MessageBubble = memo(
   function MessageBubble({ message, parts, isDark, onLongPress }: Props) {
-    const isUser = message.role === "user"
+    const isUser = message.role === "user";
 
-    const textParts = parts.filter((p) => p.type === "text")
-    const reasoningParts = parts.filter((p) => p.type === "reasoning")
-    const toolParts = parts.filter((p) => p.type === "tool")
-    const fileParts = parts.filter((p) => p.type === "file" && isImageMime(p.mime))
-    const text = textParts.map((p) => p.text).join("\n") || ""
-    const reasoning = reasoningParts.map((p) => p.text).join("\n") || ""
+    const textParts = parts.filter((p) => p.type === "text");
+    const reasoningParts = parts.filter((p) => p.type === "reasoning");
+    const toolParts = parts.filter((p) => p.type === "tool");
+    const fileParts = parts.filter(
+      (p) => p.type === "file" && isImageMime(p.mime),
+    );
+    const text = textParts.map((p) => p.text).join("\n") || "";
+    const reasoning = reasoningParts.map((p) => p.text).join("\n") || "";
 
     return (
       <TouchableOpacity
         activeOpacity={isUser && onLongPress ? 0.7 : 1}
-        onLongPress={isUser && onLongPress ? () => onLongPress(message.id) : undefined}
+        onLongPress={
+          isUser && onLongPress ? () => onLongPress(message.id) : undefined
+        }
         disabled={!isUser || !onLongPress}
         style={[
           s.bubble,
@@ -55,9 +67,19 @@ export const MessageBubble = memo(
             size={14}
             color={isUser ? (isDark ? "#ffffff" : "#0a0a0a") : "#8b5cf6"}
           />
-          <Text style={[s.role, isUser && s.roleUser, isDark && s.textWhite]}>{isUser ? "You" : "Assistant"}</Text>
-          {message.model && <Text style={[s.modelTag, isDark && s.modelTagDark]}>{message.model.modelID}</Text>}
-          {!isUser && message.modelID && <Text style={[s.modelTag, isDark && s.modelTagDark]}>{message.modelID}</Text>}
+          <Text style={[s.role, isUser && s.roleUser, isDark && s.textWhite]}>
+            {isUser ? "You" : "Assistant"}
+          </Text>
+          {message.model && (
+            <Text style={[s.modelTag, isDark && s.modelTagDark]}>
+              {message.model.modelID}
+            </Text>
+          )}
+          {!isUser && message.modelID && (
+            <Text style={[s.modelTag, isDark && s.modelTagDark]}>
+              {message.modelID}
+            </Text>
+          )}
         </View>
 
         {/* Image attachments */}
@@ -70,9 +92,16 @@ export const MessageBubble = memo(
           >
             {fileParts.map((fp) => (
               <View key={fp.id} style={s.imageWrap}>
-                <Image source={{ uri: fp.url }} style={s.attachedImage} resizeMode="cover" />
+                <Image
+                  source={{ uri: fp.url }}
+                  style={s.attachedImage}
+                  resizeMode="cover"
+                />
                 {fp.filename && (
-                  <Text style={[s.imageLabel, isDark && s.imageLabelDark]} numberOfLines={1}>
+                  <Text
+                    style={[s.imageLabel, isDark && s.imageLabelDark]}
+                    numberOfLines={1}
+                  >
                     {fp.filename}
                   </Text>
                 )}
@@ -82,7 +111,9 @@ export const MessageBubble = memo(
         )}
 
         {/* Reasoning (collapsible) */}
-        {reasoning.length > 0 && <ReasoningBlock text={reasoning} isDark={isDark} />}
+        {reasoning.length > 0 && (
+          <ReasoningBlock text={reasoning} isDark={isDark} />
+        )}
 
         {/* Message text */}
         {text.length > 0 &&
@@ -109,7 +140,7 @@ export const MessageBubble = memo(
           </Text>
         )}
       </TouchableOpacity>
-    )
+    );
   },
   (prev, next) => {
     // Only re-render if message content actually changed
@@ -118,16 +149,16 @@ export const MessageBubble = memo(
     // so a reference-equality sweep over every part catches every real change
     // (including tool parts, which have no `.text`) while still skipping
     // unchanged (completed) messages during other messages' streaming.
-    if (prev.message !== next.message) return false
-    if (prev.isDark !== next.isDark) return false
-    if (prev.onLongPress !== next.onLongPress) return false
-    if (prev.parts.length !== next.parts.length) return false
+    if (prev.message !== next.message) return false;
+    if (prev.isDark !== next.isDark) return false;
+    if (prev.onLongPress !== next.onLongPress) return false;
+    if (prev.parts.length !== next.parts.length) return false;
     for (let i = 0; i < prev.parts.length; i++) {
-      if (prev.parts[i] !== next.parts[i]) return false
+      if (prev.parts[i] !== next.parts[i]) return false;
     }
-    return true
+    return true;
   },
-)
+);
 
 const s = StyleSheet.create({
   bubble: { marginBottom: 16, padding: 12, borderRadius: 12, maxWidth: "100%" },
@@ -136,7 +167,12 @@ const s = StyleSheet.create({
   assistant: { backgroundColor: "#f0f0ff" },
   assistantDark: { backgroundColor: "#1a1a2e" },
 
-  header: { flexDirection: "row", alignItems: "center", gap: 6, marginBottom: 8 },
+  header: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
+    marginBottom: 8,
+  },
   role: { fontSize: 13, fontWeight: "600", color: "#666666" },
   roleUser: { color: "#0a0a0a" },
   textWhite: { color: "#ffffff" },
@@ -170,4 +206,4 @@ const s = StyleSheet.create({
   },
   imageLabel: { fontSize: 10, color: "#666666", marginTop: 2, maxWidth: 200 },
   imageLabelDark: { color: "#888888" },
-})
+});

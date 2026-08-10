@@ -2,89 +2,89 @@
 // We create our own lightweight client that mirrors the opencode SDK patterns
 // but works in React Native environment
 // expo/fetch provides WinterCG-compliant fetch with ReadableStream support for SSE
-import { fetch as expoFetch } from "expo/fetch"
-import { buildRequestHeaders } from "./headers"
-import { SSEParser } from "./sse"
-import { apiErrorFor } from "./api-error"
-import { loadSessionList } from "./session-list"
-import type { FileRoot } from "./file-roots"
+import { fetch as expoFetch } from "expo/fetch";
+import { buildRequestHeaders } from "./headers";
+import { SSEParser } from "./sse";
+import { apiErrorFor } from "./api-error";
+import { loadSessionList } from "./session-list";
+import type { FileRoot } from "./file-roots";
 
-export { ApiAuthError, isAuthError } from "./api-error"
+export { ApiAuthError, isAuthError } from "./api-error";
 
 export interface ClientConfig {
-  baseUrl: string
-  directory?: string
+  baseUrl: string;
+  directory?: string;
   auth?: {
-    username: string
-    password: string
-  }
+    username: string;
+    password: string;
+  };
 }
 
 export interface Session {
-  id: string
-  slug: string
-  projectID: string
-  directory: string
-  parentID?: string
-  title: string
-  version: string
-  share?: { url: string }
+  id: string;
+  slug: string;
+  projectID: string;
+  directory: string;
+  parentID?: string;
+  title: string;
+  version: string;
+  share?: { url: string };
   time: {
-    created: number
-    updated: number
-    compacting?: number
-    archived?: number
-  }
+    created: number;
+    updated: number;
+    compacting?: number;
+    archived?: number;
+  };
   summary?: {
-    additions: number
-    deletions: number
-    files: number
-  }
+    additions: number;
+    deletions: number;
+    files: number;
+  };
   // Present while a message (and everything after it) is pending revert —
   // the server keeps the underlying messages until the next prompt/summarize
   // call runs cleanup (or the revert is undone via session.unrevert).
   revert?: {
-    messageID: string
-    partID?: string
-  }
+    messageID: string;
+    partID?: string;
+  };
 }
 
 export interface Message {
-  id: string
-  sessionID: string
-  role: "user" | "assistant"
-  parentID?: string
+  id: string;
+  sessionID: string;
+  role: "user" | "assistant";
+  parentID?: string;
   time: {
-    created: number
-    completed?: number
-  }
+    created: number;
+    completed?: number;
+  };
   // User message fields
-  agent?: string
-  model?: { providerID: string; modelID: string }
+  agent?: string;
+  model?: { providerID: string; modelID: string };
   // Assistant message fields
-  modelID?: string
-  providerID?: string
-  cost?: number
+  modelID?: string;
+  providerID?: string;
+  cost?: number;
   tokens?: {
-    input: number
-    output: number
-    reasoning?: number
-    cache?: { read: number; write: number }
-  }
-  error?: { message: string }
-  finish?: string
+    input: number;
+    output: number;
+    reasoning?: number;
+    cache?: { read: number; write: number };
+  };
+  error?: { message: string };
+  finish?: string;
 }
 
 // API returns messages with parts embedded
 export interface MessageWithParts {
-  info: Message
-  parts: Part[]
+  info: Message;
+  parts: Part[];
 }
 
 export interface Part {
-  id: string
-  sessionID?: string
-  messageID: string
+  id: string;
+  sessionID?: string;
+  messageID: string;
   type:
     | "text"
     | "reasoning"
@@ -97,98 +97,98 @@ export interface Part {
     | "subtask"
     | "retry"
     | "compaction"
-    | "agent"
+    | "agent";
   // Text / reasoning part
-  text?: string
+  text?: string;
   // Tool part
-  tool?: string
-  callID?: string
+  tool?: string;
+  callID?: string;
   state?: {
-    status: "pending" | "running" | "completed" | "error"
-    input?: unknown
-    output?: unknown
-    title?: string
-    error?: { message: string }
-    time?: { start?: number; end?: number }
-  }
+    status: "pending" | "running" | "completed" | "error";
+    input?: unknown;
+    output?: unknown;
+    title?: string;
+    error?: { message: string };
+    time?: { start?: number; end?: number };
+  };
   // Timing
-  time?: { start?: number; end?: number }
+  time?: { start?: number; end?: number };
   // File part
-  mime?: string
-  url?: string
-  filename?: string
+  mime?: string;
+  url?: string;
+  filename?: string;
 }
 
 export interface Agent {
-  name: string
-  description?: string
-  mode: "subagent" | "primary" | "all"
-  native?: boolean
-  hidden?: boolean
-  topP?: number
-  temperature?: number
-  color?: string
-  model?: { modelID: string; providerID: string }
-  prompt?: string
-  options: Record<string, unknown>
-  steps?: number
+  name: string;
+  description?: string;
+  mode: "subagent" | "primary" | "all";
+  native?: boolean;
+  hidden?: boolean;
+  topP?: number;
+  temperature?: number;
+  color?: string;
+  model?: { modelID: string; providerID: string };
+  prompt?: string;
+  options: Record<string, unknown>;
+  steps?: number;
 }
 
 export interface Command {
-  name: string
-  description?: string
-  agent?: string
-  model?: string
-  mcp?: boolean
-  template: string
-  subtask?: boolean
-  hints: string[]
+  name: string;
+  description?: string;
+  agent?: string;
+  model?: string;
+  mcp?: boolean;
+  template: string;
+  subtask?: boolean;
+  hints: string[];
 }
 
 export interface Project {
-  id: string
-  name?: string
+  id: string;
+  name?: string;
   path: {
-    cwd: string
-    root: string
-    absolute: string
-  }
+    cwd: string;
+    root: string;
+    absolute: string;
+  };
 }
 
 export interface FileEntry {
-  name: string
-  path: string
-  absolute: string
-  type: "file" | "directory"
-  ignored: boolean
+  name: string;
+  path: string;
+  absolute: string;
+  type: "file" | "directory";
+  ignored: boolean;
 }
 
 export interface Event {
-  type: string
-  properties: Record<string, unknown>
+  type: string;
+  properties: Record<string, unknown>;
 }
 
 export interface HealthResponse {
-  healthy: boolean
-  version: string
+  healthy: boolean;
+  version: string;
 }
 
-const REQUEST_TIMEOUT_MS = 30_000
+const REQUEST_TIMEOUT_MS = 30_000;
 
 // Thrown by request() on a non-2xx response. Carries the HTTP status so
 // callers can distinguish e.g. 404 (older server, endpoint missing) from
 // other failures without parsing the message string.
 export class ApiError extends Error {
-  status: number
+  status: number;
   constructor(status: number, body: string) {
-    super(`API Error: ${status} - ${body}`)
-    this.name = "ApiError"
-    this.status = status
+    super(`API Error: ${status} - ${body}`);
+    this.name = "ApiError";
+    this.status = status;
   }
 }
 
 function createHeaders(config: ClientConfig): HeadersInit {
-  return buildRequestHeaders(config)
+  return buildRequestHeaders(config);
 }
 
 // `timeoutMs` lets specific callers (e.g. the onboarding health-check) fail
@@ -200,8 +200,8 @@ async function request<T>(
   options: RequestInit = {},
   timeoutMs?: number,
 ): Promise<T> {
-  const url = `${config.baseUrl}${path}`
-  const headers = { ...createHeaders(config), ...options.headers }
+  const url = `${config.baseUrl}${path}`;
+  const headers = { ...createHeaders(config), ...options.headers };
   const response = await fetchWithTimeout(
     url,
     {
@@ -209,39 +209,46 @@ async function request<T>(
       headers,
     },
     timeoutMs,
-  )
+  );
 
   if (!response.ok) {
-    const error = await response.text()
-    throw apiErrorFor(response.status, `API Error: ${response.status} - ${error}`)
+    const error = await response.text();
+    throw apiErrorFor(
+      response.status,
+      `API Error: ${response.status} - ${error}`,
+    );
   }
 
-  return response.json()
+  return response.json();
 }
 
-async function fetchWithTimeout(url: string, options: RequestInit = {}, timeoutMs: number = REQUEST_TIMEOUT_MS): Promise<Response> {
-  const parentSignal = options.signal
-  if (parentSignal?.aborted) throw new Error("Request aborted")
+async function fetchWithTimeout(
+  url: string,
+  options: RequestInit = {},
+  timeoutMs: number = REQUEST_TIMEOUT_MS,
+): Promise<Response> {
+  const parentSignal = options.signal;
+  if (parentSignal?.aborted) throw new Error("Request aborted");
 
-  const controller = new AbortController()
-  let timedOut = false
+  const controller = new AbortController();
+  let timedOut = false;
   const timeout = setTimeout(() => {
-    timedOut = true
-    controller.abort()
-  }, timeoutMs)
-  const onParentAbort = () => controller.abort()
-  parentSignal?.addEventListener("abort", onParentAbort)
+    timedOut = true;
+    controller.abort();
+  }, timeoutMs);
+  const onParentAbort = () => controller.abort();
+  parentSignal?.addEventListener("abort", onParentAbort);
 
   try {
-    return await fetch(url, { ...options, signal: controller.signal })
+    return await fetch(url, { ...options, signal: controller.signal });
   } catch (error) {
     if (timedOut) {
-      throw new Error(`Request timed out after ${timeoutMs}ms`)
+      throw new Error(`Request timed out after ${timeoutMs}ms`);
     }
-    throw error
+    throw error;
   } finally {
-    clearTimeout(timeout)
-    parentSignal?.removeEventListener("abort", onParentAbort)
+    clearTimeout(timeout);
+    parentSignal?.removeEventListener("abort", onParentAbort);
   }
 }
 
@@ -252,58 +259,66 @@ export function createClient(config: ClientConfig) {
   // every request then fails against (while the diagnostics probe, which
   // reconstructs a clean URL, reports "works now"). A bare URL with no
   // trailing slash is untouched.
-  config = { ...config, baseUrl: config.baseUrl.replace(/\/+$/, "") }
+  config = { ...config, baseUrl: config.baseUrl.replace(/\/+$/, "") };
   return {
     global: {
       // `timeoutMs` overrides the default REQUEST_TIMEOUT_MS — used by the
       // onboarding connection test to fail fast on a bad/unreachable IP
       // instead of hanging for the full 30s (issue: first-run bounce).
-      health: (timeoutMs?: number) => request<HealthResponse>(config, "/global/health", {}, timeoutMs),
+      health: (timeoutMs?: number) =>
+        request<HealthResponse>(config, "/global/health", {}, timeoutMs),
       // SSE event stream - returns async iterator
       // Pass an AbortSignal to cancel the connection
       async *events(signal?: AbortSignal): AsyncGenerator<Event> {
-        const url = `${config.baseUrl}/global/event`
-        const headers = createHeaders(config)
+        const url = `${config.baseUrl}/global/event`;
+        const headers = createHeaders(config);
         // Remove Content-Type for SSE (it's text/event-stream)
-        delete (headers as Record<string, string>)["Content-Type"]
+        delete (headers as Record<string, string>)["Content-Type"];
 
         // Must use expo/fetch for ReadableStream support on native
-        const response = await expoFetch(url, { headers, signal })
+        const response = await expoFetch(url, { headers, signal });
         if (!response.ok || !response.body) {
-          throw apiErrorFor(response.status, `Failed to connect to event stream: ${response.status}`)
+          throw apiErrorFor(
+            response.status,
+            `Failed to connect to event stream: ${response.status}`,
+          );
         }
 
-        const reader = response.body.getReader()
-        const decoder = new TextDecoder()
-        const parser = new SSEParser()
+        const reader = response.body.getReader();
+        const decoder = new TextDecoder();
+        const parser = new SSEParser();
 
-        let receivedFirstByte = false
+        let receivedFirstByte = false;
         try {
           while (true) {
-            const { done, value } = await reader.read()
+            const { done, value } = await reader.read();
             if (done) {
-              console.log("[SSE] stream ended")
-              break
+              console.log("[SSE] stream ended");
+              break;
             }
 
             if (!receivedFirstByte) {
-              receivedFirstByte = true
-              console.log(`[SSE] first byte received (${value?.byteLength ?? 0} bytes)`)
+              receivedFirstByte = true;
+              console.log(
+                `[SSE] first byte received (${value?.byteLength ?? 0} bytes)`,
+              );
             }
 
-            for (const data of parser.push(decoder.decode(value, { stream: true }))) {
+            for (const data of parser.push(
+              decoder.decode(value, { stream: true }),
+            )) {
               try {
-                yield JSON.parse(data)
+                yield JSON.parse(data);
               } catch (err) {
                 console.warn("[SSE] Failed to parse event", {
                   length: data.length,
                   error: err instanceof Error ? err.message : String(err),
-                })
+                });
               }
             }
           }
         } finally {
-          reader.releaseLock()
+          reader.releaseLock();
         }
       },
     },
@@ -319,8 +334,8 @@ export function createClient(config: ClientConfig) {
     // then list("." ) to enumerate its immediate children.
     file: {
       list: (params: { path?: string } = {}) => {
-        const query = new URLSearchParams({ path: params.path ?? "." })
-        return request<FileEntry[]>(config, `/file?${query.toString()}`)
+        const query = new URLSearchParams({ path: params.path ?? "." });
+        return request<FileEntry[]>(config, `/file?${query.toString()}`);
       },
       // Enumerate the server's filesystem roots (mounted drives, home dir)
       // to seed the directory browser's pinned top-level entries. Resolves
@@ -329,17 +344,23 @@ export function createClient(config: ClientConfig) {
       // of crashing; other errors propagate like any other request.
       roots: async (): Promise<FileRoot[] | null> => {
         try {
-          return await request<FileRoot[]>(config, "/file/roots")
+          return await request<FileRoot[]>(config, "/file/roots");
         } catch (err) {
-          if (err instanceof ApiError && err.status === 404) return null
-          throw err
+          if (err instanceof ApiError && err.status === 404) return null;
+          throw err;
         }
       },
     },
 
     path: {
       get: () =>
-        request<{ home: string; state: string; config: string; worktree: string; directory: string }>(config, "/path"),
+        request<{
+          home: string;
+          state: string;
+          config: string;
+          worktree: string;
+          directory: string;
+        }>(config, "/path"),
     },
 
     session: {
@@ -351,27 +372,39 @@ export function createClient(config: ClientConfig) {
       // loadSessionList; we fetch /experimental/session with no query params
       // because the server applies `limit` before we can filter to roots.
       // Falls back to the legacy /session path only on 404 (older servers).
-      list: (params?: { roots?: boolean; limit?: number; search?: string }): Promise<Session[]> =>
+      list: (params?: {
+        roots?: boolean;
+        limit?: number;
+        search?: string;
+      }): Promise<Session[]> =>
         loadSessionList(
           {
             getExperimental: async (): Promise<Session[] | null> => {
-              const response = await fetchWithTimeout(`${config.baseUrl}/experimental/session`, {
-                headers: createHeaders(config),
-              })
+              const response = await fetchWithTimeout(
+                `${config.baseUrl}/experimental/session`,
+                {
+                  headers: createHeaders(config),
+                },
+              );
               // Older servers lack this route — signal fallback to legacy /session.
-              if (response.status === 404) return null
+              if (response.status === 404) return null;
               if (!response.ok) {
-                const body = await response.text()
-                throw apiErrorFor(response.status, `API Error: ${response.status} - ${body}`)
+                const body = await response.text();
+                throw apiErrorFor(
+                  response.status,
+                  `API Error: ${response.status} - ${body}`,
+                );
               }
-              return response.json()
+              return response.json();
             },
-            getLegacy: (query) => request<Session[]>(config, `/session${query}`),
+            getLegacy: (query) =>
+              request<Session[]>(config, `/session${query}`),
           },
           params,
         ),
 
-      get: (sessionID: string) => request<Session>(config, `/session/${sessionID}`),
+      get: (sessionID: string) =>
+        request<Session>(config, `/session/${sessionID}`),
 
       create: (params?: { title?: string }) =>
         request<Session>(config, "/session", {
@@ -379,19 +412,26 @@ export function createClient(config: ClientConfig) {
           body: JSON.stringify(params || {}),
         }),
 
-      delete: (sessionID: string) => request<void>(config, `/session/${sessionID}`, { method: "DELETE" }),
+      delete: (sessionID: string) =>
+        request<void>(config, `/session/${sessionID}`, { method: "DELETE" }),
 
-      update: (sessionID: string, params: { title?: string; time?: { archived?: number } }) =>
+      update: (
+        sessionID: string,
+        params: { title?: string; time?: { archived?: number } },
+      ) =>
         request<Session>(config, `/session/${sessionID}`, {
           method: "PATCH",
           body: JSON.stringify(params),
         }),
 
       messages: (sessionID: string, params?: { limit?: number }) => {
-        const query = new URLSearchParams()
-        if (params?.limit) query.set("limit", String(params.limit))
-        const qs = query.toString()
-        return request<MessageWithParts[]>(config, `/session/${sessionID}/message${qs ? `?${qs}` : ""}`)
+        const query = new URLSearchParams();
+        if (params?.limit) query.set("limit", String(params.limit));
+        const qs = query.toString();
+        return request<MessageWithParts[]>(
+          config,
+          `/session/${sessionID}/message${qs ? `?${qs}` : ""}`,
+        );
       },
 
       // Sends a message and returns the response
@@ -399,58 +439,73 @@ export function createClient(config: ClientConfig) {
       prompt: async (
         sessionID: string,
         params: {
-          parts: Array<{ type: "text"; text: string } | { type: "file"; mime: string; url: string; filename?: string }>
-          model?: { providerID: string; modelID: string }
-          agent?: string
-          variant?: string
+          parts: (
+            | { type: "text"; text: string }
+            | { type: "file"; mime: string; url: string; filename?: string }
+          )[];
+          model?: { providerID: string; modelID: string };
+          agent?: string;
+          variant?: string;
         },
       ): Promise<void> => {
-        const url = `${config.baseUrl}/session/${sessionID}/prompt_async`
-        const headers = createHeaders(config)
-        const body = JSON.stringify(params)
+        const url = `${config.baseUrl}/session/${sessionID}/prompt_async`;
+        const headers = createHeaders(config);
+        const body = JSON.stringify(params);
         const response = await fetchWithTimeout(url, {
           method: "POST",
           headers,
           body,
-        })
+        });
 
         if (!response.ok) {
-          const error = await response.text()
-          throw new Error(`Failed to send message: ${response.status} - ${error}`)
+          const error = await response.text();
+          throw new Error(
+            `Failed to send message: ${response.status} - ${error}`,
+          );
         }
       },
 
       command: async (
         sessionID: string,
         params: {
-          command: string
-          arguments: string
-          agent?: string
-          model?: string
-          variant?: string
-          parts?: Array<{ type: "file"; mime: string; url: string; filename?: string }>
+          command: string;
+          arguments: string;
+          agent?: string;
+          model?: string;
+          variant?: string;
+          parts?: {
+            type: "file";
+            mime: string;
+            url: string;
+            filename?: string;
+          }[];
         },
       ): Promise<void> => {
-        const url = `${config.baseUrl}/session/${sessionID}/command`
-        const headers = createHeaders(config)
+        const url = `${config.baseUrl}/session/${sessionID}/command`;
+        const headers = createHeaders(config);
 
         const response = await fetchWithTimeout(url, {
           method: "POST",
           headers,
           body: JSON.stringify({ ...params, sessionID }),
-        })
+        });
 
         if (!response.ok) {
-          const error = await response.text()
-          throw new Error(`Failed to run command: ${response.status} - ${error}`)
+          const error = await response.text();
+          throw new Error(
+            `Failed to run command: ${response.status} - ${error}`,
+          );
         }
       },
 
-      abort: (sessionID: string) => request<boolean>(config, `/session/${sessionID}/abort`, { method: "POST" }),
+      abort: (sessionID: string) =>
+        request<boolean>(config, `/session/${sessionID}/abort`, {
+          method: "POST",
+        }),
 
       diff: (sessionID: string, messageID?: string) => {
-        const qs = messageID ? `?messageID=${messageID}` : ""
-        return request<unknown[]>(config, `/session/${sessionID}/diff${qs}`)
+        const qs = messageID ? `?messageID=${messageID}` : "";
+        return request<unknown[]>(config, `/session/${sessionID}/diff${qs}`);
       },
 
       // Marks messageID (and everything after it) as pending revert. The
@@ -470,7 +525,9 @@ export function createClient(config: ClientConfig) {
 
     permission: {
       list: () =>
-        request<Array<{ id: string; sessionID: string; tool: string; input: unknown }>>(config, "/permission"),
+        request<
+          { id: string; sessionID: string; tool: string; input: unknown }[]
+        >(config, "/permission"),
 
       reply: (requestID: string, reply: "once" | "always" | "reject") =>
         request<boolean>(config, `/permission/${requestID}/reply`, {
@@ -480,7 +537,11 @@ export function createClient(config: ClientConfig) {
     },
 
     question: {
-      list: () => request<Array<{ id: string; sessionID: string; questions: unknown[] }>>(config, "/question"),
+      list: () =>
+        request<{ id: string; sessionID: string; questions: unknown[] }[]>(
+          config,
+          "/question",
+        ),
 
       reply: (requestID: string, answers: string[][]) =>
         request<boolean>(config, `/question/${requestID}/reply`, {
@@ -505,33 +566,33 @@ export function createClient(config: ClientConfig) {
     provider: {
       list: () =>
         request<{
-          all: Array<{
-            id: string
-            name: string
+          all: {
+            id: string;
+            name: string;
             models: Record<
               string,
               {
-                id: string
-                name: string
-                attachment: boolean
-                reasoning: boolean
-                tool_call: boolean
-                cost?: { input: number; output: number }
-                limit: { context: number; output: number }
-                status?: "alpha" | "beta" | "deprecated" | "active"
-                variants?: Record<string, { reasoningEffort?: string }>
+                id: string;
+                name: string;
+                attachment: boolean;
+                reasoning: boolean;
+                tool_call: boolean;
+                cost?: { input: number; output: number };
+                limit: { context: number; output: number };
+                status?: "alpha" | "beta" | "deprecated" | "active";
+                variants?: Record<string, { reasoningEffort?: string }>;
               }
-            >
-          }>
-          default: Record<string, string>
-          connected: string[]
+            >;
+          }[];
+          default: Record<string, string>;
+          connected: string[];
         }>(config, "/provider"),
     },
 
     config: {
       get: () => request<unknown>(config, "/config"),
     },
-  }
+  };
 }
 
-export type Client = ReturnType<typeof createClient>
+export type Client = ReturnType<typeof createClient>;

@@ -1,43 +1,58 @@
-import { useMemo } from "react"
-import { View, Text, StyleSheet, TouchableOpacity, ActivityIndicator } from "react-native"
-import { Ionicons } from "@expo/vector-icons"
-import { useTranslation } from "react-i18next"
-import type { Message, Session } from "../../lib/sdk"
-import type { Provider } from "../../stores/catalog"
+import { useMemo } from "react";
+import {
+  View,
+  Text,
+  StyleSheet,
+  TouchableOpacity,
+  ActivityIndicator,
+} from "react-native";
+import { Ionicons } from "@expo/vector-icons";
+import { useTranslation } from "react-i18next";
+import type { Message, Session } from "../../lib/sdk";
+import type { Provider } from "../../stores/catalog";
 
 interface Props {
-  session: Session | null
-  messages: Message[]
-  providers: Provider[]
-  visible: boolean
-  isDark: boolean
-  hasMore: boolean
-  loadingAll: boolean
-  onLoadAll: () => void
-  onScrollToTop: () => void
-  onClose: () => void
+  session: Session | null;
+  messages: Message[];
+  providers: Provider[];
+  visible: boolean;
+  isDark: boolean;
+  hasMore: boolean;
+  loadingAll: boolean;
+  onLoadAll: () => void;
+  onScrollToTop: () => void;
+  onClose: () => void;
 }
 
 function compact(n: number): string {
-  if (n >= 1_000_000) return `${(n / 1_000_000).toFixed(1)}M`
-  if (n >= 1_000) return `${(n / 1_000).toFixed(1)}K`
-  return String(n)
+  if (n >= 1_000_000) return `${(n / 1_000_000).toFixed(1)}M`;
+  if (n >= 1_000) return `${(n / 1_000).toFixed(1)}K`;
+  return String(n);
 }
 
 function formatCost(cost: number): string {
-  return new Intl.NumberFormat("en-US", { style: "currency", currency: "USD" }).format(cost)
+  return new Intl.NumberFormat("en-US", {
+    style: "currency",
+    currency: "USD",
+  }).format(cost);
 }
 
-function formatTime(ts: number, t: (key: string, opts?: Record<string, unknown>) => string): string {
-  const diff = Date.now() - ts
-  const mins = Math.floor(diff / 60_000)
-  if (mins < 1) return t("chat.sessionInfo.time.justNow")
-  if (mins < 60) return t("chat.sessionInfo.time.minutesAgo", { count: mins })
-  const hours = Math.floor(mins / 60)
-  if (hours < 24) return t("chat.sessionInfo.time.hoursAgo", { count: hours })
-  const days = Math.floor(hours / 24)
-  if (days < 7) return t("chat.sessionInfo.time.daysAgo", { count: days })
-  return new Date(ts).toLocaleDateString(undefined, { month: "short", day: "numeric" })
+function formatTime(
+  ts: number,
+  t: (key: string, opts?: Record<string, unknown>) => string,
+): string {
+  const diff = Date.now() - ts;
+  const mins = Math.floor(diff / 60_000);
+  if (mins < 1) return t("chat.sessionInfo.time.justNow");
+  if (mins < 60) return t("chat.sessionInfo.time.minutesAgo", { count: mins });
+  const hours = Math.floor(mins / 60);
+  if (hours < 24) return t("chat.sessionInfo.time.hoursAgo", { count: hours });
+  const days = Math.floor(hours / 24);
+  if (days < 7) return t("chat.sessionInfo.time.daysAgo", { count: days });
+  return new Date(ts).toLocaleDateString(undefined, {
+    month: "short",
+    day: "numeric",
+  });
 }
 
 export function SessionInfo({
@@ -52,66 +67,94 @@ export function SessionInfo({
   onScrollToTop,
   onClose,
 }: Props) {
-  const { t } = useTranslation()
+  const { t } = useTranslation();
   // Match TUI: last assistant message tokens (context window), cumulative cost
   const stats = useMemo(() => {
-    let cost = 0
-    let last: Message | null = null
+    let cost = 0;
+    let last: Message | null = null;
 
     for (const msg of messages) {
-      if (msg.role !== "assistant") continue
-      if (msg.cost) cost += msg.cost
-      if (msg.tokens && msg.tokens.output > 0) last = msg
+      if (msg.role !== "assistant") continue;
+      if (msg.cost) cost += msg.cost;
+      if (msg.tokens && msg.tokens.output > 0) last = msg;
     }
 
     // Last assistant message token breakdown (what the TUI shows)
-    const tokens = last?.tokens
-    const input = tokens?.input || 0
-    const output = tokens?.output || 0
-    const reasoning = tokens?.reasoning || 0
-    const cacheRead = tokens?.cache?.read || 0
-    const cacheWrite = tokens?.cache?.write || 0
-    const total = input + output + reasoning + cacheRead + cacheWrite
+    const tokens = last?.tokens;
+    const input = tokens?.input || 0;
+    const output = tokens?.output || 0;
+    const reasoning = tokens?.reasoning || 0;
+    const cacheRead = tokens?.cache?.read || 0;
+    const cacheWrite = tokens?.cache?.write || 0;
+    const total = input + output + reasoning + cacheRead + cacheWrite;
 
     // Find context limit from provider catalog
-    let context = 0
+    let context = 0;
     if (last?.providerID && last?.modelID) {
-      const provider = providers.find((p) => p.id === last!.providerID)
-      const model = provider?.models.find((m) => m.id === last!.modelID)
-      context = model?.limit?.context || 0
+      const provider = providers.find((p) => p.id === last!.providerID);
+      const model = provider?.models.find((m) => m.id === last!.modelID);
+      context = model?.limit?.context || 0;
     }
-    const percent = context > 0 ? Math.round((total / context) * 100) : 0
+    const percent = context > 0 ? Math.round((total / context) * 100) : 0;
 
-    return { cost, input, output, reasoning, cacheRead, cacheWrite, total, percent, context }
-  }, [messages, providers])
+    return {
+      cost,
+      input,
+      output,
+      reasoning,
+      cacheRead,
+      cacheWrite,
+      total,
+      percent,
+      context,
+    };
+  }, [messages, providers]);
 
-  if (!visible) return null
+  if (!visible) return null;
 
-  const hasTokens = stats.total > 0
-  const hasCost = stats.cost > 0
-  const summary = session?.summary
-  const created = session?.time.created
-  const updated = session?.time.updated
+  const hasTokens = stats.total > 0;
+  const hasCost = stats.cost > 0;
+  const summary = session?.summary;
+  const created = session?.time.created;
+  const updated = session?.time.updated;
 
   return (
     <View style={[s.container, isDark && s.containerDark]}>
       {/* Top row: tokens + context % + cost — matches TUI header */}
       <View style={s.row}>
         <View style={s.costRow}>
-          <Ionicons name="stats-chart-outline" size={14} color={isDark ? "#888888" : "#666666"} />
+          <Ionicons
+            name="stats-chart-outline"
+            size={14}
+            color={isDark ? "#888888" : "#666666"}
+          />
           {hasTokens && (
             <Text style={[s.tokens, isDark && s.textDark]}>
               {stats.total.toLocaleString()}
-              {stats.percent > 0 && <Text style={[s.percent, isDark && s.dimDark]}>{`  ${stats.percent}%`}</Text>}
+              {stats.percent > 0 && (
+                <Text
+                  style={[s.percent, isDark && s.dimDark]}
+                >{`  ${stats.percent}%`}</Text>
+              )}
             </Text>
           )}
-          {hasCost && <Text style={[s.cost, isDark && s.dimDark]}>({formatCost(stats.cost)})</Text>}
+          {hasCost && (
+            <Text style={[s.cost, isDark && s.dimDark]}>
+              ({formatCost(stats.cost)})
+            </Text>
+          )}
           {!hasTokens && !hasCost && (
-            <Text style={[s.cost, isDark && s.dimDark]}>{t("chat.sessionInfo.noUsageData")}</Text>
+            <Text style={[s.cost, isDark && s.dimDark]}>
+              {t("chat.sessionInfo.noUsageData")}
+            </Text>
           )}
         </View>
         <TouchableOpacity onPress={onClose} hitSlop={8}>
-          <Ionicons name="close" size={16} color={isDark ? "#666666" : "#999999"} />
+          <Ionicons
+            name="close"
+            size={16}
+            color={isDark ? "#666666" : "#999999"}
+          />
         </TouchableOpacity>
       </View>
 
@@ -122,7 +165,11 @@ export function SessionInfo({
             style={[
               s.barFill,
               { width: `${Math.min(stats.percent, 100)}%` },
-              stats.percent > 80 ? s.barWarn : stats.percent > 50 ? s.barMid : s.barOk,
+              stats.percent > 80
+                ? s.barWarn
+                : stats.percent > 50
+                  ? s.barMid
+                  : s.barOk,
             ]}
           />
         </View>
@@ -131,13 +178,33 @@ export function SessionInfo({
       {/* Token breakdown pills */}
       {hasTokens && (
         <View style={s.breakdown}>
-          <TokenPill label={t("chat.sessionInfo.pills.in")} value={stats.input} color="#3b82f6" isDark={isDark} />
-          <TokenPill label={t("chat.sessionInfo.pills.out")} value={stats.output} color="#10b981" isDark={isDark} />
+          <TokenPill
+            label={t("chat.sessionInfo.pills.in")}
+            value={stats.input}
+            color="#3b82f6"
+            isDark={isDark}
+          />
+          <TokenPill
+            label={t("chat.sessionInfo.pills.out")}
+            value={stats.output}
+            color="#10b981"
+            isDark={isDark}
+          />
           {stats.reasoning > 0 && (
-            <TokenPill label={t("chat.sessionInfo.pills.think")} value={stats.reasoning} color="#f59e0b" isDark={isDark} />
+            <TokenPill
+              label={t("chat.sessionInfo.pills.think")}
+              value={stats.reasoning}
+              color="#f59e0b"
+              isDark={isDark}
+            />
           )}
           {stats.cacheRead > 0 && (
-            <TokenPill label={t("chat.sessionInfo.pills.cacheRead")} value={stats.cacheRead} color="#8b5cf6" isDark={isDark} />
+            <TokenPill
+              label={t("chat.sessionInfo.pills.cacheRead")}
+              value={stats.cacheRead}
+              color="#8b5cf6"
+              isDark={isDark}
+            />
           )}
           {stats.cacheWrite > 0 && (
             <TokenPill
@@ -153,10 +220,20 @@ export function SessionInfo({
       {/* Session metadata */}
       <View style={s.meta}>
         {created && (
-          <MetaItem icon="time-outline" label={t("chat.sessionInfo.meta.created")} value={formatTime(created, t)} isDark={isDark} />
+          <MetaItem
+            icon="time-outline"
+            label={t("chat.sessionInfo.meta.created")}
+            value={formatTime(created, t)}
+            isDark={isDark}
+          />
         )}
         {updated && updated !== created && (
-          <MetaItem icon="refresh-outline" label={t("chat.sessionInfo.meta.updated")} value={formatTime(updated, t)} isDark={isDark} />
+          <MetaItem
+            icon="refresh-outline"
+            label={t("chat.sessionInfo.meta.updated")}
+            value={formatTime(updated, t)}
+            isDark={isDark}
+          />
         )}
         <MetaItem
           icon="chatbubbles-outline"
@@ -173,53 +250,110 @@ export function SessionInfo({
           />
         )}
         {session?.share?.url && (
-          <MetaItem icon="share-outline" label={t("chat.sessionInfo.meta.shared")} value={t("chat.sessionInfo.meta.yes")} isDark={isDark} />
+          <MetaItem
+            icon="share-outline"
+            label={t("chat.sessionInfo.meta.shared")}
+            value={t("chat.sessionInfo.meta.yes")}
+            isDark={isDark}
+          />
         )}
       </View>
 
       {/* Navigation actions */}
       <View style={s.actions}>
         {hasMore && (
-          <TouchableOpacity style={[s.action, isDark && s.actionDark]} onPress={onLoadAll} disabled={loadingAll}>
+          <TouchableOpacity
+            style={[s.action, isDark && s.actionDark]}
+            onPress={onLoadAll}
+            disabled={loadingAll}
+          >
             {loadingAll ? (
-              <ActivityIndicator size="small" color={isDark ? "#888888" : "#666666"} />
+              <ActivityIndicator
+                size="small"
+                color={isDark ? "#888888" : "#666666"}
+              />
             ) : (
-              <Ionicons name="download-outline" size={14} color={isDark ? "#888888" : "#666666"} />
+              <Ionicons
+                name="download-outline"
+                size={14}
+                color={isDark ? "#888888" : "#666666"}
+              />
             )}
             <Text style={[s.actionText, isDark && s.dimDark]}>
-              {loadingAll ? t("chat.sessionInfo.loading") : t("chat.sessionInfo.loadAllMessages")}
+              {loadingAll
+                ? t("chat.sessionInfo.loading")
+                : t("chat.sessionInfo.loadAllMessages")}
             </Text>
           </TouchableOpacity>
         )}
         {messages.length > 0 && (
-          <TouchableOpacity style={[s.action, isDark && s.actionDark]} onPress={onScrollToTop}>
-            <Ionicons name="arrow-up-outline" size={14} color={isDark ? "#888888" : "#666666"} />
-            <Text style={[s.actionText, isDark && s.dimDark]}>{t("chat.sessionInfo.jumpToBeginning")}</Text>
+          <TouchableOpacity
+            style={[s.action, isDark && s.actionDark]}
+            onPress={onScrollToTop}
+          >
+            <Ionicons
+              name="arrow-up-outline"
+              size={14}
+              color={isDark ? "#888888" : "#666666"}
+            />
+            <Text style={[s.actionText, isDark && s.dimDark]}>
+              {t("chat.sessionInfo.jumpToBeginning")}
+            </Text>
           </TouchableOpacity>
         )}
       </View>
     </View>
-  )
+  );
 }
 
-function MetaItem({ icon, label, value, isDark }: { icon: string; label: string; value: string; isDark: boolean }) {
+function MetaItem({
+  icon,
+  label,
+  value,
+  isDark,
+}: {
+  icon: string;
+  label: string;
+  value: string;
+  isDark: boolean;
+}) {
   return (
     <View style={s.metaItem}>
-      <Ionicons name={icon as any} size={12} color={isDark ? "#555555" : "#999999"} />
+      <Ionicons
+        name={icon as any}
+        size={12}
+        color={isDark ? "#555555" : "#999999"}
+      />
       <Text style={[s.metaLabel, isDark && s.dimDark]}>{label}</Text>
       <Text style={[s.metaValue, isDark && s.metaValueDark]}>{value}</Text>
     </View>
-  )
+  );
 }
 
-function TokenPill({ label, value, color, isDark }: { label: string; value: number; color: string; isDark: boolean }) {
+function TokenPill({
+  label,
+  value,
+  color,
+  isDark,
+}: {
+  label: string;
+  value: number;
+  color: string;
+  isDark: boolean;
+}) {
   return (
-    <View style={[s.pill, { borderColor: color + "40" }, isDark && { backgroundColor: color + "15" }]}>
+    <View
+      style={[
+        s.pill,
+        { borderColor: color + "40" },
+        isDark && { backgroundColor: color + "15" },
+      ]}
+    >
       <View style={[s.dot, { backgroundColor: color }]} />
       <Text style={[s.pillLabel, isDark && s.dimDark]}>{label}</Text>
       <Text style={[s.pillValue, isDark && s.textDark]}>{compact(value)}</Text>
     </View>
-  )
+  );
 }
 
 const s = StyleSheet.create({
@@ -354,4 +488,4 @@ const s = StyleSheet.create({
   },
   textDark: { color: "#e5e5e5" },
   dimDark: { color: "#666666" },
-})
+});

@@ -3,8 +3,8 @@
 // without pulling in zustand/expo (which have no resolver outside Metro).
 
 export interface BasicAuth {
-  username: string
-  password: string
+  username: string;
+  password: string;
 }
 
 // The opencode server's default Basic-auth username is "opencode"
@@ -17,6 +17,6 @@ export function buildAuth(
   username: string | null | undefined,
   password: string | null | undefined,
 ): BasicAuth | undefined {
-  if (!password) return undefined
-  return { username: username?.trim() || "opencode", password }
+  if (!password) return undefined;
+  return { username: username?.trim() || "opencode", password };
 }

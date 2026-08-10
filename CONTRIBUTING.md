@@ -91,6 +91,7 @@ OPENCODE_SERVER_PASSWORD=devpassword opencode serve --hostname 0.0.0.0 --port 40
 ```
 
 In the app, add a connection:
+
 - **Emulator on same machine**: `http://10.0.2.2:4096` (Android AVD) or `http://localhost:4096` (iOS Simulator)
 - **Physical device on same LAN**: `http://<your-machine-LAN-IP>:4096`
 - **Tunnel for remote testing**: run `npx cloudflared tunnel --url http://localhost:4096` and use the provided HTTPS URL
@@ -109,6 +110,7 @@ npm run typecheck     # TypeScript type check (tsc --noEmit)
 There is no auto-formatter enforced by CI yet (Prettier is configured but optional). Keeping existing style consistent is more important than personal preference.
 
 Key conventions:
+
 - Components: functional, with typed props via TypeScript `interface`
 - State: Zustand stores in `src/stores/`
 - API calls: through the SDK client in `src/lib/`
@@ -121,6 +123,7 @@ Key conventions:
 Use the [Bug Report template](https://github.com/dzianisv/opencode-mobile/issues/new?template=bug_report.md).
 
 Please include:
+
 - App version (visible in Settings screen)
 - opencode server version (`opencode --version`)
 - OS and version (e.g. Android 14, iOS 17.4)

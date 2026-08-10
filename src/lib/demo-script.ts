@@ -5,25 +5,25 @@
 // so the demo can render through the SAME presentational components
 // (MessageBubble, ToolCallCard, DiffView, PermissionPrompt) real sessions
 // use, instead of a parallel fake UI.
-import type { Message, Part } from "./sdk"
+import type { Message, Part } from "./sdk";
 
-export const DEMO_SESSION_ID = "demo-session"
+export const DEMO_SESSION_ID = "demo-session";
 
-const USER_MESSAGE_ID = "demo-msg-user"
-const ASSISTANT_MESSAGE_ID = "demo-msg-assistant"
-const COMPLETION_MESSAGE_ID = "demo-msg-completion"
-const DENIAL_MESSAGE_ID = "demo-msg-denial"
+const USER_MESSAGE_ID = "demo-msg-user";
+const ASSISTANT_MESSAGE_ID = "demo-msg-assistant";
+const COMPLETION_MESSAGE_ID = "demo-msg-completion";
+const DENIAL_MESSAGE_ID = "demo-msg-denial";
 
 export interface DemoPermission {
-  id: string
-  permission: string
-  patterns: string[]
+  id: string;
+  permission: string;
+  patterns: string[];
 }
 
 export interface DemoScript {
-  messages: [Message, Message]
-  parts: Record<string, Part[]>
-  permission: DemoPermission
+  messages: [Message, Message];
+  parts: Record<string, Part[]>;
+  permission: DemoPermission;
 }
 
 /**
@@ -38,7 +38,7 @@ export function buildDemoScript(now: number = Date.now()): DemoScript {
     sessionID: DEMO_SESSION_ID,
     role: "user",
     time: { created: now - 9000 },
-  }
+  };
 
   const assistantMessage: Message = {
     id: ASSISTANT_MESSAGE_ID,
@@ -49,7 +49,7 @@ export function buildDemoScript(now: number = Date.now()): DemoScript {
     providerID: "anthropic",
     tokens: { input: 812, output: 246 },
     cost: 0.0143,
-  }
+  };
 
   const parts: Record<string, Part[]> = {
     [USER_MESSAGE_ID]: [
@@ -105,25 +105,29 @@ export function buildDemoScript(now: number = Date.now()): DemoScript {
           input: {
             filePath: "src/components/LoginButton.tsx",
             oldString: "<ScrollView contentContainerStyle={styles.form}>",
-            newString: '<ScrollView contentContainerStyle={styles.form} keyboardShouldPersistTaps="handled">',
+            newString:
+              '<ScrollView contentContainerStyle={styles.form} keyboardShouldPersistTaps="handled">',
           },
           time: { start: now - 5000, end: now - 4700 },
         },
       },
     ],
-  }
+  };
 
   const permission: DemoPermission = {
     id: "demo-permission-1",
     permission: "bash",
     patterns: ["npm test -- LoginButton"],
-  }
+  };
 
-  return { messages: [userMessage, assistantMessage], parts, permission }
+  return { messages: [userMessage, assistantMessage], parts, permission };
 }
 
 /** Follow-up assistant message shown after the demo permission is allowed. */
-export function buildDemoCompletionMessage(now: number = Date.now()): { message: Message; parts: Part[] } {
+export function buildDemoCompletionMessage(now: number = Date.now()): {
+  message: Message;
+  parts: Part[];
+} {
   return {
     message: {
       id: COMPLETION_MESSAGE_ID,
@@ -141,11 +145,14 @@ export function buildDemoCompletionMessage(now: number = Date.now()): { message:
         text: "Tests passed — the login button now responds correctly with the keyboard open. Try it yourself with your own server.",
       },
     ],
-  }
+  };
 }
 
 /** Follow-up assistant message shown after the demo permission is denied. */
-export function buildDemoDenialMessage(now: number = Date.now()): { message: Message; parts: Part[] } {
+export function buildDemoDenialMessage(now: number = Date.now()): {
+  message: Message;
+  parts: Part[];
+} {
   return {
     message: {
       id: DENIAL_MESSAGE_ID,
@@ -163,5 +170,5 @@ export function buildDemoDenialMessage(now: number = Date.now()): { message: Mes
         text: "No changes were made — permission was denied. You're always in control on your own server too.",
       },
     ],
-  }
+  };
 }

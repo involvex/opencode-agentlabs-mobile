@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState, useCallback, useMemo } from "react"
+import { useEffect, useRef, useState, useCallback, useMemo } from "react";
 import {
   View,
   Text,
@@ -11,15 +11,20 @@ import {
   Platform,
   ActivityIndicator,
   Alert,
-} from "react-native"
-import { useLocalSearchParams, Stack, useRouter, useFocusEffect } from "expo-router"
-import { Ionicons } from "@expo/vector-icons"
-import { useSafeAreaInsets } from "react-native-safe-area-context"
-import { useTranslation } from "react-i18next"
-import * as ImagePicker from "expo-image-picker"
-import * as ImageManipulator from "expo-image-manipulator"
-import * as Clipboard from "expo-clipboard"
-import type BottomSheet from "@gorhom/bottom-sheet"
+} from "react-native";
+import {
+  useLocalSearchParams,
+  Stack,
+  useRouter,
+  useFocusEffect,
+} from "expo-router";
+import { Ionicons } from "@expo/vector-icons";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { useTranslation } from "react-i18next";
+import * as ImagePicker from "expo-image-picker";
+import * as ImageManipulator from "expo-image-manipulator";
+import * as Clipboard from "expo-clipboard";
+import type BottomSheet from "@gorhom/bottom-sheet";
 import {
   MessageBubble,
   PermissionPrompt,
@@ -32,13 +37,13 @@ import {
   SessionInfo,
   type SlashCommand,
   type Attachment,
-} from "../../src/components/chat"
-import { useSessions } from "../../src/stores/sessions"
-import { useEvents, refreshPending } from "../../src/stores/events"
-import { useConnections } from "../../src/stores/connections"
-import { useAuth } from "../../src/stores/auth"
-import { useCatalog } from "../../src/stores/catalog"
-import { useSpeech } from "../../src/lib/speech"
+} from "../../src/components/chat";
+import { useSessions, type RevertResult } from "../../src/stores/sessions";
+import { useEvents, refreshPending } from "../../src/stores/events";
+import { useConnections } from "../../src/stores/connections";
+import { useAuth } from "../../src/stores/auth";
+import { useCatalog } from "../../src/stores/catalog";
+import { useSpeech } from "../../src/lib/speech";
 
 // --- Builtin slash commands ---
 const BUILTIN_COMMANDS: SlashCommand[] = [
@@ -63,28 +68,31 @@ const BUILTIN_COMMANDS: SlashCommand[] = [
     icon: "person-outline",
     type: "builtin",
   },
-]
+];
 
 function getShortDir(dir?: string): string | null {
-  if (!dir) return null
-  const parts = dir.split("/").filter(Boolean)
-  return parts[parts.length - 1] || null
+  if (!dir) return null;
+  const parts = dir.split("/").filter(Boolean);
+  return parts[parts.length - 1] || null;
 }
 
 export default function SessionScreen() {
-  const { id, directory } = useLocalSearchParams<{ id: string; directory?: string }>()
-  const router = useRouter()
-  const colorScheme = useColorScheme()
-  const isDark = colorScheme === "dark"
-  const insets = useSafeAreaInsets()
-  const { t } = useTranslation()
+  const { id, directory } = useLocalSearchParams<{
+    id: string;
+    directory?: string;
+  }>();
+  const router = useRouter();
+  const colorScheme = useColorScheme();
+  const isDark = colorScheme === "dark";
+  const insets = useSafeAreaInsets();
+  const { t } = useTranslation();
 
-  const flatListRef = useRef<FlatList>(null)
-  const modelSheetRef = useRef<BottomSheet>(null)
-  const variantSheetRef = useRef<BottomSheet>(null)
-  const [input, setInput] = useState("")
-  const [attachments, setAttachments] = useState<Attachment[]>([])
-  const [showInfo, setShowInfo] = useState(false)
+  const flatListRef = useRef<FlatList>(null);
+  const modelSheetRef = useRef<BottomSheet>(null);
+  const variantSheetRef = useRef<BottomSheet>(null);
+  const [input, setInput] = useState("");
+  const [attachments, setAttachments] = useState<Attachment[]>([]);
+  const [showInfo, setShowInfo] = useState(false);
 
   const {
     currentSession,
@@ -97,65 +105,85 @@ export default function SessionScreen() {
     sendMessage,
     abortSession,
     loadOlderMessages,
-    revertToMessage,
     unrevertSession,
-  } = useSessions()
+  } = useSessions();
 
   // Derive sending state for this specific session
-  const isSending = useSessions((s) => !!(currentSession && s.sending[currentSession.id]))
+  const isSending = useSessions(
+    (s) => !!(currentSession && s.sending[currentSession.id]),
+  );
 
-  const { authenticateForMessage } = useAuth()
-  const { client, clientForDirectory } = useConnections()
+  const { authenticateForMessage } = useAuth();
+  const { client, clientForDirectory } = useConnections();
 
   // Use directory-aware client for sessions that belong to a project other than the active one
+  // Extract directory into a plain variable so the React Compiler can track the dep
+  // without optional-chaining ambiguity (avoids preserve-manual-memoization error).
+  const sessionDirectory = currentSession?.directory;
   const sessionClient = useMemo(
-    () => (currentSession?.directory ? (clientForDirectory(currentSession.directory) ?? client) : client),
-    [currentSession?.directory, clientForDirectory, client],
-  )
+    () =>
+      sessionDirectory
+        ? (clientForDirectory(sessionDirectory) ?? client)
+        : client,
+    [sessionDirectory, clientForDirectory, client],
+  );
 
   // Catalog
-  const catalog = useCatalog()
-  const agents = Array.isArray(catalog.agents) ? catalog.agents : []
-  const serverCommands = Array.isArray(catalog.commands) ? catalog.commands : []
-  const providers = Array.isArray(catalog.providers) ? catalog.providers : []
-  const agent = catalog.agent || ""
-  const model = catalog.model
-  const setModel = catalog.setModel
-  const variant = catalog.variant
-  const setVariant = catalog.setVariant
-  const cycleAgent = catalog.cycleAgent
+  const catalog = useCatalog();
+  const agents = Array.isArray(catalog.agents) ? catalog.agents : [];
+  // Wrap array derivations in useMemo so they don't produce new references
+  // on every render, which would destabilize downstream useMemo deps.
+  const serverCommands = useMemo(
+    () => (Array.isArray(catalog.commands) ? catalog.commands : []),
+    [catalog.commands],
+  );
+  const providers = useMemo(
+    () => (Array.isArray(catalog.providers) ? catalog.providers : []),
+    [catalog.providers],
+  );
+  const agent = catalog.agent || "";
+  const model = catalog.model;
+  const setModel = catalog.setModel;
+  const variant = catalog.variant;
+  const setVariant = catalog.setVariant;
+  const cycleAgent = catalog.cycleAgent;
 
   // Permission & question state
-  const sessionID = currentSession?.id
-  const permissions = useEvents((s) => (sessionID ? s.permissions[sessionID] : undefined)) || []
-  const questions = useEvents((s) => (sessionID ? s.questions[sessionID] : undefined)) || []
+  const sessionID = currentSession?.id;
+  const permissions =
+    useEvents((s) => (sessionID ? s.permissions[sessionID] : undefined)) || [];
+  const questions =
+    useEvents((s) => (sessionID ? s.questions[sessionID] : undefined)) || [];
 
-  const shortDir = getShortDir(currentSession?.directory)
-  const [showScrollButton, setShowScrollButton] = useState(false)
+  const shortDir = getShortDir(currentSession?.directory);
+  const [showScrollButton, setShowScrollButton] = useState(false);
 
   // SSE reconnect banner
-  const reconnectAttempts = useEvents((s) => s.reconnectAttempts)
-  const [showConnectedFlash, setShowConnectedFlash] = useState(false)
-  const prevReconnecting = useRef(false)
+  const reconnectAttempts = useEvents((s) => s.reconnectAttempts);
+  const [showConnectedFlash, setShowConnectedFlash] = useState(false);
+  const prevReconnecting = useRef(false);
 
   // Voice input — transcript appends to the text input on completion
   const speech = useSpeech(
     useCallback((text: string) => {
-      setInput((prev) => (prev ? prev + " " + text : text))
+      setInput((prev) => (prev ? prev + " " + text : text));
     }, []),
-  )
+  );
 
   // Surface speech recognition failures (e.g. mic permission denied). Keyed
   // on the error value itself so it only fires once per distinct error, not
   // on every re-render while it remains set.
   useEffect(() => {
-    if (!speech.error) return
-    Alert.alert(t("session.alerts.speechErrorTitle"), t("session.alerts.speechErrorMessage"))
-  }, [speech.error, t])
+    if (!speech.error) return;
+    Alert.alert(
+      t("session.alerts.speechErrorTitle"),
+      t("session.alerts.speechErrorMessage"),
+    );
+  }, [speech.error, t]);
 
   // Slash command state
-  const slashActive = input.startsWith("/") && !input.includes(" ")
-  const slashQuery = slashActive ? input.slice(1) : ""
+  const slashActive = input.startsWith("/") && !input.includes(" ");
+  const slashQuery = slashActive ? input.slice(1) : "";
 
   const allCommands = useMemo<SlashCommand[]>(() => {
     const custom: SlashCommand[] = serverCommands.map((cmd) => ({
@@ -164,9 +192,9 @@ export default function SessionScreen() {
       description: cmd.description,
       icon: "code-slash-outline",
       type: "custom",
-    }))
-    return [...custom, ...BUILTIN_COMMANDS]
-  }, [serverCommands])
+    }));
+    return [...custom, ...BUILTIN_COMMANDS];
+  }, [serverCommands]);
 
   // While a revert is pending, the reverted message and everything after it
   // still exist server-side (cleanup only runs on the next prompt/unrevert)
@@ -175,85 +203,116 @@ export default function SessionScreen() {
   // "temp-" IDs (assigned client-side before the server responds, see
   // sendMessage) aren't part of that sort order — always keep them so a
   // message sent concurrently with a revert isn't hidden.
-  const revertMessageID = currentSession?.revert?.messageID
+  const revertMessageID = currentSession?.revert?.messageID;
 
   // Inverted FlatList: data is reversed (newest first) so newest renders at bottom
   const messageData = useMemo(
     () =>
       (messages || [])
-        .filter((msg) => !revertMessageID || msg.id.startsWith("temp-") || msg.id < revertMessageID)
+        .filter(
+          (msg) =>
+            !revertMessageID ||
+            msg.id.startsWith("temp-") ||
+            msg.id < revertMessageID,
+        )
         .map((msg) => ({
           message: msg,
           parts: (parts && parts[msg.id]) || [],
         }))
         .reverse(),
     [messages, parts, revertMessageID],
-  )
+  );
 
   // Tracks the latest composer text without pulling `input` into
-  // handleMessageLongPress's deps — kept as a plain ref assignment (not
-  // state) so the callback below stays referentially stable across
-  // keystrokes for MessageBubble's custom memo comparator.
-  const inputRef = useRef(input)
-  inputRef.current = input
+  // handleMessageLongPress's deps — kept as a ref so the callback below
+  // stays referentially stable across keystrokes for MessageBubble's
+  // custom memo comparator. Synced in an effect to avoid ref writes during render.
+  const inputRef = useRef(input);
+  useEffect(() => {
+    inputRef.current = input;
+  });
 
-  const applyRevertResult = useCallback((result: Awaited<ReturnType<typeof revertToMessage>>) => {
-    if (!result.ok) {
-      if (result.reason === "unsupported") {
-        Alert.alert(t("session.alerts.notSupportedTitle"), t("session.alerts.notSupportedMessage"))
-      } else if (result.reason === "auth") {
-        Alert.alert(t("session.alerts.revertAuthFailedTitle"), t("session.alerts.revertAuthFailedMessage"))
-      } else {
-        Alert.alert(t("session.alerts.editFailedTitle"), t("session.alerts.editFailedMessage"))
+  const applyRevertResult = useCallback(
+    (result: RevertResult) => {
+      if (!result.ok) {
+        if (result.reason === "unsupported") {
+          Alert.alert(
+            t("session.alerts.notSupportedTitle"),
+            t("session.alerts.notSupportedMessage"),
+          );
+        } else if (result.reason === "auth") {
+          Alert.alert(
+            t("session.alerts.revertAuthFailedTitle"),
+            t("session.alerts.revertAuthFailedMessage"),
+          );
+        } else {
+          Alert.alert(
+            t("session.alerts.editFailedTitle"),
+            t("session.alerts.editFailedMessage"),
+          );
+        }
+        return;
       }
-      return
-    }
-    setInput(result.text)
-    // Restore attachments in the same shape the composer's own picker
-    // functions (pickFromLibrary/pickFromCamera/pasteFromClipboard) use.
-    setAttachments(
-      result.files
-        .filter((f): f is typeof f & { url: string; mime: string } => !!f.url && !!f.mime)
-        .map((f) => ({ uri: f.url, mime: f.mime, filename: f.filename })),
-    )
-  }, [t])
+      setInput(result.text);
+      // Restore attachments in the same shape the composer's own picker
+      // functions (pickFromLibrary/pickFromCamera/pasteFromClipboard) use.
+      setAttachments(
+        result.files
+          .filter(
+            (f): f is typeof f & { url: string; mime: string } =>
+              !!f.url && !!f.mime,
+          )
+          .map((f) => ({ uri: f.url, mime: f.mime, filename: f.filename })),
+      );
+    },
+    [t],
+  );
 
   // Stable across renders (reads fresh state via getState() rather than
   // closing over props) so MessageBubble's custom memo comparator can bail
   // safely without risking a stale handler.
-  const handleMessageLongPress = useCallback((messageID: string) => {
-    Alert.alert(t("session.alerts.messageActionsTitle"), undefined, [
-      { text: t("common.cancel"), style: "cancel" },
-      {
-        text: t("session.actions.editMessage"),
-        onPress: () => {
-          const doRevert = async () => {
-            const result = await useSessions.getState().revertToMessage(messageID)
-            applyRevertResult(result)
-          }
-          // Editing overwrites the composer — don't silently clobber an
-          // in-progress unsent draft.
-          if (inputRef.current.trim()) {
-            Alert.alert(
-              t("session.alerts.replaceDraftTitle"),
-              t("session.alerts.replaceDraftMessage"),
-              [
-                { text: t("common.cancel"), style: "cancel" },
-                { text: t("session.actions.replace"), style: "destructive", onPress: doRevert },
-              ],
-              { cancelable: false },
-            )
-            return
-          }
-          doRevert()
+  const handleMessageLongPress = useCallback(
+    (messageID: string) => {
+      Alert.alert(t("session.alerts.messageActionsTitle"), undefined, [
+        { text: t("common.cancel"), style: "cancel" },
+        {
+          text: t("session.actions.editMessage"),
+          onPress: () => {
+            const doRevert = async () => {
+              const result = await useSessions
+                .getState()
+                .revertToMessage(messageID);
+              applyRevertResult(result);
+            };
+            // Editing overwrites the composer — don't silently clobber an
+            // in-progress unsent draft.
+            if (inputRef.current.trim()) {
+              Alert.alert(
+                t("session.alerts.replaceDraftTitle"),
+                t("session.alerts.replaceDraftMessage"),
+                [
+                  { text: t("common.cancel"), style: "cancel" },
+                  {
+                    text: t("session.actions.replace"),
+                    style: "destructive",
+                    onPress: doRevert,
+                  },
+                ],
+                { cancelable: false },
+              );
+              return;
+            }
+            doRevert();
+          },
         },
-      },
-    ])
-  }, [applyRevertResult, t])
+      ]);
+    },
+    [applyRevertResult, t],
+  );
 
   const scrollToBottom = useCallback((animated = true) => {
-    flatListRef.current?.scrollToOffset({ offset: 0, animated })
-  }, [])
+    flatListRef.current?.scrollToOffset({ offset: 0, animated });
+  }, []);
 
   // Re-select on every focus, not just mount. currentSession/messages/
   // permissions are a single global store, and the native stack keeps screens
@@ -264,32 +323,34 @@ export default function SessionScreen() {
   // to its own session whenever it becomes visible again.
   useFocusEffect(
     useCallback(() => {
-      if (!id) return
+      if (!id) return;
       selectSession(id, directory).then(() => {
         // Re-fetch pending permissions/questions from the server to recover from
         // missed SSE events or failed optimistic removals
-        const connState = useConnections.getState()
-        const c = directory ? (connState.clientForDirectory(directory) ?? connState.client) : connState.client
-        if (c) refreshPending(c, id)
-      })
-    }, [id, directory]),
-  )
+        const connState = useConnections.getState();
+        const c = directory
+          ? (connState.clientForDirectory(directory) ?? connState.client)
+          : connState.client;
+        if (c) refreshPending(c, id);
+      });
+    }, [id, directory, selectSession]),
+  );
 
   // Sync model chip from latest assistant message
   useEffect(() => {
-    if (!messages || messages.length === 0) return
+    if (!messages || messages.length === 0) return;
     for (let i = messages.length - 1; i >= 0; i--) {
-      const msg = messages[i]
+      const msg = messages[i];
       if (msg.role === "assistant" && msg.providerID && msg.modelID) {
-        setModel({ providerID: msg.providerID, modelID: msg.modelID })
-        return
+        setModel({ providerID: msg.providerID, modelID: msg.modelID });
+        return;
       }
       if (msg.role === "user" && msg.model) {
-        setModel(msg.model)
-        return
+        setModel(msg.model);
+        return;
       }
     }
-  }, [currentSession?.id, messages?.length])
+  }, [messages, setModel]);
 
   // Slash command handler
   const handleSlashSelect = useCallback(
@@ -297,38 +358,47 @@ export default function SessionScreen() {
       if (cmd.type === "builtin") {
         switch (cmd.trigger) {
           case "new":
-            router.back()
-            return
+            router.back();
+            return;
           case "model":
-            setInput("")
-            modelSheetRef.current?.expand()
-            return
+            setInput("");
+            modelSheetRef.current?.expand();
+            return;
           case "agent":
-            setInput("")
-            cycleAgent()
-            return
+            setInput("");
+            cycleAgent();
+            return;
         }
       }
-      setInput(`/${cmd.trigger} `)
+      setInput(`/${cmd.trigger} `);
     },
     [router, cycleAgent],
-  )
+  );
 
   // --- Image picking ---
 
   // Convert any image (including HEIC/HEIF from iOS) to guaranteed JPEG bytes
-  const MAX_DIMENSION = 1568 // Anthropic recommended max
-  async function toJpeg(uri: string, width: number, height: number): Promise<Attachment> {
-    const actions: ImageManipulator.Action[] = []
+  const MAX_DIMENSION = 1568; // Anthropic recommended max
+  async function toJpeg(
+    uri: string,
+    width: number,
+    height: number,
+  ): Promise<Attachment> {
+    const actions: ImageManipulator.Action[] = [];
     if (width > MAX_DIMENSION || height > MAX_DIMENSION) {
-      const scale = MAX_DIMENSION / Math.max(width, height)
-      actions.push({ resize: { width: Math.round(width * scale), height: Math.round(height * scale) } })
+      const scale = MAX_DIMENSION / Math.max(width, height);
+      actions.push({
+        resize: {
+          width: Math.round(width * scale),
+          height: Math.round(height * scale),
+        },
+      });
     }
     const result = await ImageManipulator.manipulateAsync(uri, actions, {
       format: ImageManipulator.SaveFormat.JPEG,
       compress: 0.8,
       base64: true,
-    })
+    });
     return {
       uri: result.uri,
       mime: "image/jpeg",
@@ -336,7 +406,7 @@ export default function SessionScreen() {
       width: result.width,
       height: result.height,
       base64: result.base64 || undefined,
-    }
+    };
   }
 
   const pickFromLibrary = useCallback(async () => {
@@ -345,85 +415,106 @@ export default function SessionScreen() {
       allowsMultipleSelection: true,
       selectionLimit: 10,
       quality: 1, // full quality - we compress in manipulator
-    })
-    if (result.canceled) return
-    const settled = await Promise.allSettled(result.assets.map((a) => toJpeg(a.uri, a.width, a.height)))
-    const items = settled.filter((r) => r.status === "fulfilled").map((r) => r.value)
-    if (items.length) setAttachments((prev) => [...prev, ...items])
+    });
+    if (result.canceled) return;
+    const settled = await Promise.allSettled(
+      result.assets.map((a) => toJpeg(a.uri, a.width, a.height)),
+    );
+    const items = settled
+      .filter((r) => r.status === "fulfilled")
+      .map((r) => r.value);
+    if (items.length) setAttachments((prev) => [...prev, ...items]);
     if (settled.some((r) => r.status === "rejected")) {
       console.error(
         "Failed to process image(s):",
         settled.filter((r) => r.status === "rejected").map((r) => r.reason),
-      )
-      Alert.alert(t("session.alerts.imageFailedTitle"), t("session.alerts.imageFailedMessage"))
+      );
+      Alert.alert(
+        t("session.alerts.imageFailedTitle"),
+        t("session.alerts.imageFailedMessage"),
+      );
     }
-  }, [t])
+  }, [t]);
 
   const pickFromCamera = useCallback(async () => {
-    const perm = await ImagePicker.requestCameraPermissionsAsync()
+    const perm = await ImagePicker.requestCameraPermissionsAsync();
     if (!perm.granted) {
-      Alert.alert(t("session.alerts.cameraPermissionTitle"), t("session.alerts.cameraPermissionMessage"))
-      return
+      Alert.alert(
+        t("session.alerts.cameraPermissionTitle"),
+        t("session.alerts.cameraPermissionMessage"),
+      );
+      return;
     }
-    const result = await ImagePicker.launchCameraAsync({ quality: 1 })
-    if (result.canceled) return
-    const a = result.assets[0]
+    const result = await ImagePicker.launchCameraAsync({ quality: 1 });
+    if (result.canceled) return;
+    const a = result.assets[0];
     try {
-      const item = await toJpeg(a.uri, a.width, a.height)
-      setAttachments((prev) => [...prev, item])
+      const item = await toJpeg(a.uri, a.width, a.height);
+      setAttachments((prev) => [...prev, item]);
     } catch (err) {
-      console.error("Failed to process photo:", err)
-      Alert.alert(t("session.alerts.imageFailedTitle"), t("session.alerts.imageFailedMessage"))
+      console.error("Failed to process photo:", err);
+      Alert.alert(
+        t("session.alerts.imageFailedTitle"),
+        t("session.alerts.imageFailedMessage"),
+      );
     }
-  }, [t])
+  }, [t]);
 
   const pasteFromClipboard = useCallback(async () => {
     // Try image first
-    const hasImage = await Clipboard.hasImageAsync()
+    const hasImage = await Clipboard.hasImageAsync();
     if (hasImage) {
-      const img = await Clipboard.getImageAsync({ format: "png" })
+      const img = await Clipboard.getImageAsync({ format: "png" });
       if (img?.data) {
-        const uri = img.data.startsWith("data:") ? img.data : `data:image/png;base64,${img.data}`
-        const item = await toJpeg(uri, img.size.width, img.size.height)
-        setAttachments((prev) => [...prev, item])
-        return
+        const uri = img.data.startsWith("data:")
+          ? img.data
+          : `data:image/png;base64,${img.data}`;
+        const item = await toJpeg(uri, img.size.width, img.size.height);
+        setAttachments((prev) => [...prev, item]);
+        return;
       }
     }
     // Fall back to text
-    const hasText = await Clipboard.hasStringAsync()
+    const hasText = await Clipboard.hasStringAsync();
     if (hasText) {
-      const text = await Clipboard.getStringAsync()
+      const text = await Clipboard.getStringAsync();
       if (text) {
-        setInput((prev) => prev + text)
-        return
+        setInput((prev) => prev + text);
+        return;
       }
     }
-    Alert.alert(t("session.alerts.emptyClipboardTitle"), t("session.alerts.emptyClipboardMessage"))
-  }, [t])
+    Alert.alert(
+      t("session.alerts.emptyClipboardTitle"),
+      t("session.alerts.emptyClipboardMessage"),
+    );
+  }, [t]);
 
   const removeAttachment = useCallback((index: number) => {
-    setAttachments((prev) => prev.filter((_, i) => i !== index))
-  }, [])
+    setAttachments((prev) => prev.filter((_, i) => i !== index));
+  }, []);
 
   // --- Send ---
   const handleSend = async () => {
-    if (!input.trim() && attachments.length === 0) return
-    const authenticated = await authenticateForMessage()
+    if (!input.trim() && attachments.length === 0) return;
+    const authenticated = await authenticateForMessage();
     if (!authenticated) {
-      Alert.alert(t("session.alerts.authRequiredTitle"), t("session.alerts.authRequiredMessage"))
-      return
+      Alert.alert(
+        t("session.alerts.authRequiredTitle"),
+        t("session.alerts.authRequiredMessage"),
+      );
+      return;
     }
 
-    const text = input.trim()
-    const files = [...attachments]
-    setInput("")
-    setAttachments([])
+    const text = input.trim();
+    const files = [...attachments];
+    setInput("");
+    setAttachments([]);
 
     // Server slash commands (no attachments for commands)
     if (text.startsWith("/") && files.length === 0) {
-      const [cmdName, ...args] = text.split(" ")
-      const name = cmdName.slice(1)
-      const match = serverCommands.find((c) => c.name === name)
+      const [cmdName, ...args] = text.split(" ");
+      const name = cmdName.slice(1);
+      const match = serverCommands.find((c) => c.name === name);
       if (match && sessionClient && currentSession) {
         sessionClient.session
           .command(currentSession.id, {
@@ -432,139 +523,165 @@ export default function SessionScreen() {
             agent,
             model: model ? `${model.providerID}/${model.modelID}` : undefined,
           })
-          .catch((err) => console.error("Command failed:", err))
-        return
+          .catch((err) => console.error("Command failed:", err));
+        return;
       }
     }
 
     // Messages are queued server-side when the session is busy.
     // No need to abort - just send and it will be processed after current response.
     try {
-      await sendMessage(text, model || undefined, agent || undefined, files, variant || undefined)
+      await sendMessage(
+        text,
+        model || undefined,
+        agent || undefined,
+        files,
+        variant || undefined,
+      );
     } catch (err) {
-      console.error("Send failed:", err)
+      console.error("Send failed:", err);
       // Restore the user's text and attachments so their input isn't lost.
-      setInput((prev) => (prev ? prev : text))
-      setAttachments((prev) => (prev.length ? prev : files))
-      Alert.alert(t("session.alerts.sendFailedTitle"), t("session.alerts.sendFailedMessage"))
+      setInput((prev) => (prev ? prev : text));
+      setAttachments((prev) => (prev.length ? prev : files));
+      Alert.alert(
+        t("session.alerts.sendFailedTitle"),
+        t("session.alerts.sendFailedMessage"),
+      );
     }
-  }
+  };
 
   // In inverted mode, offset 0 = bottom. Show scroll button when scrolled away from bottom.
   const handleScroll = useCallback((event: any) => {
-    const { contentOffset } = event.nativeEvent
-    setShowScrollButton(contentOffset.y > 200)
-  }, [])
+    const { contentOffset } = event.nativeEvent;
+    setShowScrollButton(contentOffset.y > 200);
+  }, []);
 
   // Debounce: onEndReached can fire multiple times during a single scroll gesture
-  const loadingTriggered = useRef(false)
+  const loadingTriggered = useRef(false);
   const handleLoadMore = useCallback(() => {
     if (hasMore && !loadingMore && !loadingTriggered.current) {
-      loadingTriggered.current = true
-      loadOlderMessages()
+      loadingTriggered.current = true;
+      loadOlderMessages();
     }
-  }, [hasMore, loadingMore, loadOlderMessages])
+  }, [hasMore, loadingMore, loadOlderMessages]);
 
   // Reset trigger when loading finishes
   useEffect(() => {
-    if (!loadingMore) loadingTriggered.current = false
-  }, [loadingMore])
+    if (!loadingMore) loadingTriggered.current = false;
+  }, [loadingMore]);
 
   // Detect reconnecting → stable transition for the "Connected ✓" flash.
   // reconnectAttempts and lastDisconnectAt reset in the same set() call, so we
   // can't use lastDisconnectAt alone; a useRef tracks the prior reconnecting state.
   useEffect(() => {
-    const isReconnecting = reconnectAttempts > 0
+    const isReconnecting = reconnectAttempts > 0;
     if (prevReconnecting.current && !isReconnecting) {
-      setShowConnectedFlash(true)
-      const t = setTimeout(() => setShowConnectedFlash(false), 2000)
-      return () => clearTimeout(t)
+      setShowConnectedFlash(true);
+      const t = setTimeout(() => setShowConnectedFlash(false), 2000);
+      return () => clearTimeout(t);
     }
-    prevReconnecting.current = isReconnecting
-  }, [reconnectAttempts])
+    prevReconnecting.current = isReconnecting;
+  }, [reconnectAttempts]);
 
-  const handlePermissionReply = async (requestID: string, reply: "once" | "always" | "reject") => {
-    if (!sessionClient || !sessionID) return
+  const handlePermissionReply = async (
+    requestID: string,
+    reply: "once" | "always" | "reject",
+  ) => {
+    if (!sessionClient || !sessionID) return;
     // Snapshot for rollback
-    const snapshot = useEvents.getState().permissions[sessionID] || []
+    const snapshot = useEvents.getState().permissions[sessionID] || [];
     // Optimistically remove from UI
     useEvents.setState((state) => ({
       permissions: {
         ...state.permissions,
         [sessionID]: snapshot.filter((p) => p.id !== requestID),
       },
-    }))
+    }));
     try {
-      await sessionClient.permission.reply(requestID, reply)
+      await sessionClient.permission.reply(requestID, reply);
     } catch (err) {
-      console.error("Permission reply failed:", err)
+      console.error("Permission reply failed:", err);
       // Restore the prompt so the user can retry
       useEvents.setState((state) => ({
         permissions: { ...state.permissions, [sessionID]: snapshot },
-      }))
-      Alert.alert(t("session.alerts.replyFailedTitle"), t("session.alerts.replyFailedMessage"))
+      }));
+      Alert.alert(
+        t("session.alerts.replyFailedTitle"),
+        t("session.alerts.replyFailedMessage"),
+      );
     }
-  }
+  };
 
-  const handleQuestionReply = async (requestID: string, answers: string[][]) => {
-    if (!sessionClient || !sessionID) return
-    const snapshot = useEvents.getState().questions[sessionID] || []
+  const handleQuestionReply = async (
+    requestID: string,
+    answers: string[][],
+  ) => {
+    if (!sessionClient || !sessionID) return;
+    const snapshot = useEvents.getState().questions[sessionID] || [];
     useEvents.setState((state) => ({
       questions: {
         ...state.questions,
         [sessionID]: snapshot.filter((q) => q.id !== requestID),
       },
-    }))
+    }));
     try {
-      await sessionClient.question.reply(requestID, answers)
+      await sessionClient.question.reply(requestID, answers);
     } catch (err) {
-      console.error("Question reply failed:", err)
+      console.error("Question reply failed:", err);
       useEvents.setState((state) => ({
         questions: { ...state.questions, [sessionID]: snapshot },
-      }))
-      Alert.alert(t("session.alerts.replyFailedTitle"), t("session.alerts.replyFailedMessage"))
+      }));
+      Alert.alert(
+        t("session.alerts.replyFailedTitle"),
+        t("session.alerts.replyFailedMessage"),
+      );
     }
-  }
+  };
 
   const handleQuestionReject = async (requestID: string) => {
-    if (!sessionClient || !sessionID) return
-    const snapshot = useEvents.getState().questions[sessionID] || []
+    if (!sessionClient || !sessionID) return;
+    const snapshot = useEvents.getState().questions[sessionID] || [];
     useEvents.setState((state) => ({
       questions: {
         ...state.questions,
         [sessionID]: snapshot.filter((q) => q.id !== requestID),
       },
-    }))
+    }));
     try {
-      await sessionClient.question.reject(requestID)
+      await sessionClient.question.reject(requestID);
     } catch (err) {
-      console.error("Question reject failed:", err)
+      console.error("Question reject failed:", err);
       useEvents.setState((state) => ({
         questions: { ...state.questions, [sessionID]: snapshot },
-      }))
-      Alert.alert(t("session.alerts.rejectFailedTitle"), t("session.alerts.rejectFailedMessage"))
+      }));
+      Alert.alert(
+        t("session.alerts.rejectFailedTitle"),
+        t("session.alerts.rejectFailedMessage"),
+      );
     }
-  }
+  };
 
   const handleModelSelect = useCallback(
     (providerID: string, modelID: string) => {
-      setModel({ providerID, modelID })
+      setModel({ providerID, modelID });
     },
     [setModel],
-  )
+  );
 
   // Current agent display
-  const currentAgent = agents.find((a) => a.name === agent)
-  const agentColor = currentAgent?.color || "#8b5cf6"
-  const modelLabel = model?.modelID ? model.modelID.split("/").pop() || model.modelID : "default"
+  const currentAgent = agents.find((a) => a.name === agent);
+  const agentColor = currentAgent?.color || "#8b5cf6";
+  const modelLabel = model?.modelID
+    ? model.modelID.split("/").pop() || model.modelID
+    : "default";
 
   // Variants for current model (for reasoning effort picker)
   const currentModelVariants = useMemo(() => {
-    if (!model) return undefined
-    const provider = providers.find((p) => p.id === model.providerID)
-    const found = provider?.models.find((m) => m.id === model.modelID)
-    return found?.variants
-  }, [model, providers])
+    if (!model) return undefined;
+    const provider = providers.find((p) => p.id === model.providerID);
+    const found = provider?.models.find((m) => m.id === model.modelID);
+    return found?.variants;
+  }, [model, providers]);
 
   return (
     <>
@@ -575,11 +692,20 @@ export default function SessionScreen() {
             <View style={s.headerRight}>
               {shortDir && (
                 <View style={[s.dirBadge, isDark && s.dirBadgeDark]}>
-                  <Ionicons name="folder-outline" size={14} color={isDark ? "#888888" : "#666666"} />
-                  <Text style={[s.dirText, isDark && s.dirTextDark]}>{shortDir}</Text>
+                  <Ionicons
+                    name="folder-outline"
+                    size={14}
+                    color={isDark ? "#888888" : "#666666"}
+                  />
+                  <Text style={[s.dirText, isDark && s.dirTextDark]}>
+                    {shortDir}
+                  </Text>
                 </View>
               )}
-              <TouchableOpacity onPress={() => setShowInfo((v) => !v)} hitSlop={8}>
+              <TouchableOpacity
+                onPress={() => setShowInfo((v) => !v)}
+                hitSlop={8}
+              >
                 <Ionicons
                   name={showInfo ? "stats-chart" : "stats-chart-outline"}
                   size={20}
@@ -618,10 +744,10 @@ export default function SessionScreen() {
           hasMore={hasMore}
           loadingAll={loadingMore}
           onLoadAll={() => {
-            if (hasMore && !loadingMore) loadOlderMessages()
+            if (hasMore && !loadingMore) loadOlderMessages();
           }}
           onScrollToTop={() => {
-            flatListRef.current?.scrollToEnd({ animated: true })
+            flatListRef.current?.scrollToEnd({ animated: true });
           }}
           onClose={() => setShowInfo(false)}
         />
@@ -629,7 +755,11 @@ export default function SessionScreen() {
         {/* SSE reconnect/connected banner */}
         {reconnectAttempts > 0 && (
           <View style={[s.banner, s.bannerReconnecting]}>
-            <Text style={s.bannerText}>{t("session.banners.reconnecting", { attempt: reconnectAttempts })}</Text>
+            <Text style={s.bannerText}>
+              {t("session.banners.reconnecting", {
+                attempt: reconnectAttempts,
+              })}
+            </Text>
           </View>
         )}
         {showConnectedFlash && reconnectAttempts === 0 && (
@@ -645,12 +775,12 @@ export default function SessionScreen() {
             <Text style={s.bannerText}>{t("session.banners.reverted")}</Text>
             <TouchableOpacity
               onPress={() => {
-                unrevertSession()
+                unrevertSession();
                 // The composer was prefilled with the reverted message's text/
                 // attachments (see applyRevertResult) — clear it so Undo doesn't
                 // leave a stale draft that could be sent as a duplicate.
-                setInput("")
-                setAttachments([])
+                setInput("");
+                setAttachments([]);
               }}
               hitSlop={8}
             >
@@ -661,7 +791,10 @@ export default function SessionScreen() {
 
         {isLoading ? (
           <View style={s.loading}>
-            <ActivityIndicator size="large" color={isDark ? "#ffffff" : "#0a0a0a"} />
+            <ActivityIndicator
+              size="large"
+              color={isDark ? "#ffffff" : "#0a0a0a"}
+            />
           </View>
         ) : (
           <View style={s.listWrap}>
@@ -688,8 +821,13 @@ export default function SessionScreen() {
               ListFooterComponent={
                 loadingMore ? (
                   <View style={s.loadingMore}>
-                    <ActivityIndicator size="small" color={isDark ? "#888888" : "#666666"} />
-                    <Text style={[s.loadingMoreText, isDark && s.metaDark]}>{t("session.loadingOlder")}</Text>
+                    <ActivityIndicator
+                      size="small"
+                      color={isDark ? "#888888" : "#666666"}
+                    />
+                    <Text style={[s.loadingMoreText, isDark && s.metaDark]}>
+                      {t("session.loadingOlder")}
+                    </Text>
                   </View>
                 ) : null
               }
@@ -698,21 +836,38 @@ export default function SessionScreen() {
                 inverted transform mirroring its text/icon (see #ui-mirror). */}
             {messageData.length === 0 && (
               <View style={s.emptyOverlay} pointerEvents="none">
-                <Ionicons name="chatbubble-outline" size={48} color={isDark ? "#444444" : "#cccccc"} />
-                <Text style={[s.emptyText, isDark && s.metaDark]}>{t("session.empty.title")}</Text>
-                <Text style={[s.emptyHint, isDark && s.metaDark]}>{t("session.empty.hint")}</Text>
+                <Ionicons
+                  name="chatbubble-outline"
+                  size={48}
+                  color={isDark ? "#444444" : "#cccccc"}
+                />
+                <Text style={[s.emptyText, isDark && s.metaDark]}>
+                  {t("session.empty.title")}
+                </Text>
+                <Text style={[s.emptyHint, isDark && s.metaDark]}>
+                  {t("session.empty.hint")}
+                </Text>
               </View>
             )}
             {showScrollButton && (
-              <TouchableOpacity style={[s.scrollBtn, isDark && s.scrollBtnDark]} onPress={() => scrollToBottom(true)}>
-                <Ionicons name="chevron-down" size={24} color={isDark ? "#ffffff" : "#0a0a0a"} />
+              <TouchableOpacity
+                style={[s.scrollBtn, isDark && s.scrollBtnDark]}
+                onPress={() => scrollToBottom(true)}
+              >
+                <Ionicons
+                  name="chevron-down"
+                  size={24}
+                  color={isDark ? "#ffffff" : "#0a0a0a"}
+                />
               </TouchableOpacity>
             )}
           </View>
         )}
 
         {/* Status */}
-        {currentSession && <StatusIndicator sessionID={currentSession.id} isDark={isDark} />}
+        {currentSession && (
+          <StatusIndicator sessionID={currentSession.id} isDark={isDark} />
+        )}
 
         {/* Permissions */}
         {permissions.map((perm) => (
@@ -737,7 +892,12 @@ export default function SessionScreen() {
 
         {/* Slash popover */}
         {slashActive && (
-          <SlashPopover query={slashQuery} commands={allCommands} isDark={isDark} onSelect={handleSlashSelect} />
+          <SlashPopover
+            query={slashQuery}
+            commands={allCommands}
+            isDark={isDark}
+            onSelect={handleSlashSelect}
+          />
         )}
 
         {/* Agent/model toolbar */}
@@ -748,8 +908,14 @@ export default function SessionScreen() {
             onLongPress={() => cycleAgent(-1)}
           >
             <View style={[s.agentDot, { backgroundColor: agentColor }]} />
-            <Text style={[s.agentLabel, isDark && s.textWhite]}>{agent || "build"}</Text>
-            <Ionicons name="swap-horizontal-outline" size={12} color={isDark ? "#888888" : "#666666"} />
+            <Text style={[s.agentLabel, isDark && s.textWhite]}>
+              {agent || "build"}
+            </Text>
+            <Ionicons
+              name="swap-horizontal-outline"
+              size={12}
+              color={isDark ? "#888888" : "#666666"}
+            />
           </TouchableOpacity>
 
           <TouchableOpacity
@@ -757,46 +923,95 @@ export default function SessionScreen() {
             onPress={() => modelSheetRef.current?.expand()}
             testID="model-chip"
           >
-            <Ionicons name="hardware-chip-outline" size={14} color={isDark ? "#888888" : "#666666"} />
-            <Text style={[s.modelLabel, isDark && s.metaDark]} numberOfLines={1}>
+            <Ionicons
+              name="hardware-chip-outline"
+              size={14}
+              color={isDark ? "#888888" : "#666666"}
+            />
+            <Text
+              style={[s.modelLabel, isDark && s.metaDark]}
+              numberOfLines={1}
+            >
               {modelLabel}
             </Text>
           </TouchableOpacity>
 
-          {currentModelVariants && Object.keys(currentModelVariants).length > 0 && (
-            <TouchableOpacity
-              style={[s.variantChip, isDark && s.variantChipDark, variant && s.variantChipActive]}
-              onPress={() => variantSheetRef.current?.expand()}
-              testID="variant-chip"
-            >
-              <Ionicons name="flash-outline" size={14} color={variant ? "#8b5cf6" : isDark ? "#888888" : "#666666"} />
-              <Text style={[s.variantLabel, isDark && s.metaDark, variant && s.variantLabelActive]} numberOfLines={1}>
-                {variant ? variant.charAt(0).toUpperCase() + variant.slice(1) : t("session.toolbar.auto")}
-              </Text>
-            </TouchableOpacity>
-          )}
+          {currentModelVariants &&
+            Object.keys(currentModelVariants).length > 0 && (
+              <TouchableOpacity
+                style={[
+                  s.variantChip,
+                  isDark && s.variantChipDark,
+                  variant && s.variantChipActive,
+                ]}
+                onPress={() => variantSheetRef.current?.expand()}
+                testID="variant-chip"
+              >
+                <Ionicons
+                  name="flash-outline"
+                  size={14}
+                  color={variant ? "#8b5cf6" : isDark ? "#888888" : "#666666"}
+                />
+                <Text
+                  style={[
+                    s.variantLabel,
+                    isDark && s.metaDark,
+                    variant && s.variantLabelActive,
+                  ]}
+                  numberOfLines={1}
+                >
+                  {variant
+                    ? variant.charAt(0).toUpperCase() + variant.slice(1)
+                    : t("session.toolbar.auto")}
+                </Text>
+              </TouchableOpacity>
+            )}
         </View>
 
         {/* Attachment preview */}
-        <ImageAttachments attachments={attachments} isDark={isDark} onRemove={removeAttachment} />
+        <ImageAttachments
+          attachments={attachments}
+          isDark={isDark}
+          onRemove={removeAttachment}
+        />
 
         {/* Input */}
         <View
-          style={[s.inputContainer, isDark && s.inputContainerDark, { paddingBottom: Math.max(12, insets.bottom) }]}
+          style={[
+            s.inputContainer,
+            isDark && s.inputContainerDark,
+            { paddingBottom: Math.max(12, insets.bottom) },
+          ]}
         >
           <View style={s.inputRow}>
             {/* Attach button */}
-            <TouchableOpacity style={s.attachBtn} onPress={pickFromLibrary} onLongPress={pickFromCamera}>
-              <Ionicons name="add-circle-outline" size={26} color={isDark ? "#888888" : "#666666"} />
+            <TouchableOpacity
+              style={s.attachBtn}
+              onPress={pickFromLibrary}
+              onLongPress={pickFromCamera}
+            >
+              <Ionicons
+                name="add-circle-outline"
+                size={26}
+                color={isDark ? "#888888" : "#666666"}
+              />
             </TouchableOpacity>
 
             {/* Clipboard paste button */}
             <TouchableOpacity style={s.attachBtn} onPress={pasteFromClipboard}>
-              <Ionicons name="clipboard-outline" size={22} color={isDark ? "#888888" : "#666666"} />
+              <Ionicons
+                name="clipboard-outline"
+                size={22}
+                color={isDark ? "#888888" : "#666666"}
+              />
             </TouchableOpacity>
 
             <TextInput
-              style={[s.input, isDark && s.inputDark, speech.listening && s.inputListening]}
+              style={[
+                s.input,
+                isDark && s.inputDark,
+                speech.listening && s.inputListening,
+              ]}
               placeholder={
                 speech.listening
                   ? t("session.input.placeholderListening")
@@ -804,7 +1019,9 @@ export default function SessionScreen() {
                     ? t("session.input.placeholderFollowUp")
                     : t("session.input.placeholderDefault")
               }
-              placeholderTextColor={speech.listening ? "#ef4444" : isDark ? "#666666" : "#999999"}
+              placeholderTextColor={
+                speech.listening ? "#ef4444" : isDark ? "#666666" : "#999999"
+              }
               value={speech.listening ? speech.transcript : input}
               onChangeText={speech.listening ? undefined : setInput}
               editable={!speech.listening}
@@ -813,17 +1030,27 @@ export default function SessionScreen() {
               testID="chat-message-input"
             />
             {/* Stop button: only when busy and no input */}
-            {isSending && !input.trim() && attachments.length === 0 && !speech.listening && (
-              <TouchableOpacity style={s.stopBtn} onPress={abortSession}>
-                <Ionicons name="stop" size={20} color="#ffffff" />
-              </TouchableOpacity>
-            )}
+            {isSending &&
+              !input.trim() &&
+              attachments.length === 0 &&
+              !speech.listening && (
+                <TouchableOpacity style={s.stopBtn} onPress={abortSession}>
+                  <Ionicons name="stop" size={20} color="#ffffff" />
+                </TouchableOpacity>
+              )}
             {/* Mic button: when no input, not sending, and not listening */}
-            {!isSending && !input.trim() && attachments.length === 0 && !speech.listening && (
-              <TouchableOpacity style={s.micBtn} onPress={speech.start}>
-                <Ionicons name="mic" size={22} color={isDark ? "#888888" : "#666666"} />
-              </TouchableOpacity>
-            )}
+            {!isSending &&
+              !input.trim() &&
+              attachments.length === 0 &&
+              !speech.listening && (
+                <TouchableOpacity style={s.micBtn} onPress={speech.start}>
+                  <Ionicons
+                    name="mic"
+                    size={22}
+                    color={isDark ? "#888888" : "#666666"}
+                  />
+                </TouchableOpacity>
+              )}
             {/* Listening indicator: tap to stop */}
             {speech.listening && (
               <TouchableOpacity style={s.micBtnActive} onPress={speech.stop}>
@@ -832,7 +1059,11 @@ export default function SessionScreen() {
             )}
             {/* Send button: when there's input */}
             {!speech.listening && (input.trim() || attachments.length > 0) && (
-              <TouchableOpacity style={s.sendBtn} onPress={handleSend} testID="chat-send-button">
+              <TouchableOpacity
+                style={s.sendBtn}
+                onPress={handleSend}
+                testID="chat-send-button"
+              >
                 <Ionicons name="send" size={20} color="#ffffff" />
               </TouchableOpacity>
             )}
@@ -858,7 +1089,7 @@ export default function SessionScreen() {
         onSelect={setVariant}
       />
     </>
-  )
+  );
 }
 
 const s = StyleSheet.create({
@@ -902,14 +1133,19 @@ const s = StyleSheet.create({
   // Empty state overlay — sits on top of the (empty) inverted list, untransformed,
   // so its text/icon render upright and un-mirrored on Android.
   emptyOverlay: {
-    ...StyleSheet.absoluteFillObject,
+    ...StyleSheet.absoluteFill,
     justifyContent: "center",
     alignItems: "center",
     paddingVertical: 64,
   },
 
   // Empty
-  empty: { flex: 1, justifyContent: "center", alignItems: "center", paddingVertical: 64 },
+  empty: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
+    paddingVertical: 64,
+  },
   emptyText: { fontSize: 16, color: "#999999", marginTop: 12 },
   emptyHint: { fontSize: 13, color: "#bbbbbb", marginTop: 4 },
   metaDark: { color: "#666666" },
@@ -1064,4 +1300,4 @@ const s = StyleSheet.create({
     justifyContent: "space-between",
   },
   bannerAction: { color: "#93c5fd", fontSize: 13, fontWeight: "700" },
-})
+});

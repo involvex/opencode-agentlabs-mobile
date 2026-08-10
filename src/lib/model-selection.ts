@@ -1,25 +1,25 @@
 export interface ProviderModelRef {
-  id: string
+  id: string;
 }
 
 export interface ProviderRef {
-  id: string
-  models: ProviderModelRef[]
+  id: string;
+  models: ProviderModelRef[];
 }
 
 export interface ModelSelection {
-  providerID: string
-  modelID: string
+  providerID: string;
+  modelID: string;
 }
 
 export function isModelAvailable(
   providers: ProviderRef[],
   selection: ModelSelection | null | undefined,
 ): selection is ModelSelection {
-  if (!selection) return false
-  const provider = providers.find((p) => p.id === selection.providerID)
-  if (!provider) return false
-  return provider.models.some((m) => m.id === selection.modelID)
+  if (!selection) return false;
+  const provider = providers.find((p) => p.id === selection.providerID);
+  if (!provider) return false;
+  return provider.models.some((m) => m.id === selection.modelID);
 }
 
 /**
@@ -35,18 +35,18 @@ export function isModelAvailable(
  * selection that is still valid (model available on a connected provider).
  */
 export function chooseModelSelection(params: {
-  providers: ProviderRef[]
-  defaults: Record<string, string>
-  existing: ModelSelection | null
-  agentModel: ModelSelection | null
+  providers: ProviderRef[];
+  defaults: Record<string, string>;
+  existing: ModelSelection | null;
+  agentModel: ModelSelection | null;
 }): ModelSelection | null {
-  const { providers, existing } = params
+  const { providers, existing } = params;
 
   // Keep existing user-chosen selection if it's still reachable
-  if (isModelAvailable(providers, existing)) return existing
+  if (isModelAvailable(providers, existing)) return existing;
 
   // Otherwise return null — let the server decide via its own config.
   // The provider registry's "defaults" map is unreliable (it lists the
   // upstream registry default, not what's deployed on the user's resource).
-  return null
+  return null;
 }

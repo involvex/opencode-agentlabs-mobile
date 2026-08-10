@@ -9,20 +9,21 @@ Goal: bug-free E2E + published on F-Droid & Play + 1k downloads.
 
 ## TL;DR status
 
-| Goal | State |
-|---|---|
-| #1 App works E2E, no bugs | ✅ Done & verified (CUA smoke green; 4 bugs fixed) |
-| #2 F-Droid published | ✅ self-hosted repo LIVE @ v0.4.3 |
-| #3 Google Play published | 🟡 **"Changes in review"** — v0.4.5 (VC32) submitted 2026-06-21, awaiting Google approval (up to 7 days) |
-| #4 Store optimization (ASO) | ✅ YouTube video + 4 CUA screenshots + ASO copy live in listing |
-| #5 Website live | ✅ `https://opencode.agentlabs.cc` live (Vercel, SSL) |
-| #6 1k downloads | ❌ needs Google approval → announce |
+| Goal                        | State                                                                                                    |
+| --------------------------- | -------------------------------------------------------------------------------------------------------- |
+| #1 App works E2E, no bugs   | ✅ Done & verified (CUA smoke green; 4 bugs fixed)                                                       |
+| #2 F-Droid published        | ✅ self-hosted repo LIVE @ v0.4.3                                                                        |
+| #3 Google Play published    | 🟡 **"Changes in review"** — v0.4.5 (VC32) submitted 2026-06-21, awaiting Google approval (up to 7 days) |
+| #4 Store optimization (ASO) | ✅ YouTube video + 4 CUA screenshots + ASO copy live in listing                                          |
+| #5 Website live             | ✅ `https://opencode.agentlabs.cc` live (Vercel, SSL)                                                    |
+| #6 1k downloads             | ❌ needs Google approval → announce                                                                      |
 
 ---
 
 ## Session 2026-06-21: what was done
 
 ### Play Store — submitted to production
+
 - Built AAB v0.4.5 (versionCode=32) locally, signed with Bitwarden keys
 - Uploaded to internal track via Play Developer API
 - Promoted to production: 100% rollout to 177 countries
@@ -30,21 +31,25 @@ Goal: bug-free E2E + published on F-Droid & Play + 1k downloads.
 - **Status: "Changes in review" as of 2026-06-21**
 
 ### Play Store listing
+
 - YouTube demo video: `https://www.youtube.com/watch?v=ckAHcfZKuUY` (Unlisted Short, Vibe Technologies channel `UCyq0vIekTqyLDFakzHxkJtA`)
 - 4 CUA screenshots uploaded (1080×2160): empty state, add connection, AI chat, session list
 
 ### Website
+
 - `https://opencode.agentlabs.cc` live — Vercel project `opencode-mobile-site`
 - DNS: A + TXT records added in Spaceship for `agentlabs.cc`
 - Vercel domain verified via API, SSL cert auto-provisioned
 
 ### CUA test rewritten
+
 - `scripts/android-cua-smoke.py` — full onboarding showcase (6 phases)
 - Phases: connect → session_list → new_session → typescript task → verify → settings
 - `--speed-multiplier` flag for fast video recording
 - Committed: `3c49897`
 
 ### versionCode bumped
+
 - `app.json` + `android/app/build.gradle` both set to 32, versionName `0.4.5`
 - Committed: `db75606`
 
@@ -55,33 +60,40 @@ Goal: bug-free E2E + published on F-Droid & Play + 1k downloads.
 ---
 
 ### 1. Wait for Google review (ETA: up to 7 days)
+
 Check: Play Console → Publishing overview
 URL: `https://play.google.com/console/u/1/developers/8842655543970815326/app/4973009715197528834/publishing`
 If rejected: read exact rejection reason, fix, resubmit.
 Account: `vibeteaichnologies@gmail.com`
 
 ### 2. Keep demo server alive during review
+
 Google reviewers use `http://100.108.64.76:4096` (Tailscale host `openclaw-dev-1`).
 **Keep this server running until review completes** — if reviewers can't connect, app gets rejected.
 
 ### 3. Announce once approved (in this order)
+
 1. **HN Show HN** — Tuesday–Thursday 8–10am ET. Template in `opencode-mobile-demo-to-store` skill.
 2. **Twitter/X thread** — 30 min after HN
 3. **Reddit** — r/androiddev, r/selfhosted, r/artificial (Day 2)
 4. **Product Hunt** — Day 3
 
 ### 4. Re-record demo video (post-review)
+
 Current video (`ckAHcfZKuUY`) is slow, shows old flow.
+
 ```bash
 source ~/.env.d/azure-openai.env
 adb shell screenrecord --time-limit 180 /sdcard/demo.mp4 &
 python3 scripts/android-cua-smoke.py --model gpt-4o --speed-multiplier 0.5
 adb pull /sdcard/demo.mp4 /tmp/demo.mp4
 ```
+
 Upload to Vibe Technologies YouTube channel via VBC DataTransfer injection (see `android-cua-demo-recording` skill).
 Then update Play Store listing video URL via Play Developer API.
 
 ### 5. More screenshots (optional, improves conversion)
+
 Add diff viewer + tool-call approval screenshots. Upload via Play Developer API (see `opencode-mobile-demo-to-store` skill Phase 3).
 
 ---
@@ -100,6 +112,7 @@ Add diff viewer + tool-call approval screenshots. Upload via Play Developer API 
 ## What was done this session (committed to `main`)
 
 **Bug fixes (goal #1) — `npm run typecheck` + `npm test` green, E2E smoke verified:**
+
 - `0615ab8` gradle versionName 0.4.1→0.4.2 (stale vs app.json)
 - `bed0b6f` #10 root cause: single `src/stores/sessionScope.ts` helper so session
   list/create scopes can't drift; `node:test` regression guard + `npm test` script
@@ -111,6 +124,7 @@ Add diff viewer + tool-call approval screenshots. Upload via Play Developer API 
 - **CUA smoke GREEN** (run 26803479355): connect→create→list passes (was the #10 repro).
 
 **Publishing (goals #2/#3):**
+
 - `c66f4fb` cut **v0.4.3** (versionCode 5).
 - `eea84a3` **F-Droid publish fix**: pin `androguard==4.1.3` (the `==4.1.4` pin added
   2026-06-01 crashed in `parse_v2_v3_signature`) + apksigner v1+v2-only re-sign step in
@@ -139,18 +153,18 @@ Add diff viewer + tool-call approval screenshots. Upload via Play Developer API 
    ```
 
 0b. **HARD GATE — test a real public release before ANY public/community posting (owner directive
-    2026-06-08).** Automated unit tests are NOT sufficient (no 100% coverage). Before posting to
-    HN / Reddit / PH / socials, a built release APK must be manually exercised across all core flows
-    (add-connection, session list, streaming chat, tool-call approve/reject, diff viewer, biometric
-    unlock) on a real device/emulator and confirmed free of bugs and UI/UX defects. The CUA smoke
-    currently runs `--only-connect-scenario` only — EXPAND it to all scenarios + human-review the
-    captured screenshots/video before greenlighting any public launch post.
-   The session-scope fix is not yet in any release. To ship it, bump the version in
-   BOTH `app.json` (line 5: `"version": "0.4.3"` → `"0.4.4"`) and
-   `android/app/build.gradle` (line 98 `versionName "0.4.3"` → `"0.4.4"`; leave
-   `versionCode` — Play's is auto-set to `github.run_number`, F-Droid reads versionName),
-   commit, then `git tag v0.4.4 && git push origin main --tags`. The `v*` tag fires
-   `publish-fdroid.yml` and `publish-play-store.yml` automatically.
+2026-06-08).** Automated unit tests are NOT sufficient (no 100% coverage). Before posting to
+HN / Reddit / PH / socials, a built release APK must be manually exercised across all core flows
+(add-connection, session list, streaming chat, tool-call approve/reject, diff viewer, biometric
+unlock) on a real device/emulator and confirmed free of bugs and UI/UX defects. The CUA smoke
+currently runs `--only-connect-scenario` only — EXPAND it to all scenarios + human-review the
+captured screenshots/video before greenlighting any public launch post.
+The session-scope fix is not yet in any release. To ship it, bump the version in
+BOTH `app.json` (line 5: `"version": "0.4.3"` → `"0.4.4"`) and
+`android/app/build.gradle` (line 98 `versionName "0.4.3"` → `"0.4.4"`; leave
+`versionCode` — Play's is auto-set to `github.run_number`, F-Droid reads versionName),
+commit, then `git tag v0.4.4 && git push origin main --tags`. The `v*` tag fires
+`publish-fdroid.yml` and `publish-play-store.yml` automatically.
 
 1. **Privacy policy is live (Play-production blocker cleared).** Canonical privacy URL is
    now `https://dzianisv.github.io/opencode-mobile/privacy/` — live & verified (HTTP 200) on
@@ -167,7 +181,7 @@ Add diff viewer + tool-call approval screenshots. Upload via Play Developer API 
    `distribution/PLAY-APP-CONTENT-ANSWERS.md`. Then Production → create release → add
    the v0.4.3 AAB (CI already uploaded) → roll out → submit for review.
 
-2. **F-Droid reach (any/all):**
+3. **F-Droid reach (any/all):**
    - Self-hosted repo updates automatically once the in-flight publish run is green —
      just share the repo URL above. (Verify: command below.)
    - **IzzyOnDroid** (fast, popular): file the inclusion issue at
@@ -182,7 +196,7 @@ Add diff viewer + tool-call approval screenshots. Upload via Play Developer API 
      `distribution/fdroid-submission/metadata.yml`), push, and reply to each reviewer
      thread. If CI is red, fix per the build log and re-push the source branch.
 
-3. **Growth → 1k downloads:** post the launch kit in `distribution/launch/`
+4. **Growth → 1k downloads:** post the launch kit in `distribution/launch/`
    (Show HN, Product Hunt, Reddit, X, dev.to) from your accounts, following the fire
    sequence in `distribution/launch/LAUNCH-CHECKLIST.md`.
    **Gate:** every post file contains `{{PLAY_URL}}` / `{{FDROID_URL}}` placeholders —
@@ -244,7 +258,7 @@ adb shell am start -n cc.agentlabs.opencode/.MainActivity
      via CodeBlock (fine). The dedicated DiffView (green/red +/- lines) only appears when the
      agent uses the `edit`/`apply_patch` TOOL; to exercise it, ask the agent (in a real project
      dir) to actually edit a file.
-   If all three look right with no truncation/overflow/cutoff → the core path is release-ready.
+     If all three look right with no truncation/overflow/cutoff → the core path is release-ready.
 
 ## Verify / common commands
 
@@ -259,6 +273,7 @@ curl -s https://dzianisv.github.io/opencode-mobile/fdroid/repo/index-v1.json | \
 ```
 
 ## Gotchas / notes
+
 - `expo prebuild` regenerates `android/build.gradle` in CI → enforce signing in the
   workflow (apksigner re-sign step), not only in gradle.
 - F-Droid breaks on androguard 4.1.4 (`'NoOverwriteDict' has no attribute 'append'`);
@@ -272,6 +287,7 @@ curl -s https://dzianisv.github.io/opencode-mobile/fdroid/repo/index-v1.json | \
   browser-driven console/Codeberg steps couldn't be attempted.
 
 ## Infra references (durable)
+
 - OpenCode server (testing): `100.108.64.76:4096` (Tailscale host `openclaw-dev-1`).
 - CUA smoke vision model: Azure `gpt-5.4`; endpoint
   `https://info-mjnxtt51-eastus2.cognitiveservices.azure.com`; gpt-5.x needs

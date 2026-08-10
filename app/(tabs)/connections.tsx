@@ -1,12 +1,20 @@
-import { View, Text, FlatList, TouchableOpacity, StyleSheet, useColorScheme, Alert } from "react-native"
-import { router } from "expo-router"
-import { Ionicons } from "@expo/vector-icons"
-import { useTranslation } from "react-i18next"
-import { useConnections } from "../../src/stores/connections"
-import { useSettings } from "../../src/stores/settings"
-import type { ServerConnection } from "../../src/lib/types"
+import {
+  View,
+  Text,
+  FlatList,
+  TouchableOpacity,
+  StyleSheet,
+  useColorScheme,
+  Alert,
+} from "react-native";
+import { router } from "expo-router";
+import { Ionicons } from "@expo/vector-icons";
+import { useTranslation } from "react-i18next";
+import { useConnections } from "../../src/stores/connections";
+import { useSettings } from "../../src/stores/settings";
+import type { ServerConnection } from "../../src/lib/types";
 
-const PAGE_SIZE_OPTIONS = [10, 25, 50, 100, 200] as const
+const PAGE_SIZE_OPTIONS = [10, 25, 50, 100, 200] as const;
 
 function ConnectionItem({
   connection,
@@ -16,23 +24,28 @@ function ConnectionItem({
   onEdit,
   onDelete,
 }: {
-  connection: ServerConnection
-  isDark: boolean
-  isActive: boolean
-  onSelect: () => void
-  onEdit: () => void
-  onDelete: () => void
+  connection: ServerConnection;
+  isDark: boolean;
+  isActive: boolean;
+  onSelect: () => void;
+  onEdit: () => void;
+  onDelete: () => void;
 }) {
-  const { t } = useTranslation()
-  const typeIcon = connection.type === "local" ? "wifi" : connection.type === "tunnel" ? "globe" : "cloud"
+  const { t } = useTranslation();
+  const typeIcon =
+    connection.type === "local"
+      ? "wifi"
+      : connection.type === "tunnel"
+        ? "globe"
+        : "cloud";
 
   const handleLongPress = () => {
     Alert.alert(connection.name, t("connectionsList.actionsAlert.message"), [
       { text: t("common.cancel"), style: "cancel" },
       { text: t("connectionsList.actionsAlert.edit"), onPress: onEdit },
       { text: t("common.delete"), style: "destructive", onPress: onDelete },
-    ])
-  }
+    ]);
+  };
 
   return (
     <TouchableOpacity
@@ -46,7 +59,11 @@ function ConnectionItem({
       onLongPress={handleLongPress}
     >
       <View style={styles.connectionIcon}>
-        <Ionicons name={typeIcon} size={24} color={isActive ? "#22c55e" : isDark ? "#888888" : "#666666"} />
+        <Ionicons
+          name={typeIcon}
+          size={24}
+          color={isActive ? "#22c55e" : isDark ? "#888888" : "#666666"}
+        />
       </View>
       <View style={styles.connectionContent}>
         <View style={styles.connectionHeader}>
@@ -61,39 +78,64 @@ function ConnectionItem({
             {connection.name}
           </Text>
           {isActive && (
-            <View style={[styles.activeBadge, isDark && styles.activeBadgeDark]}>
-              <Text style={[styles.activeBadgeText, isDark && styles.activeBadgeTextDark]}>
+            <View
+              style={[styles.activeBadge, isDark && styles.activeBadgeDark]}
+            >
+              <Text
+                style={[
+                  styles.activeBadgeText,
+                  isDark && styles.activeBadgeTextDark,
+                ]}
+              >
                 {t("connectionsList.activeBadge")}
               </Text>
             </View>
           )}
         </View>
         <Text
-          style={[styles.connectionUrl, isDark && styles.metaDark, isActive && styles.connectionUrlActive]}
+          style={[
+            styles.connectionUrl,
+            isDark && styles.metaDark,
+            isActive && styles.connectionUrlActive,
+          ]}
           numberOfLines={1}
         >
           {connection.url}
         </Text>
         {connection.lastConnected && (
           <Text style={[styles.connectionMeta, isDark && styles.metaDark]}>
-            {t("connectionsList.lastConnected", { date: new Date(connection.lastConnected).toLocaleDateString() })}
+            {t("connectionsList.lastConnected", {
+              date: new Date(connection.lastConnected).toLocaleDateString(),
+            })}
           </Text>
         )}
       </View>
-      <TouchableOpacity onPress={onEdit} hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}>
-        <Ionicons name="ellipsis-vertical" size={20} color={isDark ? "#666666" : "#999999"} />
+      <TouchableOpacity
+        onPress={onEdit}
+        hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+      >
+        <Ionicons
+          name="ellipsis-vertical"
+          size={20}
+          color={isDark ? "#666666" : "#999999"}
+        />
       </TouchableOpacity>
     </TouchableOpacity>
-  )
+  );
 }
 
 export default function ConnectionsScreen() {
-  const colorScheme = useColorScheme()
-  const isDark = colorScheme === "dark"
-  const { t } = useTranslation()
+  const colorScheme = useColorScheme();
+  const isDark = colorScheme === "dark";
+  const { t } = useTranslation();
 
-  const { connections, activeConnection, setActiveConnection, removeConnection } = useConnections()
-  const { pageSize, setPageSize } = useSettings()
+  const {
+    connections,
+    activeConnection,
+    setActiveConnection,
+    removeConnection,
+  } = useConnections();
+  const { pageSize, setPageSize } = useSettings();
 
   const handleDelete = (connection: ServerConnection) => {
     Alert.alert(
@@ -107,8 +149,8 @@ export default function ConnectionsScreen() {
           onPress: () => removeConnection(connection.id),
         },
       ],
-    )
-  }
+    );
+  };
 
   return (
     <View style={[styles.container, isDark && styles.containerDark]}>
@@ -127,8 +169,14 @@ export default function ConnectionsScreen() {
         )}
         ListEmptyComponent={
           <View style={styles.emptyContainer}>
-            <Ionicons name="server-outline" size={64} color={isDark ? "#444444" : "#cccccc"} />
-            <Text style={[styles.emptyTitle, isDark && styles.textDark]}>{t("connectionsList.empty.title")}</Text>
+            <Ionicons
+              name="server-outline"
+              size={64}
+              color={isDark ? "#444444" : "#cccccc"}
+            />
+            <Text style={[styles.emptyTitle, isDark && styles.textDark]}>
+              {t("connectionsList.empty.title")}
+            </Text>
             <Text style={[styles.emptySubtitle, isDark && styles.metaDark]}>
               {t("connectionsList.empty.subtitle")}
             </Text>
@@ -136,17 +184,28 @@ export default function ConnectionsScreen() {
         }
         ListHeaderComponent={
           <View style={[styles.header, isDark && styles.headerDark]}>
-            <Text style={[styles.headerText, isDark && styles.metaDark]}>{t("connectionsList.header")}</Text>
+            <Text style={[styles.headerText, isDark && styles.metaDark]}>
+              {t("connectionsList.header")}
+            </Text>
           </View>
         }
         ListFooterComponent={
-          <View style={[styles.settingsSection, isDark && styles.settingsSectionDark]}>
+          <View
+            style={[
+              styles.settingsSection,
+              isDark && styles.settingsSectionDark,
+            ]}
+          >
             <Text style={[styles.settingsTitle, isDark && styles.textDark]}>
               {t("connectionsList.preferences.title")}
             </Text>
             <View style={styles.settingRow}>
               <View style={styles.settingLabel}>
-                <Ionicons name="layers-outline" size={18} color={isDark ? "#888888" : "#666666"} />
+                <Ionicons
+                  name="layers-outline"
+                  size={18}
+                  color={isDark ? "#888888" : "#666666"}
+                />
                 <Text style={[styles.settingText, isDark && styles.textDark]}>
                   {t("connectionsList.preferences.pageSizeLabel")}
                 </Text>
@@ -159,7 +218,9 @@ export default function ConnectionsScreen() {
                       styles.pageOption,
                       isDark && styles.pageOptionDark,
                       pageSize === size && styles.pageOptionActive,
-                      pageSize === size && isDark && styles.pageOptionActiveDark,
+                      pageSize === size &&
+                        isDark &&
+                        styles.pageOptionActiveDark,
                     ]}
                     onPress={() => setPageSize(size)}
                   >
@@ -181,15 +242,20 @@ export default function ConnectionsScreen() {
             </Text>
           </View>
         }
-        contentContainerStyle={connections.length === 0 ? styles.emptyContent : undefined}
+        contentContainerStyle={
+          connections.length === 0 ? styles.emptyContent : undefined
+        }
       />
 
       {/* FAB to add connection */}
-      <TouchableOpacity style={[styles.fab, isDark && styles.fabDark]} onPress={() => router.push("/connection/add")}>
+      <TouchableOpacity
+        style={[styles.fab, isDark && styles.fabDark]}
+        onPress={() => router.push("/connection/add")}
+      >
         <Ionicons name="add" size={28} color={isDark ? "#0a0a0a" : "#ffffff"} />
       </TouchableOpacity>
     </View>
-  )
+  );
 }
 
 const styles = StyleSheet.create({
@@ -397,4 +463,4 @@ const styles = StyleSheet.create({
     fontSize: 12,
     color: "#999999",
   },
-})
+});

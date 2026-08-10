@@ -4,13 +4,13 @@
 
 Configure these in **Settings > Secrets and variables > Actions**:
 
-| Secret | Description |
-|--------|-------------|
+| Secret                            | Description                                                      |
+| --------------------------------- | ---------------------------------------------------------------- |
 | `PLAY_STORE_SERVICE_ACCOUNT_JSON` | Google Play Console service account JSON key (full JSON content) |
-| `KEYSTORE_BASE64` | Base64-encoded release keystore (`base64 -w0 release.keystore`) |
-| `KEYSTORE_PASSWORD` | Keystore password |
-| `KEY_ALIAS` | Key alias in the keystore |
-| `KEY_PASSWORD` | Key password |
+| `KEYSTORE_BASE64`                 | Base64-encoded release keystore (`base64 -w0 release.keystore`)  |
+| `KEYSTORE_PASSWORD`               | Keystore password                                                |
+| `KEY_ALIAS`                       | Key alias in the keystore                                        |
+| `KEY_PASSWORD`                    | Key password                                                     |
 
 ## Setup Steps
 
@@ -23,6 +23,7 @@ keytool -genkeypair -v -storetype PKCS12 \
 ```
 
 Encode it for GitHub secrets:
+
 ```bash
 base64 -w0 release.keystore
 ```
@@ -37,6 +38,7 @@ base64 -w0 release.keystore
 ### 3. Workflow triggers
 
 The publish workflow runs on:
+
 - GitHub Release publish events
 - Tag pushes matching `v*`
 
@@ -65,7 +67,7 @@ Connect" waitlist card on the Connect screen (`app/connection/add.tsx` →
 `src/lib/waitlist.ts` → `POST https://opencode.agentlabs.cc/api/beta-signup`) collects an
 email address when a user opts in, and the backend forwards it to **Brevo** (email
 marketing/CRM). This was true collection that the Data Safety form did not declare — Play
-requires *all* personal-info collection to be declared, even when it's optional and
+requires _all_ personal-info collection to be declared, even when it's optional and
 unrelated to the app's core function.
 
 The repo-side declaration is now fixed (this PR): `distribution/play-listing.md` Data Safety

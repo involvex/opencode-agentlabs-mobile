@@ -21,10 +21,13 @@ Example value: `6478291034`
 6. Copy the value next to **Apple ID** — this is your `ascAppId`
 
 **Replace in `eas.json`**:
+
 ```json
 "ascAppId": "REPLACE_WITH_APP_STORE_CONNECT_APP_ID"
 ```
+
 →
+
 ```json
 "ascAppId": "6478291034"   // use your actual number
 ```
@@ -43,15 +46,19 @@ Example value: `ABC1234DEF`
 3. Your **Team ID** is listed under the team name
 
 Alternatively, in App Store Connect:
+
 1. Open https://appstoreconnect.apple.com/
 2. Click your profile icon (top right) → **View Profile**
 3. The Team ID is shown in the Developer Profile section
 
 **Replace in `eas.json`**:
+
 ```json
 "appleTeamId": "REPLACE_WITH_APPLE_TEAM_ID"
 ```
+
 →
+
 ```json
 "appleTeamId": "ABC1234DEF"   // use your actual Team ID
 ```
@@ -60,14 +67,14 @@ Alternatively, in App Store Connect:
 
 ## Other fields already set
 
-| Field | Value | Notes |
-|---|---|---|
-| `appleId` | `support@agentlabs.cc` | The Apple ID used for App Store Connect login — update if different |
-| `distribution` (production ios) | `store` | Correct for App Store / TestFlight submissions |
-| `buildType` (production android) | `app-bundle` | Correct for Play Store AAB submissions |
-| `autoIncrement` | `buildNumber` | EAS increments the iOS build number remotely for every production build |
-| `appVersionSource` | `remote` | EAS is the source of truth for store build numbers |
-| `cli.version` | `>= 21.0.0` | CI installs the exact supported release, `eas-cli@21.0.0` |
+| Field                            | Value                  | Notes                                                                   |
+| -------------------------------- | ---------------------- | ----------------------------------------------------------------------- |
+| `appleId`                        | `support@agentlabs.cc` | The Apple ID used for App Store Connect login — update if different     |
+| `distribution` (production ios)  | `store`                | Correct for App Store / TestFlight submissions                          |
+| `buildType` (production android) | `app-bundle`           | Correct for Play Store AAB submissions                                  |
+| `autoIncrement`                  | `buildNumber`          | EAS increments the iOS build number remotely for every production build |
+| `appVersionSource`               | `remote`               | EAS is the source of truth for store build numbers                      |
+| `cli.version`                    | `>= 21.0.0`            | CI installs the exact supported release, `eas-cli@21.0.0`               |
 
 ---
 
@@ -82,4 +89,4 @@ Alternatively, in App Store Connect:
 
 ---
 
-*This file is safe to commit. It contains no secrets — only navigation instructions.*
+_This file is safe to commit. It contains no secrets — only navigation instructions._

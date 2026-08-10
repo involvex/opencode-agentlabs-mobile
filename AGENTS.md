@@ -7,26 +7,29 @@ See [`.agents/retro.md`](.agents/retro.md) for lessons from past tasks. Read ent
 ## Agent Operating Rules (read first)
 
 **Failure taxonomy — classify every failure before acting. Escalate cheapest-first; never skip a rung or repeat one:**
+
 - **transient** (network blip, flaky): retry at most 2×.
 - **code** (your bug, wrong path, bad arg): fix, then retry.
-- **tool-usage-gated** (you called a *working* tool wrong): fix the *call*, not the tool. Cheapest fix — try this before assuming the tool is broken. Example: chrome-devtools `new_page` with `isolatedContext` opens a cookieless context; instead use `list_pages` → `select_page` to drive the existing authenticated tab.
-- **tooling-gated** (the tool's *source* is genuinely broken): **diagnose before fixing** — verify it's actually broken (read the code, reproduce). If broken, spawn a fix-it subagent to patch + rebuild it, then retry. Do NOT stop.
+- **tool-usage-gated** (you called a _working_ tool wrong): fix the _call_, not the tool. Cheapest fix — try this before assuming the tool is broken. Example: chrome-devtools `new_page` with `isolatedContext` opens a cookieless context; instead use `list_pages` → `select_page` to drive the existing authenticated tab.
+- **tooling-gated** (the tool's _source_ is genuinely broken): **diagnose before fixing** — verify it's actually broken (read the code, reproduce). If broken, spawn a fix-it subagent to patch + rebuild it, then retry. Do NOT stop.
 - **infra** (CI runner, emulator boot timeout): report it; do not try to "fix" someone else's infrastructure.
 - **human-gated** (only when no automated path exists): emit ONE precise instruction for the human, mark the task **BLOCKED**, and continue all other automatable work. Never re-attempt across turns.
 
 **Diagnose before fixing:** Before patching or replacing any tool, confirm it is actually the cause. Copilot burned 39h assuming chrome-devtools-mcp was broken — it wasn't (it already drives the authenticated default context via `browser.defaultBrowserContext()`/`browser.pages()`). A 3-minute diagnostic subagent would have caught this.
 
 **Known gated steps:**
-- Play Console **API-access grant** to the service account — *was* the blocker; now granted (publish run 26662900471 succeeded, AAB on internal track, versionCode 19). One-time path if re-needed: Play Console → Setup → API access → link GCP project `opencode-mobile-deploy` → grant `playstore-deploy@opencode-mobile-deploy.iam.gserviceaccount.com` Admin/Release-manager.
+
+- Play Console **API-access grant** to the service account — _was_ the blocker; now granted (publish run 26662900471 succeeded, AAB on internal track, versionCode 19). One-time path if re-needed: Play Console → Setup → API access → link GCP project `opencode-mobile-deploy` → grant `playstore-deploy@opencode-mobile-deploy.iam.gserviceaccount.com` Admin/Release-manager.
 - **Add internal testers** (Play Console → Internal testing → Testers): the genuinely human-gated residual. Google's anti-automation blocks CDP-controlled Chrome sign-in, so this UI step needs a human (or a real, non-CDP browser session).
 
 **Stop discipline:** If a tool returns the same error 3× (or no new artifact/commit is produced across several turns), STOP. Print a BLOCKED summary with the single human action needed. A vague "please do X and let me know" that leaves you idle is worse than a clean stop — don't do it.
 
 **Work-tracking discipline:**
+
 - Track multi-step/upgrade work in the **related GitHub issue**, updated via `gh issue comment` — NOT by repeatedly editing AGENTS.md and NOT in scratch files under `/tmp` (e.g. no `/tmp/playconsole-fill.md`). Keep reference material (listing copy, form answers) in the repo under `distribution/` or as issue comments.
 - AGENTS.md is for durable conventions only; do not churn it with task status.
 - **Never claim a step done without verifying it in the real channel** (e.g. an app exists only if it appears in the Play Console app-list; an AAB is the right package only if its manifest says so). Do not invent IDs.
-- **Driving web UIs:** snapshot → act on the *current* uids → re-snapshot. Never fire batched/guessed clicks; if a page shows "Loading"/an error toast, wait and re-snapshot rather than clicking blind.
+- **Driving web UIs:** snapshot → act on the _current_ uids → re-snapshot. Never fire batched/guessed clicks; if a page shows "Loading"/an error toast, wait and re-snapshot rather than clicking blind.
 
 ## Overview
 
@@ -115,13 +118,16 @@ The script `scripts/android-cua-smoke.py` drives the emulator via ADB using a vi
 ### Run modes
 
 **`--showcase` (default, regression guard)**
+
 ```bash
 source ~/.env.d/azure-openai.env
 python3 scripts/android-cua-smoke.py --model gpt-5.4 --include-xml
 ```
+
 Runs: connect → sessions load (pre-created session MUST appear) → new session → sessions reload → TypeScript task → settings.
 
 **`--e2e` (full coding task, project dir, model picker)**
+
 ```bash
 source ~/.env.d/azure-openai.env
 python3 scripts/android-cua-smoke.py --e2e \
@@ -131,9 +137,11 @@ python3 scripts/android-cua-smoke.py --e2e \
   --e2e-task "Write a hello_world.py file that prints 'Hello World' to stdout." \
   --e2e-filename hello_world.py
 ```
+
 Phases: connect → long-press FAB → enter project dir → select deepseek model → submit task → **DETERMINISTIC** API poll for idle → **DETERMINISTIC** API scan for filename → **DETERMINISTIC** ADB uiautomator check.
 
 **`--query` (natural-language test description)**
+
 ```bash
 source ~/.env.d/azure-openai.env
 python3 scripts/android-cua-smoke.py \
@@ -144,6 +152,7 @@ python3 scripts/android-cua-smoke.py \
            Ask to write hello_world.py. Validate that agent completed task." \
   --eval-output /tmp/eval-report.json
 ```
+
 The LLM plans phases from the query, executes them, runs deterministic checks, and prints a scored evaluation report (overall/score/phases/recommendations).
 
 ### Available models on dev server (100.108.64.76:4096)
@@ -155,6 +164,7 @@ Use `--e2e-model-hint deepseek` to select `deepseek-v4-flash-free` (free quota, 
 ### Azure OpenAI credentials
 
 The correct Azure AI Services endpoint (with actual deployments) is:
+
 - **Endpoint**: `https://info-mjnxtt51-eastus2.cognitiveservices.azure.com`
 - **Env file**: `~/.env.d/azure-openai.env`
 - **Available vision models**: `gpt-5.4`, `gpt-5.2`, `gpt-5.1`, `gpt-4.1`
@@ -175,6 +185,7 @@ Secrets required: `AZURE_OPENAI_API_KEY`, `AZURE_OPENAI_ENDPOINT` (already set o
 **Triggers**: Runs on push to `main` (with path filters) AND on `v*` tags (releases).
 
 **Dispatch inputs** (workflow_dispatch):
+
 - `scenario`: `showcase` (default) | `e2e`
 - `query`: natural-language test description (enables `--query` mode, overrides scenario)
 - `opencode_url`: override server URL (use Tailscale URL for live server)
@@ -183,6 +194,7 @@ Secrets required: `AZURE_OPENAI_API_KEY`, `AZURE_OPENAI_ENDPOINT` (already set o
 ### When to run CUA test
 
 **MANDATORY**: Run the CUA smoke test before any merge to `main` or release:
+
 1. Before merging a PR that touches `src/**`, `app/**`, or `scripts/android-cua-smoke.py`
 2. After creating a release tag — CI runs it automatically
 3. When debugging UI issues — run locally with `--include-xml` for richer context
@@ -211,6 +223,7 @@ bw list items --session "$BW_SESSION" | jq --arg f "$FOLDER_ID" '[.[] | select(.
 ```
 
 Secrets stored in vault:
+
 - `EXPO_PUBLIC_SENTRY_DSN` — Sentry ingest DSN (embedded in APK at build time)
 - `SENTRY_AUTH_TOKEN` — sentry-cli upload token (source maps, releases)
 - `SENTRY_ORG` — `vibetechnologies`

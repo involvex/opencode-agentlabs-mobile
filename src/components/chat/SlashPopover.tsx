@@ -1,44 +1,66 @@
-import { useMemo } from "react"
-import { View, Text, TouchableOpacity, ScrollView, StyleSheet, Keyboard, Platform } from "react-native"
-import { Ionicons } from "@expo/vector-icons"
-import { useTranslation } from "react-i18next"
+import { useMemo } from "react";
+import {
+  View,
+  Text,
+  TouchableOpacity,
+  ScrollView,
+  StyleSheet,
+} from "react-native";
+import { Ionicons } from "@expo/vector-icons";
+import { useTranslation } from "react-i18next";
 
 export interface SlashCommand {
-  trigger: string
-  title: string
-  description?: string
-  icon: string
-  type: "builtin" | "custom"
+  trigger: string;
+  title: string;
+  description?: string;
+  icon: string;
+  type: "builtin" | "custom";
 }
 
 interface Props {
-  query: string
-  commands: SlashCommand[]
-  isDark: boolean
-  onSelect: (cmd: SlashCommand) => void
+  query: string;
+  commands: SlashCommand[];
+  isDark: boolean;
+  onSelect: (cmd: SlashCommand) => void;
 }
 
 export function SlashPopover({ query, commands, isDark, onSelect }: Props) {
-  const { t } = useTranslation()
+  const { t } = useTranslation();
   const filtered = useMemo(() => {
-    const q = query.toLowerCase()
-    return commands.filter((c) => c.trigger.toLowerCase().startsWith(q) || c.title.toLowerCase().includes(q))
-  }, [query, commands])
+    const q = query.toLowerCase();
+    return commands.filter(
+      (c) =>
+        c.trigger.toLowerCase().startsWith(q) ||
+        c.title.toLowerCase().includes(q),
+    );
+  }, [query, commands]);
 
-  if (filtered.length === 0) return null
+  if (filtered.length === 0) return null;
 
   return (
     <View style={[s.popover, isDark && s.popoverDark]}>
       <ScrollView keyboardShouldPersistTaps="always" style={s.scroll}>
         {filtered.map((cmd) => (
-          <TouchableOpacity key={cmd.trigger} style={[s.item, isDark && s.itemDark]} onPress={() => onSelect(cmd)}>
+          <TouchableOpacity
+            key={cmd.trigger}
+            style={[s.item, isDark && s.itemDark]}
+            onPress={() => onSelect(cmd)}
+          >
             <Ionicons
               name={cmd.icon as any}
               size={18}
-              color={cmd.type === "custom" ? "#8b5cf6" : isDark ? "#888888" : "#666666"}
+              color={
+                cmd.type === "custom"
+                  ? "#8b5cf6"
+                  : isDark
+                    ? "#888888"
+                    : "#666666"
+              }
             />
             <View style={s.textCol}>
-              <Text style={[s.trigger, isDark && s.textWhite]}>/{cmd.trigger}</Text>
+              <Text style={[s.trigger, isDark && s.textWhite]}>
+                /{cmd.trigger}
+              </Text>
               {cmd.description && (
                 <Text style={[s.desc, isDark && s.metaDark]} numberOfLines={1}>
                   {cmd.description}
@@ -47,14 +69,16 @@ export function SlashPopover({ query, commands, isDark, onSelect }: Props) {
             </View>
             {cmd.type === "custom" && (
               <View style={[s.badge, isDark && s.badgeDark]}>
-                <Text style={s.badgeText}>{t("chat.slashPopover.customBadge")}</Text>
+                <Text style={s.badgeText}>
+                  {t("chat.slashPopover.customBadge")}
+                </Text>
               </View>
             )}
           </TouchableOpacity>
         ))}
       </ScrollView>
     </View>
-  )
+  );
 }
 
 const s = StyleSheet.create({
@@ -87,4 +111,4 @@ const s = StyleSheet.create({
   },
   badgeDark: { backgroundColor: "#2a1a3e" },
   badgeText: { fontSize: 10, color: "#8b5cf6", fontWeight: "600" },
-})
+});

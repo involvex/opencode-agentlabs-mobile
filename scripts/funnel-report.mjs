@@ -19,10 +19,13 @@
 //
 // Read-only: issues HogQL SELECTs only. No data is written.
 
-const KEY = process.env.POSTHOG_PERSONAL_API_KEY
-const PROJECT = process.env.POSTHOG_PROJECT_ID
-const HOST = (process.env.POSTHOG_HOST || "https://eu.posthog.com").replace(/\/+$/, "")
-const DAYS = Number(process.env.FUNNEL_DAYS || 30)
+const KEY = process.env.POSTHOG_PERSONAL_API_KEY;
+const PROJECT = process.env.POSTHOG_PROJECT_ID;
+const HOST = (process.env.POSTHOG_HOST || "https://eu.posthog.com").replace(
+  /\/+$/,
+  "",
+);
+const DAYS = Number(process.env.FUNNEL_DAYS || 30);
 
 if (!KEY || !PROJECT) {
   console.error(
@@ -35,28 +38,33 @@ if (!KEY || !PROJECT) {
       "  export POSTHOG_HOST=https://eu.posthog.com # optional (EU default)",
       "  node scripts/funnel-report.mjs",
     ].join("\n"),
-  )
-  process.exit(2)
+  );
+  process.exit(2);
 }
 
 async function hogql(query) {
   const res = await fetch(`${HOST}/api/projects/${PROJECT}/query/`, {
     method: "POST",
-    headers: { Authorization: `Bearer ${KEY}`, "Content-Type": "application/json" },
+    headers: {
+      Authorization: `Bearer ${KEY}`,
+      "Content-Type": "application/json",
+    },
     body: JSON.stringify({ query: { kind: "HogQLQuery", query } }),
-  })
+  });
   if (!res.ok) {
-    const body = await res.text()
-    throw new Error(`PostHog query failed (HTTP ${res.status}): ${body.slice(0, 300)}`)
+    const body = await res.text();
+    throw new Error(
+      `PostHog query failed (HTTP ${res.status}): ${body.slice(0, 300)}`,
+    );
   }
-  const json = await res.json()
-  return json.results || []
+  const json = await res.json();
+  return json.results || [];
 }
 
-const pct = (n, d) => (d > 0 ? `${((100 * n) / d).toFixed(1)}%` : "—")
+const pct = (n, d) => (d > 0 ? `${((100 * n) / d).toFixed(1)}%` : "—");
 
 async function main() {
-  const since = `now() - INTERVAL ${DAYS} DAY`
+  const since = `now() - INTERVAL ${DAYS} DAY`;
 
   // 1. Per-event volume + unique users in the window.
   const events = [
@@ -71,17 +79,17 @@ async function main() {
     "demo_step_advanced",
     "demo_completed",
     "demo_exited_to_connect",
-  ]
+  ];
   const rows = await hogql(
     `SELECT event, count() AS events, count(DISTINCT person_id) AS users
      FROM events
      WHERE event IN (${events.map((e) => `'${e}'`).join(",")})
        AND timestamp > ${since}
      GROUP BY event`,
-  )
-  const u = {}
-  for (const [event, , users] of rows) u[event] = Number(users)
-  const has = (e) => u[e] || 0
+  );
+  const u = {};
+  for (const [event, , users] of rows) u[event] = Number(users);
+  const has = (e) => u[e] || 0;
 
   // 2. Demo -> real connection correlation (the money metric): of users who
   //    started the demo, how many later reached a successful connection.
@@ -100,35 +108,52 @@ async function main() {
          )
        GROUP BY person_id
      )`,
-  )
+  );
 
-  console.log(`\n=== OpenCode Mobile funnel — last ${DAYS} days (${HOST}, project ${PROJECT}) ===\n`)
+  console.log(
+    `\n=== OpenCode Mobile funnel — last ${DAYS} days (${HOST}, project ${PROJECT}) ===\n`,
+  );
 
-  console.log("Activation funnel (unique users):")
-  const opened = has("app_opened")
-  console.log(`  app_opened                ${opened}`)
-  console.log(`  connection_form_submitted ${has("connection_form_submitted")}  (${pct(has("connection_form_submitted"), opened)} of opens)`)
-  console.log(`  connection_succeeded      ${has("connection_succeeded")}  (${pct(has("connection_succeeded"), opened)} of opens)`)
-  console.log(`  message_sent              ${has("message_sent")}  (${pct(has("message_sent"), opened)} of opens)`)
-  console.log(`  response_received         ${has("response_received")}`)
-  console.log(`  connection_failed         ${has("connection_failed")}`)
+  console.log("Activation funnel (unique users):");
+  const opened = has("app_opened");
+  console.log(`  app_opened                ${opened}`);
+  console.log(
+    `  connection_form_submitted ${has("connection_form_submitted")}  (${pct(has("connection_form_submitted"), opened)} of opens)`,
+  );
+  console.log(
+    `  connection_succeeded      ${has("connection_succeeded")}  (${pct(has("connection_succeeded"), opened)} of opens)`,
+  );
+  console.log(
+    `  message_sent              ${has("message_sent")}  (${pct(has("message_sent"), opened)} of opens)`,
+  );
+  console.log(`  response_received         ${has("response_received")}`);
+  console.log(`  connection_failed         ${has("connection_failed")}`);
 
-  console.log("\nDemo funnel (unique users):")
-  const dStart = has("demo_started")
-  console.log(`  demo_started              ${dStart}`)
-  console.log(`  demo_step_advanced        ${has("demo_step_advanced")}  (${pct(has("demo_step_advanced"), dStart)})`)
-  console.log(`  demo_completed            ${has("demo_completed")}  (${pct(has("demo_completed"), dStart)})`)
-  console.log(`  demo_exited_to_connect    ${has("demo_exited_to_connect")}  (${pct(has("demo_exited_to_connect"), dStart)})`)
+  console.log("\nDemo funnel (unique users):");
+  const dStart = has("demo_started");
+  console.log(`  demo_started              ${dStart}`);
+  console.log(
+    `  demo_step_advanced        ${has("demo_step_advanced")}  (${pct(has("demo_step_advanced"), dStart)})`,
+  );
+  console.log(
+    `  demo_completed            ${has("demo_completed")}  (${pct(has("demo_completed"), dStart)})`,
+  );
+  console.log(
+    `  demo_exited_to_connect    ${has("demo_exited_to_connect")}  (${pct(has("demo_exited_to_connect"), dStart)})`,
+  );
 
-  console.log("\nDemo → connection (does the demo drive activation?):")
-  console.log(`  started demo              ${Number(demoUsers)}`)
-  console.log(`  ...later connected        ${Number(demoThenConnected)}  (${pct(Number(demoThenConnected), Number(demoUsers))} of demo users)`)
-  const nonDemoOpen = opened - dStart
-  console.log(`  baseline connect rate     ${pct(has("connection_succeeded"), opened)} (all opens)`)
-  console.log("")
+  console.log("\nDemo → connection (does the demo drive activation?):");
+  console.log(`  started demo              ${Number(demoUsers)}`);
+  console.log(
+    `  ...later connected        ${Number(demoThenConnected)}  (${pct(Number(demoThenConnected), Number(demoUsers))} of demo users)`,
+  );
+  console.log(
+    `  baseline connect rate     ${pct(has("connection_succeeded"), opened)} (all opens)`,
+  );
+  console.log("");
 }
 
 main().catch((e) => {
-  console.error(String(e.message || e))
-  process.exit(1)
-})
+  console.error(String(e.message || e));
+  process.exit(1);
+});

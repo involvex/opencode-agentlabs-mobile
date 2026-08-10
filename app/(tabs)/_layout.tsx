@@ -1,12 +1,12 @@
-import { Tabs } from "expo-router"
-import { useColorScheme } from "react-native"
-import { Ionicons } from "@expo/vector-icons"
-import { useTranslation } from "react-i18next"
+import { Tabs } from "expo-router";
+import { useColorScheme } from "react-native";
+import { Ionicons } from "@expo/vector-icons";
+import { useTranslation } from "react-i18next";
 
 export default function TabLayout() {
-  const colorScheme = useColorScheme()
-  const isDark = colorScheme === "dark"
-  const { t } = useTranslation()
+  const colorScheme = useColorScheme();
+  const isDark = colorScheme === "dark";
+  const { t } = useTranslation();
 
   return (
     <Tabs
@@ -27,23 +27,29 @@ export default function TabLayout() {
         name="index"
         options={{
           title: t("nav.sessionsTab"),
-          tabBarIcon: ({ color, size }) => <Ionicons name="chatbubbles-outline" size={size} color={color} />,
+          tabBarIcon: ({ color, size }) => (
+            <Ionicons name="chatbubbles-outline" size={size} color={color} />
+          ),
         }}
       />
       <Tabs.Screen
         name="connections"
         options={{
           title: t("nav.connectionsTab"),
-          tabBarIcon: ({ color, size }) => <Ionicons name="server-outline" size={size} color={color} />,
+          tabBarIcon: ({ color, size }) => (
+            <Ionicons name="server-outline" size={size} color={color} />
+          ),
         }}
       />
       <Tabs.Screen
         name="settings"
         options={{
           title: t("nav.settingsTab"),
-          tabBarIcon: ({ color, size }) => <Ionicons name="settings-outline" size={size} color={color} />,
+          tabBarIcon: ({ color, size }) => (
+            <Ionicons name="settings-outline" size={size} color={color} />
+          ),
         }}
       />
     </Tabs>
-  )
+  );
 }

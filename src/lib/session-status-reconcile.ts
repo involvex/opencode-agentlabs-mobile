@@ -1,4 +1,4 @@
-import type { Message } from "./sdk"
+import type { Message } from "./sdk";
 
 /**
  * Decide whether a session the client believes is "busy" has actually
@@ -23,9 +23,11 @@ import type { Message } from "./sdk"
  * never forces a session busy that the server hasn't reported as such, so a
  * genuinely still-busy session is never clobbered.
  */
-export function isSessionActuallyIdle(messages: Message[] | null | undefined): boolean {
-  if (!messages || messages.length === 0) return false
-  const last = messages[messages.length - 1]
-  if (last.role !== "assistant") return false
-  return Boolean(last.time?.completed) || Boolean(last.error)
+export function isSessionActuallyIdle(
+  messages: Message[] | null | undefined,
+): boolean {
+  if (!messages || messages.length === 0) return false;
+  const last = messages[messages.length - 1];
+  if (last.role !== "assistant") return false;
+  return Boolean(last.time?.completed) || Boolean(last.error);
 }

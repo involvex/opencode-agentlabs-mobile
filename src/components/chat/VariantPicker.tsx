@@ -1,35 +1,44 @@
-import { View, Text, TouchableOpacity, StyleSheet } from "react-native"
-import { Ionicons } from "@expo/vector-icons"
-import BottomSheet, { BottomSheetBackdrop, BottomSheetFlatList } from "@gorhom/bottom-sheet"
-import { useTranslation } from "react-i18next"
+import { View, Text, TouchableOpacity, StyleSheet } from "react-native";
+import { Ionicons } from "@expo/vector-icons";
+import BottomSheet, {
+  BottomSheetBackdrop,
+  BottomSheetFlatList,
+} from "@gorhom/bottom-sheet";
+import { useTranslation } from "react-i18next";
 
 interface VariantOption {
-  id: string | null
-  label: string
-  description: string
+  id: string | null;
+  label: string;
+  description: string;
 }
 
 interface Props {
-  variants: Record<string, { reasoningEffort?: string }> | undefined
-  selected: string | null
-  isDark: boolean
-  onSelect: (variant: string | null) => void
-  sheetRef: React.RefObject<BottomSheet | null>
+  variants: Record<string, { reasoningEffort?: string }> | undefined;
+  selected: string | null;
+  isDark: boolean;
+  onSelect: (variant: string | null) => void;
+  sheetRef: React.RefObject<BottomSheet | null>;
 }
 
-export function VariantPicker({ variants, selected, isDark, onSelect, sheetRef }: Props) {
-  const { t } = useTranslation()
+export function VariantPicker({
+  variants,
+  selected,
+  isDark,
+  onSelect,
+  sheetRef,
+}: Props) {
+  const { t } = useTranslation();
 
   const effortDescriptions: Record<string, string> = {
     low: t("chat.variantPicker.effort.low"),
     medium: t("chat.variantPicker.effort.medium"),
     high: t("chat.variantPicker.effort.high"),
-  }
+  };
   const autoOption: VariantOption = {
     id: null,
     label: t("chat.variantPicker.autoLabel"),
     description: t("chat.variantPicker.autoDescription"),
-  }
+  };
 
   const options: VariantOption[] = [
     autoOption,
@@ -38,12 +47,12 @@ export function VariantPicker({ variants, selected, isDark, onSelect, sheetRef }
       label: id.charAt(0).toUpperCase() + id.slice(1),
       description: effortDescriptions[id] ?? id,
     })),
-  ]
+  ];
 
   const handleSelect = (id: string | null) => {
-    onSelect(id)
-    sheetRef.current?.close()
-  }
+    onSelect(id);
+    sheetRef.current?.close();
+  };
 
   return (
     <BottomSheet
@@ -57,35 +66,52 @@ export function VariantPicker({ variants, selected, isDark, onSelect, sheetRef }
       backgroundStyle={isDark ? s.sheetDark : s.sheet}
       handleIndicatorStyle={{ backgroundColor: isDark ? "#666666" : "#cccccc" }}
       backdropComponent={(props) => (
-        <BottomSheetBackdrop {...props} disappearsOnIndex={-1} appearsOnIndex={0} opacity={0.5} />
+        <BottomSheetBackdrop
+          {...props}
+          disappearsOnIndex={-1}
+          appearsOnIndex={0}
+          opacity={0.5}
+        />
       )}
     >
       <View style={s.header}>
-        <Text style={[s.title, isDark && s.textWhite]}>{t("chat.variantPicker.title")}</Text>
+        <Text style={[s.title, isDark && s.textWhite]}>
+          {t("chat.variantPicker.title")}
+        </Text>
       </View>
       <BottomSheetFlatList
         data={options}
         keyExtractor={(item: VariantOption) => item.id ?? "auto"}
         renderItem={({ item }: { item: VariantOption }) => {
-          const active = item.id === selected
+          const active = item.id === selected;
           return (
             <TouchableOpacity
-              style={[s.row, isDark && s.rowDark, active && (isDark ? s.rowSelectedDark : s.rowSelected)]}
+              style={[
+                s.row,
+                isDark && s.rowDark,
+                active && (isDark ? s.rowSelectedDark : s.rowSelected),
+              ]}
               onPress={() => handleSelect(item.id)}
               testID={`variant-option-${item.id ?? "auto"}`}
             >
               <View style={s.rowText}>
-                <Text style={[s.rowName, isDark && s.textWhite]}>{item.label}</Text>
-                <Text style={[s.rowDesc, isDark && s.metaDark]}>{item.description}</Text>
+                <Text style={[s.rowName, isDark && s.textWhite]}>
+                  {item.label}
+                </Text>
+                <Text style={[s.rowDesc, isDark && s.metaDark]}>
+                  {item.description}
+                </Text>
               </View>
-              {active && <Ionicons name="checkmark-circle" size={20} color="#8b5cf6" />}
+              {active && (
+                <Ionicons name="checkmark-circle" size={20} color="#8b5cf6" />
+              )}
             </TouchableOpacity>
-          )
+          );
         }}
         contentContainerStyle={s.content}
       />
     </BottomSheet>
-  )
+  );
 }
 
 const s = StyleSheet.create({
@@ -110,4 +136,4 @@ const s = StyleSheet.create({
   rowText: { flex: 1 },
   rowName: { fontSize: 15, fontWeight: "600", color: "#0a0a0a" },
   rowDesc: { fontSize: 12, color: "#999999", marginTop: 2 },
-})
+});

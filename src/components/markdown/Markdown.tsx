@@ -1,7 +1,15 @@
-import { useMemo, type ReactNode } from "react"
-import { View, Text, useColorScheme, Platform, type StyleProp, type ViewStyle, type TextStyle } from "react-native"
-import { useMarkdown, Renderer } from "react-native-marked"
-import { CodeBlock } from "./CodeBlock"
+import { useMemo, type ReactNode } from "react";
+import {
+  View,
+  Text,
+  useColorScheme,
+  Platform,
+  type StyleProp,
+  type ViewStyle,
+  type TextStyle,
+} from "react-native";
+import { useMarkdown, Renderer } from "react-native-marked";
+import { CodeBlock } from "./CodeBlock";
 
 // react-native-marked's base Renderer hardcodes `selectable` on every plain
 // text node it produces (text/strong/em/del/heading/codespan). On Android,
@@ -15,55 +23,84 @@ import { CodeBlock } from "./CodeBlock"
 // this. Code content is still copyable via CodeBlock's explicit Copy
 // button, so dropping `selectable` on plain text costs little.
 class CustomRenderer extends Renderer {
-  private plainText(children: string | ReactNode[], styles?: StyleProp<TextStyle>): ReactNode {
+  private plainText(
+    children: string | ReactNode[],
+    styles?: StyleProp<TextStyle>,
+  ): ReactNode {
     return (
       <Text key={this.getKey()} style={styles}>
         {children}
       </Text>
-    )
+    );
   }
 
-  code(text: string, language?: string, containerStyle?: ViewStyle, _textStyle?: TextStyle) {
+  code(
+    text: string,
+    language?: string,
+    containerStyle?: ViewStyle,
+    _textStyle?: TextStyle,
+  ) {
     return (
       <View key={this.getKey()} style={containerStyle}>
         <CodeBlock code={text} language={language} />
       </View>
-    )
+    );
   }
 
   text(text: string | ReactNode[], styles?: TextStyle): ReactNode {
-    return this.plainText(text, styles)
+    return this.plainText(text, styles);
   }
 
   strong(children: string | ReactNode[], styles?: TextStyle): ReactNode {
-    return this.plainText(children, styles)
+    return this.plainText(children, styles);
   }
 
   em(children: string | ReactNode[], styles?: TextStyle): ReactNode {
-    return this.plainText(children, styles)
+    return this.plainText(children, styles);
   }
 
   del(children: string | ReactNode[], styles?: TextStyle): ReactNode {
-    return this.plainText(children, styles)
+    return this.plainText(children, styles);
   }
 
   heading(text: string | ReactNode[], styles?: TextStyle): ReactNode {
-    return this.plainText(text, styles)
+    return this.plainText(text, styles);
   }
 
   codespan(text: string, styles?: TextStyle): ReactNode {
-    return this.plainText(text, [styles, { fontStyle: "normal", fontWeight: "normal" }])
+    return this.plainText(text, [
+      styles,
+      { fontStyle: "normal", fontWeight: "normal" },
+    ]);
   }
 }
 
-const mono = Platform.OS === "ios" ? "Menlo" : "monospace"
+const mono = Platform.OS === "ios" ? "Menlo" : "monospace";
 
 const lightTheme = {
   text: { color: "#0a0a0a", fontSize: 15, lineHeight: 22 },
   paragraph: { marginTop: 0, marginBottom: 8 },
-  h1: { fontSize: 22, fontWeight: "700" as const, color: "#0a0a0a", marginBottom: 8, marginTop: 12 },
-  h2: { fontSize: 19, fontWeight: "600" as const, color: "#0a0a0a", marginBottom: 6, marginTop: 10 },
-  h3: { fontSize: 16, fontWeight: "600" as const, color: "#0a0a0a", marginBottom: 4, marginTop: 8 },
+  h1: {
+    fontSize: 22,
+    fontWeight: "700" as const,
+    color: "#0a0a0a",
+    marginBottom: 8,
+    marginTop: 12,
+  },
+  h2: {
+    fontSize: 19,
+    fontWeight: "600" as const,
+    color: "#0a0a0a",
+    marginBottom: 6,
+    marginTop: 10,
+  },
+  h3: {
+    fontSize: 16,
+    fontWeight: "600" as const,
+    color: "#0a0a0a",
+    marginBottom: 4,
+    marginTop: 8,
+  },
   link: { color: "#8b5cf6" },
   blockquote: {
     backgroundColor: "transparent",
@@ -98,7 +135,7 @@ const lightTheme = {
   em: { fontStyle: "italic" as const },
   strikethrough: { textDecorationLine: "line-through" as const },
   image: { borderRadius: 8 },
-}
+};
 
 const darkTheme = {
   ...lightTheme,
@@ -122,15 +159,15 @@ const darkTheme = {
     color: "#c4b5fd",
   },
   hr: { ...lightTheme.hr, backgroundColor: "#2a2a2a" },
-}
+};
 
 interface Props {
-  children: string
+  children: string;
 }
 
 export function Markdown({ children }: Props) {
-  const isDark = useColorScheme() === "dark"
-  const theme = isDark ? darkTheme : lightTheme
+  const isDark = useColorScheme() === "dark";
+  const theme = isDark ? darkTheme : lightTheme;
 
   // A module-scope singleton renderer would share one CustomRenderer (and
   // its underlying github-slugger) across every Markdown instance and every
@@ -141,7 +178,8 @@ export function Markdown({ children }: Props) {
   // the renderer to `children` resets the slugger per parse, so keys are
   // deterministic (and stable) for a given value, while re-renders with an
   // unchanged value stay memoized instead of creating a new renderer.
-  const renderer = useMemo(() => new CustomRenderer(), [children])
+  // eslint-disable-next-line react-hooks/exhaustive-deps -- `children` is intentionally a dep to reset the slugger per unique value
+  const renderer = useMemo(() => new CustomRenderer(), [children]);
 
   // react-native-marked's default <RNMarkdown> export renders blocks inside a
   // FlatList. Chat messages are rendered inside app/session/[id].tsx's own
@@ -156,9 +194,9 @@ export function Markdown({ children }: Props) {
     renderer,
     styles: theme,
     colorScheme: isDark ? "dark" : "light",
-  })
+  });
 
-  if (!children?.trim()) return null
+  if (!children?.trim()) return null;
 
-  return <View style={{ backgroundColor: "transparent" }}>{elements}</View>
+  return <View style={{ backgroundColor: "transparent" }}>{elements}</View>;
 }

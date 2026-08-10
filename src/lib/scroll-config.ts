@@ -8,11 +8,11 @@
 // Native renderer needed) while both components spread the SAME object onto
 // their ScrollView, so the test and the real components can't drift apart.
 export interface HorizontalScrollConfig {
-  horizontal: true
-  showsHorizontalScrollIndicator: boolean
+  horizontal: true;
+  showsHorizontalScrollIndicator: boolean;
 }
 
 export const WIDE_CONTENT_SCROLL_CONFIG: HorizontalScrollConfig = {
   horizontal: true,
   showsHorizontalScrollIndicator: true,
-}
+};

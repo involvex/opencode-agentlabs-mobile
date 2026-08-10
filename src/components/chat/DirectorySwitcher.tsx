@@ -1,54 +1,72 @@
-import { useState, useCallback, useMemo } from "react"
-import { View, Text, TouchableOpacity, StyleSheet } from "react-native"
-import { Ionicons } from "@expo/vector-icons"
-import BottomSheet, { BottomSheetBackdrop, BottomSheetFlatList, BottomSheetTextInput } from "@gorhom/bottom-sheet"
-import { useTranslation } from "react-i18next"
+import { useState, useCallback, useMemo } from "react";
+import { View, Text, TouchableOpacity, StyleSheet } from "react-native";
+import { Ionicons } from "@expo/vector-icons";
+import BottomSheet, {
+  BottomSheetBackdrop,
+  BottomSheetFlatList,
+  BottomSheetTextInput,
+} from "@gorhom/bottom-sheet";
+import { useTranslation } from "react-i18next";
 
 interface Props {
-  sheetRef: React.RefObject<BottomSheet | null>
-  current?: string
-  recents: string[]
-  serverHome: string | null
-  isDark: boolean
-  onSwitch: (directory?: string) => void
+  sheetRef: React.RefObject<BottomSheet | null>;
+  current?: string;
+  recents: string[];
+  serverHome: string | null;
+  isDark: boolean;
+  onSwitch: (directory?: string) => void;
   // Opens a browsable folder picker rooted at the server's filesystem, as an
   // alternative to typing a path. Optional so existing callers keep working.
-  onBrowse?: () => void
+  onBrowse?: () => void;
 }
 
-export function DirectorySwitcher({ sheetRef, current, recents, serverHome, isDark, onSwitch, onBrowse }: Props) {
-  const { t } = useTranslation()
-  const [custom, setCustom] = useState("")
+export function DirectorySwitcher({
+  sheetRef,
+  current,
+  recents,
+  serverHome,
+  isDark,
+  onSwitch,
+  onBrowse,
+}: Props) {
+  const { t } = useTranslation();
+  const [custom, setCustom] = useState("");
 
   const handleSelect = useCallback(
     (dir?: string) => {
-      onSwitch(dir)
-      setCustom("")
-      sheetRef.current?.close()
+      onSwitch(dir);
+      setCustom("");
+      sheetRef.current?.close();
     },
     [onSwitch, sheetRef],
-  )
+  );
 
   const handleCustomSubmit = useCallback(() => {
-    const dir = custom.trim()
-    if (!dir) return
-    handleSelect(dir)
-  }, [custom, handleSelect])
+    const dir = custom.trim();
+    if (!dir) return;
+    handleSelect(dir);
+  }, [custom, handleSelect]);
 
   // Build list: server default + recents (excluding current)
   const items = useMemo(() => {
-    const list: Array<{ label: string; dir?: string; active: boolean }> = [
-      { label: t("chat.directorySwitcher.serverDefaultLabel"), dir: undefined, active: !current },
-    ]
+    const list: { label: string; dir?: string; active: boolean }[] = [
+      {
+        label: t("chat.directorySwitcher.serverDefaultLabel"),
+        dir: undefined,
+        active: !current,
+      },
+    ];
     for (const dir of recents) {
-      if (dir === current) continue
-      const short = dir.split("/").filter(Boolean).pop() || dir
-      list.push({ label: short, dir, active: false })
+      if (dir === current) continue;
+      const short = dir.split("/").filter(Boolean).pop() || dir;
+      list.push({ label: short, dir, active: false });
     }
-    return list
-  }, [recents, current, t])
+    return list;
+  }, [recents, current, t]);
 
-  const shortCurrent = current ? current.split("/").filter(Boolean).pop() || current : null
+  const shortCurrent = current
+    ? current.split("/").filter(Boolean).pop() || current
+    : null;
 
   return (
     <BottomSheet
@@ -65,14 +83,21 @@ export function DirectorySwitcher({ sheetRef, current, recents, serverHome, isDa
       backgroundStyle={isDark ? s.sheetDark : s.sheet}
       handleIndicatorStyle={{ backgroundColor: isDark ? "#666666" : "#cccccc" }}
       backdropComponent={(props) => (
-        <BottomSheetBackdrop {...props} disappearsOnIndex={-1} appearsOnIndex={0} opacity={0.5} />
+        <BottomSheetBackdrop
+          {...props}
+          disappearsOnIndex={-1}
+          appearsOnIndex={0}
+          opacity={0.5}
+        />
       )}
       onChange={(idx) => {
-        if (idx === -1) setCustom("")
+        if (idx === -1) setCustom("");
       }}
     >
       <View style={s.header}>
-        <Text style={[s.title, isDark && s.white]}>{t("chat.directorySwitcher.title")}</Text>
+        <Text style={[s.title, isDark && s.white]}>
+          {t("chat.directorySwitcher.title")}
+        </Text>
         {shortCurrent && (
           <View style={s.current}>
             <Ionicons name="folder" size={14} color="#8b5cf6" />
@@ -91,9 +116,10 @@ export function DirectorySwitcher({ sheetRef, current, recents, serverHome, isDa
           placeholderTextColor={isDark ? "#666666" : "#999999"}
           value={custom}
           onChangeText={(text) => {
-            if (serverHome && text === "~") setCustom(serverHome)
-            else if (serverHome && text.startsWith("~/")) setCustom(serverHome + text.slice(1))
-            else setCustom(text)
+            if (serverHome && text === "~") setCustom(serverHome);
+            else if (serverHome && text.startsWith("~/"))
+              setCustom(serverHome + text.slice(1));
+            else setCustom(text);
           }}
           onSubmitEditing={handleCustomSubmit}
           returnKeyType="go"
@@ -101,8 +127,15 @@ export function DirectorySwitcher({ sheetRef, current, recents, serverHome, isDa
           autoCorrect={false}
         />
         {custom.trim() && (
-          <TouchableOpacity style={[s.goBtn, isDark && s.goBtnDark]} onPress={handleCustomSubmit}>
-            <Ionicons name="arrow-forward" size={18} color={isDark ? "#0a0a0a" : "#ffffff"} />
+          <TouchableOpacity
+            style={[s.goBtn, isDark && s.goBtnDark]}
+            onPress={handleCustomSubmit}
+          >
+            <Ionicons
+              name="arrow-forward"
+              size={18}
+              color={isDark ? "#0a0a0a" : "#ffffff"}
+            />
           </TouchableOpacity>
         )}
       </View>
@@ -112,10 +145,16 @@ export function DirectorySwitcher({ sheetRef, current, recents, serverHome, isDa
         <View style={s.chips}>
           {serverHome && (
             <>
-              <TouchableOpacity style={[s.chip, isDark && s.chipDark]} onPress={() => setCustom(serverHome)}>
+              <TouchableOpacity
+                style={[s.chip, isDark && s.chipDark]}
+                onPress={() => setCustom(serverHome)}
+              >
                 <Text style={[s.chipText, isDark && s.chipTextDark]}>~</Text>
               </TouchableOpacity>
-              <TouchableOpacity style={[s.chip, isDark && s.chipDark]} onPress={() => setCustom(serverHome + "/")}>
+              <TouchableOpacity
+                style={[s.chip, isDark && s.chipDark]}
+                onPress={() => setCustom(serverHome + "/")}
+              >
                 <Text style={[s.chipText, isDark && s.chipTextDark]}>~/</Text>
               </TouchableOpacity>
             </>
@@ -124,12 +163,18 @@ export function DirectorySwitcher({ sheetRef, current, recents, serverHome, isDa
             <TouchableOpacity
               style={[s.chip, s.chipBrowse, isDark && s.chipDark]}
               onPress={() => {
-                sheetRef.current?.close()
-                onBrowse()
+                sheetRef.current?.close();
+                onBrowse();
               }}
             >
-              <Ionicons name="folder-open-outline" size={14} color={isDark ? "#8b5cf6" : "#6d28d9"} />
-              <Text style={[s.chipText, isDark && s.chipTextDark]}>{t("chat.directorySwitcher.browseLabel")}</Text>
+              <Ionicons
+                name="folder-open-outline"
+                size={14}
+                color={isDark ? "#8b5cf6" : "#6d28d9"}
+              />
+              <Text style={[s.chipText, isDark && s.chipTextDark]}>
+                {t("chat.directorySwitcher.browseLabel")}
+              </Text>
             </TouchableOpacity>
           )}
         </View>
@@ -138,7 +183,9 @@ export function DirectorySwitcher({ sheetRef, current, recents, serverHome, isDa
       {/* Recent directories */}
       <BottomSheetFlatList
         data={items}
-        keyExtractor={(item: (typeof items)[number], i: number) => item.dir || `default-${i}`}
+        keyExtractor={(item: (typeof items)[number], i: number) =>
+          item.dir || `default-${i}`
+        }
         renderItem={({ item }: { item: (typeof items)[number] }) => (
           <TouchableOpacity
             style={[s.row, isDark && s.rowDark, item.active && s.rowActive]}
@@ -152,30 +199,46 @@ export function DirectorySwitcher({ sheetRef, current, recents, serverHome, isDa
               />
             </View>
             <View style={s.rowContent}>
-              <Text style={[s.rowLabel, isDark && s.white, item.active && s.rowLabelActive]} numberOfLines={1}>
+              <Text
+                style={[
+                  s.rowLabel,
+                  isDark && s.white,
+                  item.active && s.rowLabelActive,
+                ]}
+                numberOfLines={1}
+              >
                 {item.label}
               </Text>
               {item.dir && (
-                <Text style={[s.rowPath, isDark && s.dimDark]} numberOfLines={1}>
+                <Text
+                  style={[s.rowPath, isDark && s.dimDark]}
+                  numberOfLines={1}
+                >
                   {item.dir}
                 </Text>
               )}
               {!item.dir && (
-                <Text style={[s.rowPath, isDark && s.dimDark]}>{t("chat.directorySwitcher.usesServerDir")}</Text>
+                <Text style={[s.rowPath, isDark && s.dimDark]}>
+                  {t("chat.directorySwitcher.usesServerDir")}
+                </Text>
               )}
             </View>
-            {item.active && <Ionicons name="checkmark-circle" size={20} color="#8b5cf6" />}
+            {item.active && (
+              <Ionicons name="checkmark-circle" size={20} color="#8b5cf6" />
+            )}
           </TouchableOpacity>
         )}
         contentContainerStyle={s.list}
         ListHeaderComponent={
           items.length > 1 ? (
-            <Text style={[s.section, isDark && s.dimDark]}>{t("chat.directorySwitcher.recentProjectsLabel")}</Text>
+            <Text style={[s.section, isDark && s.dimDark]}>
+              {t("chat.directorySwitcher.recentProjectsLabel")}
+            </Text>
           ) : null
         }
       />
     </BottomSheet>
-  )
+  );
 }
 
 const s = StyleSheet.create({
@@ -276,4 +339,4 @@ const s = StyleSheet.create({
   rowLabel: { fontSize: 15, fontWeight: "500", color: "#0a0a0a" },
   rowLabelActive: { color: "#8b5cf6" },
   rowPath: { fontSize: 12, color: "#999999", marginTop: 1 },
-})
+});

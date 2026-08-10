@@ -1,4 +1,4 @@
-import type { Message } from "./sdk"
+import type { Message } from "./sdk";
 
 /**
  * Merge a server `message.updated` event into the current message list.
@@ -15,18 +15,23 @@ import type { Message } from "./sdk"
  * not yet echoed back) vanishes from the chat until its own event arrives —
  * a "did my message send?" ghosting bug.
  */
-export function mergeIncomingMessage(messages: Message[], message: Message): Message[] {
+export function mergeIncomingMessage(
+  messages: Message[],
+  message: Message,
+): Message[] {
   // Already present (a later update to a message we've seen): replace in place.
   if (messages.some((m) => m.id === message.id)) {
-    return messages.map((m) => (m.id === message.id ? message : m))
+    return messages.map((m) => (m.id === message.id ? message : m));
   }
   // First time we see this real message: resolve the oldest matching temp.
-  const tempIdx = messages.findIndex((m) => m.id.startsWith("temp-") && m.role === message.role)
+  const tempIdx = messages.findIndex(
+    (m) => m.id.startsWith("temp-") && m.role === message.role,
+  );
   if (tempIdx !== -1) {
-    const next = messages.slice()
-    next[tempIdx] = message
-    return next
+    const next = messages.slice();
+    next[tempIdx] = message;
+    return next;
   }
   // No optimistic placeholder to resolve (e.g. an assistant reply): append.
-  return [...messages, message]
+  return [...messages, message];
 }

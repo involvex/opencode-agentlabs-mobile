@@ -1,19 +1,19 @@
-import { View, Text, StyleSheet, Platform, ScrollView } from "react-native"
-import { WIDE_CONTENT_SCROLL_CONFIG } from "../../lib/scroll-config"
-import { computeDiff } from "./diff-compute"
+import { View, Text, StyleSheet, Platform, ScrollView } from "react-native";
+import { WIDE_CONTENT_SCROLL_CONFIG } from "../../lib/scroll-config";
+import { computeDiff } from "./diff-compute";
 
-const mono = Platform.OS === "ios" ? "Menlo" : "monospace"
+const mono = Platform.OS === "ios" ? "Menlo" : "monospace";
 
 interface Props {
-  before: string
-  after: string
-  isDark: boolean
+  before: string;
+  after: string;
+  isDark: boolean;
 }
 
 export function DiffView({ before, after, isDark }: Props) {
-  const lines = computeDiff(before, after)
+  const lines = computeDiff(before, after);
 
-  if (lines.length === 0) return null
+  if (lines.length === 0) return null;
 
   return (
     <View style={[s.container, isDark && s.containerDark]}>
@@ -47,7 +47,7 @@ export function DiffView({ before, after, isDark }: Props) {
         </View>
       </ScrollView>
     </View>
-  )
+  );
 }
 
 const s = StyleSheet.create({
@@ -87,4 +87,4 @@ const s = StyleSheet.create({
   textDark: { color: "#e5e5e5" },
   addText: { color: "#16a34a" },
   removeText: { color: "#dc2626" },
-})
+});

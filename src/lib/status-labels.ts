@@ -1,7 +1,7 @@
 // Human-readable status labels shown while the agent works ("Searching codebase...").
 // Extracted from stores/events.ts so the mapping is unit-testable in isolation.
 // `import type` is erased at runtime, so this module pulls in no RN/SDK code.
-import type { Part } from "./sdk"
+import type { Part } from "./sdk";
 
 // Tool status labels derived from part type.
 export const TOOL_STATUS: Record<string, string> = {
@@ -17,11 +17,12 @@ export const TOOL_STATUS: Record<string, string> = {
   task: "Delegating...",
   todowrite: "Planning...",
   todoread: "Planning...",
-}
+};
 
 export function statusFromPart(part: Part): string {
-  if (part.type === "reasoning") return "Thinking..."
-  if (part.type === "tool" && part.tool) return TOOL_STATUS[part.tool] || `Running ${part.tool}...`
-  if (part.type === "text") return "Writing..."
-  return "Working..."
+  if (part.type === "reasoning") return "Thinking...";
+  if (part.type === "tool" && part.tool)
+    return TOOL_STATUS[part.tool] || `Running ${part.tool}...`;
+  if (part.type === "text") return "Writing...";
+  return "Working...";
 }

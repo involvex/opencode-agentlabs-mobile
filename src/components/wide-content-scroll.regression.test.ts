@@ -1,8 +1,8 @@
-import { test } from "node:test"
-import assert from "node:assert/strict"
-import { readFileSync } from "node:fs"
-import { fileURLToPath } from "node:url"
-import path from "node:path"
+import { test } from "node:test";
+import assert from "node:assert/strict";
+import { readFileSync } from "node:fs";
+import { fileURLToPath } from "node:url";
+import path from "node:path";
 
 // GitHub issue #21 ("QA: verify DiffView + CodeBlock horizontal-scroll
 // on-device with a populated diff"). The underlying fixes were:
@@ -21,25 +21,33 @@ import path from "node:path"
 // pass on a source file where the fix was reverted.
 
 function readComponent(relativePath: string): string {
-  const dir = path.dirname(fileURLToPath(import.meta.url))
-  return readFileSync(path.join(dir, relativePath), "utf8")
+  const dir = path.dirname(fileURLToPath(import.meta.url));
+  return readFileSync(path.join(dir, relativePath), "utf8");
 }
 
 test("DiffView wraps diff lines in the shared horizontal-scroll ScrollView", () => {
-  const src = readComponent("chat/DiffView.tsx")
-  assert.match(src, /<ScrollView\s+\{\.\.\.WIDE_CONTENT_SCROLL_CONFIG\}/)
-  assert.doesNotMatch(src, /numberOfLines/, "DiffView must not truncate diff line text with numberOfLines")
-})
+  const src = readComponent("chat/DiffView.tsx");
+  assert.match(src, /<ScrollView\s+\{\.\.\.WIDE_CONTENT_SCROLL_CONFIG\}/);
+  assert.doesNotMatch(
+    src,
+    /numberOfLines/,
+    "DiffView must not truncate diff line text with numberOfLines",
+  );
+});
 
 test("CodeBlock wraps code in the shared horizontal-scroll ScrollView", () => {
-  const src = readComponent("markdown/CodeBlock.tsx")
-  assert.match(src, /<ScrollView\s+\{\.\.\.WIDE_CONTENT_SCROLL_CONFIG\}/)
-  assert.doesNotMatch(src, /numberOfLines/, "CodeBlock must not truncate code text with numberOfLines")
-})
+  const src = readComponent("markdown/CodeBlock.tsx");
+  assert.match(src, /<ScrollView\s+\{\.\.\.WIDE_CONTENT_SCROLL_CONFIG\}/);
+  assert.doesNotMatch(
+    src,
+    /numberOfLines/,
+    "CodeBlock must not truncate code text with numberOfLines",
+  );
+});
 
 test("DiffView and CodeBlock both source the config from the shared, unit-tested module", () => {
-  const diffView = readComponent("chat/DiffView.tsx")
-  const codeBlock = readComponent("markdown/CodeBlock.tsx")
-  assert.match(diffView, /from ["']\.\.\/\.\.\/lib\/scroll-config["']/)
-  assert.match(codeBlock, /from ["']\.\.\/\.\.\/lib\/scroll-config["']/)
-})
+  const diffView = readComponent("chat/DiffView.tsx");
+  const codeBlock = readComponent("markdown/CodeBlock.tsx");
+  assert.match(diffView, /from ["']\.\.\/\.\.\/lib\/scroll-config["']/);
+  assert.match(codeBlock, /from ["']\.\.\/\.\.\/lib\/scroll-config["']/);
+});

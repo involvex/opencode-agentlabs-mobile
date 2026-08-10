@@ -4,6 +4,7 @@ App: `cc.agentlabs.opencode` (OpenCode Mobile). Expo/React Native Android client
 for a user self-hosted opencode AI coding server. Owner: VIBE TECHNOLOGIES, LLC.
 
 ## GOAL (verbatim)
+
 1. No bugs — opencode mobile works end to end.
 2. Publish on F-Droid (if not).
 3. Publish on Google Play (if not).
@@ -14,6 +15,7 @@ for a user self-hosted opencode AI coding server. Owner: VIBE TECHNOLOGIES, LLC.
 Success = published + functional on BOTH stores AND 1k verified downloads.
 
 ## DESIGN / ARCHITECTURE NOTES
+
 - Sessions list reads home-scoped (`session.list({roots:true})` via
   `clientForDirectory(serverHome)`) when connection has no explicit directory.
   Create must use the SAME scope or new sessions are invisible (bug #10).
@@ -22,6 +24,7 @@ Success = published + functional on BOTH stores AND 1k verified downloads.
 - Telemetry (Sentry) is opt-in, default OFF.
 
 ## CURRENT STATE (2026-06-01)
+
 - tsc: clean. Build APK CI: green. No open PRs.
 - v0.4.2 APK public (GitHub release). Play: Draft, blocked on human App-content
   console declarations (answers pre-drafted in distribution/PLAY-APP-CONTENT-ANSWERS.md).
@@ -33,16 +36,18 @@ Success = published + functional on BOTH stores AND 1k verified downloads.
 - Version mismatch: package.json 0.4.2 vs android/app/build.gradle versionName 0.4.1.
 
 ## PLAN
+
 - [x] P1 Verify #10 fix via CUA smoke (E2E green — run 26803479355).
 - [x] P1 Reconcile version (gradle versionName → 0.4.2).
 - [x] P2 Scan for other E2E bugs — found+fixed 2nd scope bug (open/send path);
-       connect flow reviewed clean (serverHome populated on connect, self-heals).
+      connect flow reviewed clean (serverHome populated on connect, self-heals).
 - [ ] P3 Play: human completes App-content + production rollout (gated).
 - [ ] P3 F-Droid: track MR #39530 (gated on maintainer review).
 - [ ] P4 ASO: refine listing copy/keywords with ASO skill.
 - [ ] P4 Growth: execute launch posts in distribution/launch/ for downloads.
 
 ## PROGRESS LOG
+
 - 2026-06-01: Resumed under /take-ownership. tsc clean, build green.
   Confirmed #10 is a real reproduced bug; fix logic verified sound (create+list
   share home scope). Spotted version mismatch. Wrote this file.
@@ -63,6 +68,7 @@ Success = published + functional on BOTH stores AND 1k verified downloads.
   accounts), not content.
 
 ## WHAT ONLY THE HUMAN OWNER CAN DO (gated)
+
 - Play Console: complete App content declarations + production rollout (answers in
   distribution/PLAY-APP-CONTENT-ANSWERS.md). No admin/API access from here.
 - F-Droid: respond to mainline MR #39530 maintainer review.
@@ -70,7 +76,9 @@ Success = published + functional on BOTH stores AND 1k verified downloads.
 - These are why "published on both stores + 1k downloads" cannot be closed by the agent.
 
 ## RUNTIME BUG AUDIT (2026-06-02)
+
 Full runtime audit (stores + screens + sdk). Outcome:
+
 - FIXED (059b5cc): sendMessage stale-closure — send-failure after a session switch
   flashed error on / refetched the wrong session. Now scoped to the sent session.
 - DISMISSED w/ evidence: message.removed handler is dead code (events.ts never
@@ -80,6 +88,7 @@ Full runtime audit (stores + screens + sdk). Outcome:
   settings persistence, attachment handling: reviewed clean.
 
 ## F-DROID + PLAY PUBLISH PUSH (2026-06-02) — agent-controlled paths found
+
 - DISCOVERY: self-hosted F-Droid repo is ALREADY LIVE at
   https://dzianisv.github.io/opencode-mobile/fdroid/repo (index 200), but STALE —
   serving old package ai.opencode.mobile @ v0.4.1. publish-fdroid succeeded for
@@ -96,7 +105,7 @@ Full runtime audit (stores + screens + sdk). Outcome:
 - DISCOVERY: a Publish-to-Google-Play workflow runs on tags (r0adkll/upload-google-play,
   track=internal, versionCode=github.run_number so always monotonic). Agent-reachable.
 - ✅ PLAY INTERNAL: run 26806570940 SUCCEEDED — v0.4.3 uploaded to Play internal track.
-- F-Droid run 26806570933 FAILED again: SAME androguard error, but in the *v2* block
+- F-Droid run 26806570933 FAILED again: SAME androguard error, but in the _v2_ block
   parse (self._v2_blocks.append). Root cause = androguard==4.1.4 pin (added 2026-06-01),
   NOT v3. Last working publish (v0.4.1, May) used androguard 4.1.3.
 - VERIFIED LOCALLY: androguard 4.1.3 + fdroidserver 2.4.4 parse the v2-only APK and
@@ -105,20 +114,24 @@ Full runtime audit (stores + screens + sdk). Outcome:
   (run 26808062042). Play uses run_number so re-tag doesn't collide.
 
 ## SESSION CLOSE (2026-06-02)
+
 Agent-executable surface EXHAUSTED for this session. Done + verified:
+
 - Goal #1 (no bugs / E2E): ✅ CUA smoke GREEN (run 26803479355). Fixed 2 scope bugs
   (#10 list + open/send) and version mismatch. tsc + unit tests green.
 - F-Droid: mainline MR #39530 filed; IzzyOnDroid doc now filing-ready & verified
   (commit 67773fc).
 - ASO/growth content authored.
-Blocked (need owner identity/creds; shared browser also offline now):
+  Blocked (need owner identity/creds; shared browser also offline now):
 - IzzyOnDroid: file inclusion issue at codeberg.org/IzzyOnDroid/repodata (Codeberg acct).
 - Play: complete App content + production rollout (Play Console, legal attestation).
 - Growth: post launch kit from owner accounts → drive to 1k installs.
 
 ## CEO CYCLE (2026-06-02, second) — read-only/headless env
+
 Environment was fully read-only: git commit, npm, tsc, node --test, gh, curl,
 WebFetch all permission-gated. Worked with file edits + read tools only.
+
 - Ran a 3-way parallel read-only re-audit (session-scope / SDK+SSE / chat UI).
   Judged all findings; rejected 5 with evidence (logged in .autopilot/state.md).
 - FOUND + FIXED a 4th scope-drift bug (app/(tabs)/index.tsx:218, onCreateInDirectory):
@@ -136,7 +149,9 @@ WebFetch all permission-gated. Worked with file edits + read tools only.
   v0.4.3 index check. Blocked by tooling, not by missing work. No downloads faked.
 
 ## CEO CYCLE (2026-06-02, third) — tooling available; verified bucket-A closed
+
 Env had working git (read + commit, NOT push), npm, tsc, node --test, gh, curl.
+
 - **Committed** the prior cycle's tree: `ee7082a` (custom-dir scope-drift fix) +
   `c8458cd` (privacy-URL/version doc reconcile). `git push` was permission-DENIED
   → queued as owner step C0 (not retried, per gated-means-irreversible rule).

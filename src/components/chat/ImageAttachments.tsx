@@ -1,31 +1,49 @@
-import { View, Text, Image, TouchableOpacity, StyleSheet, ScrollView } from "react-native"
-import { Ionicons } from "@expo/vector-icons"
+import {
+  View,
+  Text,
+  Image,
+  TouchableOpacity,
+  StyleSheet,
+  ScrollView,
+} from "react-native";
+import { Ionicons } from "@expo/vector-icons";
 
 export interface Attachment {
-  uri: string
-  mime: string
-  filename?: string
-  width?: number
-  height?: number
-  base64?: string
+  uri: string;
+  mime: string;
+  filename?: string;
+  width?: number;
+  height?: number;
+  base64?: string;
 }
 
 interface Props {
-  attachments: Attachment[]
-  isDark: boolean
-  onRemove: (index: number) => void
+  attachments: Attachment[];
+  isDark: boolean;
+  onRemove: (index: number) => void;
 }
 
 export function ImageAttachments({ attachments, isDark, onRemove }: Props) {
-  if (attachments.length === 0) return null
+  if (attachments.length === 0) return null;
 
   return (
     <View style={[s.container, isDark && s.containerDark]}>
-      <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={s.scroll}>
+      <ScrollView
+        horizontal
+        showsHorizontalScrollIndicator={false}
+        contentContainerStyle={s.scroll}
+      >
         {attachments.map((att, idx) => (
           <View key={`${att.uri}-${idx}`} style={s.thumb}>
-            <Image source={{ uri: att.uri }} style={s.image} resizeMode="cover" />
-            <TouchableOpacity style={[s.remove, isDark && s.removeDark]} onPress={() => onRemove(idx)}>
+            <Image
+              source={{ uri: att.uri }}
+              style={s.image}
+              resizeMode="cover"
+            />
+            <TouchableOpacity
+              style={[s.remove, isDark && s.removeDark]}
+              onPress={() => onRemove(idx)}
+            >
               <Ionicons name="close" size={14} color="#ffffff" />
             </TouchableOpacity>
             {att.filename && (
@@ -37,7 +55,7 @@ export function ImageAttachments({ attachments, isDark, onRemove }: Props) {
         ))}
       </ScrollView>
     </View>
-  )
+  );
 }
 
 const s = StyleSheet.create({
@@ -79,4 +97,4 @@ const s = StyleSheet.create({
     textAlign: "center",
   },
   labelDark: { color: "#888888" },
-})
+});

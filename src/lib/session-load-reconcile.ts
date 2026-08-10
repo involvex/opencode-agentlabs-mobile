@@ -26,8 +26,11 @@
  * live SSE updates keep current) while the refetch runs quietly in the
  * background.
  */
-export function isColdSessionLoad(currentSessionID: string | null | undefined, targetSessionID: string): boolean {
-  return currentSessionID !== targetSessionID
+export function isColdSessionLoad(
+  currentSessionID: string | null | undefined,
+  targetSessionID: string,
+): boolean {
+  return currentSessionID !== targetSessionID;
 }
 
 /**
@@ -40,5 +43,7 @@ export function isLiveEventForSession(
   eventSessionID: string | null | undefined,
   activeSessionID: string | null | undefined,
 ): boolean {
-  return !!eventSessionID && !!activeSessionID && eventSessionID === activeSessionID
+  return (
+    !!eventSessionID && !!activeSessionID && eventSessionID === activeSessionID
+  );
 }

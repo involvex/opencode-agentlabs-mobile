@@ -1,4 +1,4 @@
-import { useCallback, useMemo, useState, useRef, useEffect } from "react"
+import { useCallback, useMemo, useState, useRef, useEffect } from "react";
 import {
   View,
   Text,
@@ -15,32 +15,47 @@ import {
   KeyboardAvoidingView,
   Platform,
   Linking,
-} from "react-native"
-import { router, useFocusEffect } from "expo-router"
-import { Ionicons } from "@expo/vector-icons"
-import { useTranslation } from "react-i18next"
-import { useSessions } from "../../src/stores/sessions"
-import { useConnections } from "../../src/stores/connections"
-import { useEvents } from "../../src/stores/events"
-import { useCatalog } from "../../src/stores/catalog"
-import type BottomSheet from "@gorhom/bottom-sheet"
-import type { Session, Project } from "../../src/lib/sdk"
-import { DirectorySwitcher, DirectoryBrowserSheet } from "../../src/components/chat"
-import { groupByDirectory } from "../../src/lib/session-grouping"
-import { nameOf } from "../../src/lib/path-utils"
-import { SETUP_GUIDE_URL } from "../../src/lib/links"
+} from "react-native";
+import { router, useFocusEffect } from "expo-router";
+import { Ionicons } from "@expo/vector-icons";
+import { useTranslation } from "react-i18next";
+import { useSessions } from "../../src/stores/sessions";
+import { useConnections } from "../../src/stores/connections";
+import { useEvents } from "../../src/stores/events";
+import { useCatalog } from "../../src/stores/catalog";
+import type BottomSheet from "@gorhom/bottom-sheet";
+import type { Session, Project } from "../../src/lib/sdk";
+import {
+  DirectorySwitcher,
+  DirectoryBrowserSheet,
+} from "../../src/components/chat";
+import { groupByDirectory } from "../../src/lib/session-grouping";
+import { nameOf } from "../../src/lib/path-utils";
+import { SETUP_GUIDE_URL } from "../../src/lib/links";
 
-function formatTime(timestamp: number, t: (key: string, opts?: Record<string, unknown>) => string): string {
-  const date = new Date(timestamp)
-  const now = new Date()
-  const diff = now.getTime() - date.getTime()
+function formatTime(
+  timestamp: number,
+  t: (key: string, opts?: Record<string, unknown>) => string,
+): string {
+  const date = new Date(timestamp);
+  const now = new Date();
+  const diff = now.getTime() - date.getTime();
 
-  if (diff < 60000) return t("sessionsList.time.justNow")
-  if (diff < 3600000) return t("sessionsList.time.minutesAgo", { count: Math.floor(diff / 60000) })
-  if (diff < 86400000) return t("sessionsList.time.hoursAgo", { count: Math.floor(diff / 3600000) })
-  if (diff < 604800000) return t("sessionsList.time.daysAgo", { count: Math.floor(diff / 86400000) })
+  if (diff < 60000) return t("sessionsList.time.justNow");
+  if (diff < 3600000)
+    return t("sessionsList.time.minutesAgo", {
+      count: Math.floor(diff / 60000),
+    });
+  if (diff < 86400000)
+    return t("sessionsList.time.hoursAgo", {
+      count: Math.floor(diff / 3600000),
+    });
+  if (diff < 604800000)
+    return t("sessionsList.time.daysAgo", {
+      count: Math.floor(diff / 86400000),
+    });
 
-  return date.toLocaleDateString()
+  return date.toLocaleDateString();
 }
 
 function SessionItem({
@@ -49,30 +64,35 @@ function SessionItem({
   onRename,
   onDelete,
 }: {
-  session: Session
-  isDark: boolean
-  onRename: () => void
-  onDelete: () => void
+  session: Session;
+  isDark: boolean;
+  onRename: () => void;
+  onDelete: () => void;
 }) {
-  const { t } = useTranslation()
+  const { t } = useTranslation();
 
   const onPress = () => {
     router.push({
       pathname: `/session/[id]`,
-      params: { id: session.id, ...(session.directory ? { directory: session.directory } : {}) },
-    })
-  }
+      params: {
+        id: session.id,
+        ...(session.directory ? { directory: session.directory } : {}),
+      },
+    });
+  };
 
   const onLongPress = () => {
     Alert.alert(session.title || t("sessionsList.untitledSession"), undefined, [
       { text: t("common.cancel"), style: "cancel" },
       { text: t("sessionsList.actions.rename"), onPress: onRename },
       { text: t("common.delete"), style: "destructive", onPress: onDelete },
-    ])
-  }
+    ]);
+  };
 
   // Extract short directory name from session
-  const shortDir = session.directory ? session.directory.split("/").filter(Boolean).pop() : null
+  const shortDir = session.directory
+    ? session.directory.split("/").filter(Boolean).pop()
+    : null;
 
   return (
     <TouchableOpacity
@@ -83,7 +103,10 @@ function SessionItem({
     >
       <View style={styles.sessionContent}>
         <View style={styles.sessionHeader}>
-          <Text style={[styles.sessionTitle, isDark && styles.textDark]} numberOfLines={1}>
+          <Text
+            style={[styles.sessionTitle, isDark && styles.textDark]}
+            numberOfLines={1}
+          >
             {session.title || t("sessionsList.untitledSession")}
           </Text>
         </View>
@@ -93,37 +116,59 @@ function SessionItem({
             {/* summary is always present but files defaults to 0 until the
                 server populates it — only show the count when it's meaningful,
                 matching the SessionInfo panel's `summary.files > 0` guard (#55) */}
-            {session.summary && session.summary.files > 0 &&
+            {session.summary &&
+              session.summary.files > 0 &&
               ` · ${t("sessionsList.filesCount", { count: session.summary.files })}`}
           </Text>
           {shortDir && (
             <View style={styles.sessionDirBadge}>
-              <Ionicons name="folder-outline" size={12} color={isDark ? "#888888" : "#666666"} />
-              <Text style={[styles.sessionDirText, isDark && styles.metaDark]}>{shortDir}</Text>
+              <Ionicons
+                name="folder-outline"
+                size={12}
+                color={isDark ? "#888888" : "#666666"}
+              />
+              <Text style={[styles.sessionDirText, isDark && styles.metaDark]}>
+                {shortDir}
+              </Text>
             </View>
           )}
         </View>
       </View>
-      <Ionicons name="chevron-forward" size={20} color={isDark ? "#666666" : "#999999"} />
+      <Ionicons
+        name="chevron-forward"
+        size={20}
+        color={isDark ? "#666666" : "#999999"}
+      />
     </TouchableOpacity>
-  )
+  );
 }
 
 // Flattened list row — either a collapsible group header or a session.
 // A single flat array keeps FlatList's refresh/empty-state handling as-is
 // instead of switching to SectionList.
 type ListRow =
-  | { type: "header"; directory: string; shortName: string; count: number; collapsed: boolean }
-  | { type: "session"; session: Session }
+  | {
+      type: "header";
+      directory: string;
+      shortName: string;
+      count: number;
+      collapsed: boolean;
+    }
+  | { type: "session"; session: Session };
 
 function GroupHeader({
   row,
   isDark,
   onToggle,
 }: {
-  row: { directory: string; shortName: string; count: number; collapsed: boolean }
-  isDark: boolean
-  onToggle: () => void
+  row: {
+    directory: string;
+    shortName: string;
+    count: number;
+    collapsed: boolean;
+  };
+  isDark: boolean;
+  onToggle: () => void;
 }) {
   return (
     <TouchableOpacity
@@ -131,48 +176,70 @@ function GroupHeader({
       onPress={onToggle}
       activeOpacity={0.7}
     >
-      <Ionicons name="folder-outline" size={16} color={isDark ? "#8b5cf6" : "#6d28d9"} />
-      <Text style={[styles.groupHeaderText, isDark && styles.textDark]} numberOfLines={1}>
+      <Ionicons
+        name="folder-outline"
+        size={16}
+        color={isDark ? "#8b5cf6" : "#6d28d9"}
+      />
+      <Text
+        style={[styles.groupHeaderText, isDark && styles.textDark]}
+        numberOfLines={1}
+      >
         {row.shortName}
       </Text>
-      <Text style={[styles.groupHeaderCount, isDark && styles.metaDark]}>{row.count}</Text>
+      <Text style={[styles.groupHeaderCount, isDark && styles.metaDark]}>
+        {row.count}
+      </Text>
       <Ionicons
         name={row.collapsed ? "chevron-forward" : "chevron-down"}
         size={16}
         color={isDark ? "#666666" : "#999999"}
       />
     </TouchableOpacity>
-  )
+  );
 }
 
 // Get short directory name (last folder or project name)
 function getShortPath(
-  project: { path?: { cwd?: string; root?: string; absolute?: string }; name?: string } | null | undefined,
+  project:
+    | {
+        path?: { cwd?: string; root?: string; absolute?: string };
+        name?: string;
+      }
+    | null
+    | undefined,
 ): string {
-  if (!project) return ""
-  if (project.name) return project.name
-  if (!project.path?.absolute) return ""
-  const parts = project.path.absolute.split("/").filter(Boolean)
-  return parts[parts.length - 1] || project.path.absolute
+  if (!project) return "";
+  if (project.name) return project.name;
+  if (!project.path?.absolute) return "";
+  const parts = project.path.absolute.split("/").filter(Boolean);
+  return parts[parts.length - 1] || project.path.absolute;
 }
 
 export default function SessionsScreen() {
-  const colorScheme = useColorScheme()
-  const isDark = colorScheme === "dark"
-  const { t } = useTranslation()
-  const [showNewSession, setShowNewSession] = useState(false)
-  const [customDir, setCustomDir] = useState("")
-  const [isCreating, setIsCreating] = useState(false)
-  const [renaming, setRenaming] = useState<Session | null>(null)
-  const [renameText, setRenameText] = useState("")
-  const renamingInFlight = useRef(false)
+  const colorScheme = useColorScheme();
+  const isDark = colorScheme === "dark";
+  const { t } = useTranslation();
+  const [showNewSession, setShowNewSession] = useState(false);
+  const [customDir, setCustomDir] = useState("");
+  const [isCreating, setIsCreating] = useState(false);
+  const [renaming, setRenaming] = useState<Session | null>(null);
+  const [renameText, setRenameText] = useState("");
+  const renamingInFlight = useRef(false);
   // Synchronous re-entrancy guard: `isCreating` state lags by a render, so a
   // fast double-tap on the FAB / "Use this folder" would fire two session
   // creates before the disabled state lands. This blocks the second call.
-  const creatingInFlight = useRef(false)
-  const [serverProjects, setServerProjects] = useState<Project[]>([])
+  const creatingInFlight = useRef(false);
+  const [serverProjects, setServerProjects] = useState<Project[]>([]);
 
-  const { sessions, isLoading, error, loadSessions, createSession, deleteSession } = useSessions()
+  const {
+    sessions,
+    isLoading,
+    error,
+    loadSessions,
+    createSession,
+    deleteSession,
+  } = useSessions();
   const {
     activeConnection,
     client,
@@ -183,122 +250,130 @@ export default function SessionsScreen() {
     switchDirectory,
     addRecentDirectory,
     recentDirectories,
-  } = useConnections()
-  const authError = useEvents((s) => s.authError)
-  const reconnect = useEvents((s) => s.connect)
-  const loadCatalog = useCatalog((s) => s.load)
-  const dirSheetRef = useRef<BottomSheet>(null)
-  const browserSheetRef = useRef<BottomSheet>(null)
-  const [browseStartDir, setBrowseStartDir] = useState<string | null>(null)
+  } = useConnections();
+  const authError = useEvents((s) => s.authError);
+  const reconnect = useEvents((s) => s.connect);
+  const loadCatalog = useCatalog((s) => s.load);
+  const dirSheetRef = useRef<BottomSheet>(null);
+  const browserSheetRef = useRef<BottomSheet>(null);
+  const [browseStartDir, setBrowseStartDir] = useState<string | null>(null);
   // Shared folder browser is opened either to pick a directory for a new
   // session, or to switch the active connection's directory.
-  const [browseMode, setBrowseMode] = useState<"create" | "switch">("create")
-  const [refreshing, setRefreshing] = useState(false)
+  const [browseMode, setBrowseMode] = useState<"create" | "switch">("create");
+  const [refreshing, setRefreshing] = useState(false);
   // Directories collapsed in the grouped session list. Empty by default —
   // all groups start expanded (#67).
-  const [collapsedDirs, setCollapsedDirs] = useState<Set<string>>(new Set())
+  const [collapsedDirs, setCollapsedDirs] = useState<Set<string>>(new Set());
 
   const toggleGroup = useCallback((directory: string) => {
     setCollapsedDirs((prev) => {
-      const next = new Set(prev)
-      if (next.has(directory)) next.delete(directory)
-      else next.add(directory)
-      return next
-    })
-  }, [])
+      const next = new Set(prev);
+      if (next.has(directory)) next.delete(directory);
+      else next.add(directory);
+      return next;
+    });
+  }, []);
 
   // Flatten sessions into header+item rows. Skip headers entirely when
   // everything lives in one directory — a lone header adds noise, not clarity.
   const rows = useMemo<ListRow[]>(() => {
-    const groups = groupByDirectory(sessions)
+    const groups = groupByDirectory(sessions);
     if (groups.length <= 1) {
-      return sessions.map((session) => ({ type: "session", session }))
+      return sessions.map((session) => ({ type: "session", session }));
     }
-    const out: ListRow[] = []
+    const out: ListRow[] = [];
     for (const group of groups) {
-      const collapsed = collapsedDirs.has(group.directory)
+      const collapsed = collapsedDirs.has(group.directory);
       out.push({
         type: "header",
         directory: group.directory,
         shortName: nameOf(group.directory) || group.directory,
         count: group.items.length,
         collapsed,
-      })
+      });
       if (!collapsed) {
-        for (const session of group.items) out.push({ type: "session", session })
+        for (const session of group.items)
+          out.push({ type: "session", session });
       }
     }
-    return out
-  }, [sessions, collapsedDirs])
+    return out;
+  }, [sessions, collapsedDirs]);
 
   // Fetch server-known projects when the new session modal opens
   useEffect(() => {
-    if (!showNewSession || !client) return
+    if (!showNewSession || !client) return;
     client.project
       .list()
       .then(setServerProjects)
-      .catch(() => setServerProjects([]))
-  }, [showNewSession, client])
+      .catch(() => setServerProjects([]));
+  }, [showNewSession, client]);
 
   const handleSwitchDirectory = useCallback(
     async (dir?: string) => {
-      await switchDirectory(dir)
-      loadSessions()
-      refreshProject()
-      loadCatalog()
+      await switchDirectory(dir);
+      loadSessions();
+      refreshProject();
+      loadCatalog();
     },
     [switchDirectory, loadSessions, refreshProject, loadCatalog],
-  )
+  );
 
   useFocusEffect(
     useCallback(() => {
       if (client) {
-        loadSessions()
-        refreshProject()
+        loadSessions();
+        refreshProject();
       }
     }, [client, loadSessions, refreshProject]),
-  )
+  );
 
   const onRefresh = useCallback(async () => {
-    setRefreshing(true)
+    setRefreshing(true);
     try {
-      await Promise.all([loadSessions(), refreshProject()])
+      await Promise.all([loadSessions(), refreshProject()]);
     } catch (err) {
-      console.error("Refresh failed:", err)
+      console.error("Refresh failed:", err);
     } finally {
-      setRefreshing(false)
+      setRefreshing(false);
     }
-  }, [loadSessions, refreshProject])
+  }, [loadSessions, refreshProject]);
 
   const handleRename = useCallback((session: Session) => {
-    setRenameText(session.title || "")
-    setRenaming(session)
-  }, [])
+    setRenameText(session.title || "");
+    setRenaming(session);
+  }, []);
 
   const submitRename = useCallback(async () => {
-    const title = renameText.trim()
-    if (!title || !renaming || renamingInFlight.current) return
-    const renameClient = renaming.directory ? (clientForDirectory(renaming.directory) ?? client) : client
-    if (!renameClient) return
-    renamingInFlight.current = true
+    const title = renameText.trim();
+    if (!title || !renaming || renamingInFlight.current) return;
+    const renameClient = renaming.directory
+      ? (clientForDirectory(renaming.directory) ?? client)
+      : client;
+    if (!renameClient) return;
+    renamingInFlight.current = true;
     try {
-      await renameClient.session.update(renaming.id, { title })
-      setRenaming(null)
-      setRenameText("")
-      loadSessions()
+      await renameClient.session.update(renaming.id, { title });
+      setRenaming(null);
+      setRenameText("");
+      loadSessions();
     } catch (err) {
-      console.error("Rename failed:", err)
-      Alert.alert(t("sessionsList.alerts.renameFailedTitle"), t("sessionsList.alerts.renameFailedMessage"))
+      console.error("Rename failed:", err);
+      Alert.alert(
+        t("sessionsList.alerts.renameFailedTitle"),
+        t("sessionsList.alerts.renameFailedMessage"),
+      );
     } finally {
-      renamingInFlight.current = false
+      renamingInFlight.current = false;
     }
-  }, [renaming, renameText, client, clientForDirectory, loadSessions, t])
+  }, [renaming, renameText, client, clientForDirectory, loadSessions, t]);
 
   const handleDelete = useCallback(
     (session: Session) => {
       Alert.alert(
         t("sessionsList.alerts.deleteTitle"),
-        t("sessionsList.alerts.deleteMessage", { title: session.title || t("sessionsList.untitledSession") }),
+        t("sessionsList.alerts.deleteMessage", {
+          title: session.title || t("sessionsList.untitledSession"),
+        }),
         [
           { text: t("common.cancel"), style: "cancel" },
           {
@@ -306,139 +381,177 @@ export default function SessionsScreen() {
             style: "destructive",
             onPress: async () => {
               try {
-                await deleteSession(session.id)
+                await deleteSession(session.id);
               } catch (err) {
-                console.error("Delete failed:", err)
-                Alert.alert(t("sessionsList.alerts.deleteFailedTitle"), t("sessionsList.alerts.deleteFailedMessage"))
+                console.error("Delete failed:", err);
+                Alert.alert(
+                  t("sessionsList.alerts.deleteFailedTitle"),
+                  t("sessionsList.alerts.deleteFailedMessage"),
+                );
               }
             },
           },
         ],
-      )
+      );
     },
     [deleteSession, t],
-  )
+  );
 
   const onCreateSession = async () => {
-    if (creatingInFlight.current) return
-    creatingInFlight.current = true
+    if (creatingInFlight.current) return;
+    creatingInFlight.current = true;
     try {
-      const session = await createSession()
+      const session = await createSession();
       if (session) {
         router.push({
           pathname: `/session/[id]`,
-          params: { id: session.id, ...(session.directory ? { directory: session.directory } : {}) },
-        })
+          params: {
+            id: session.id,
+            ...(session.directory ? { directory: session.directory } : {}),
+          },
+        });
       } else {
-        Alert.alert(t("common.error"), t("sessionsList.alerts.createFailedMessage"))
+        Alert.alert(
+          t("common.error"),
+          t("sessionsList.alerts.createFailedMessage"),
+        );
       }
     } finally {
-      creatingInFlight.current = false
+      creatingInFlight.current = false;
     }
-  }
+  };
 
-  const onCreateInDirectory = async (dir?: string) => {
-    if (!activeConnection) return
-    if (creatingInFlight.current) return
-    creatingInFlight.current = true
-    setIsCreating(true)
+  const onCreateInDirectory = useCallback(
+    async (dir?: string) => {
+      if (!activeConnection) return;
+      if (creatingInFlight.current) return;
+      creatingInFlight.current = true;
+      setIsCreating(true);
 
-    try {
-      // If a custom directory is specified, use a one-off client for that directory
-      // so we don't mutate the connection's default project
-      if (dir && dir.trim()) {
-        const dirClient = clientForDirectory(dir.trim())
-        if (!dirClient) return
-        try {
-          const session = await dirClient.session.create({})
-          addRecentDirectory(dir.trim())
-          setShowNewSession(false)
-          setCustomDir("")
-          if (session) {
-            router.push({
-              pathname: `/session/[id]`,
-              params: { id: session.id, ...(session.directory ? { directory: session.directory } : {}) },
-            })
+      try {
+        // If a custom directory is specified, use a one-off client for that directory
+        // so we don't mutate the connection's default project
+        if (dir && dir.trim()) {
+          const dirClient = clientForDirectory(dir.trim());
+          if (!dirClient) return;
+          try {
+            const session = await dirClient.session.create({});
+            addRecentDirectory(dir.trim());
+            setShowNewSession(false);
+            setCustomDir("");
+            if (session) {
+              router.push({
+                pathname: `/session/[id]`,
+                params: {
+                  id: session.id,
+                  ...(session.directory
+                    ? { directory: session.directory }
+                    : {}),
+                },
+              });
+            }
+          } catch (error) {
+            console.error("Failed to create session in directory:", error);
+            Alert.alert(
+              t("common.error"),
+              t("sessionsList.alerts.createFailedMessage"),
+            );
           }
-        } catch (error) {
-          console.error("Failed to create session in directory:", error)
-          Alert.alert(t("common.error"), t("sessionsList.alerts.createFailedMessage"))
+          return;
         }
-        return
-      }
 
-      const session = await createSession()
-      setShowNewSession(false)
-      setCustomDir("")
-      if (session) {
-        router.push({
-          pathname: `/session/[id]`,
-          params: { id: session.id, ...(session.directory ? { directory: session.directory } : {}) },
-        })
-      } else {
-        Alert.alert(t("common.error"), t("sessionsList.alerts.createFailedMessage"))
+        const session = await createSession();
+        setShowNewSession(false);
+        setCustomDir("");
+        if (session) {
+          router.push({
+            pathname: `/session/[id]`,
+            params: {
+              id: session.id,
+              ...(session.directory ? { directory: session.directory } : {}),
+            },
+          });
+        } else {
+          Alert.alert(
+            t("common.error"),
+            t("sessionsList.alerts.createFailedMessage"),
+          );
+        }
+      } finally {
+        creatingInFlight.current = false;
+        setIsCreating(false);
       }
-    } finally {
-      creatingInFlight.current = false
-      setIsCreating(false)
-    }
-  }
+    },
+    [
+      activeConnection,
+      clientForDirectory,
+      addRecentDirectory,
+      createSession,
+      t,
+    ],
+  );
 
   // The browser sheet is a sibling of the New Session <Modal>. A native RN
   // Modal layers above everything in the React root (including bottom-sheet
   // portals), so the modal must be closed before the sheet is shown; this ref
   // remembers to bring it back if the user cancels without picking a folder.
-  const restoreNewSessionOnDismiss = useRef(false)
+  const restoreNewSessionOnDismiss = useRef(false);
 
   const openBrowser = useCallback(
     (startDir: string | null, mode: "create" | "switch") => {
-      setBrowseStartDir(startDir || serverHome || null)
-      setBrowseMode(mode)
+      setBrowseStartDir(startDir || serverHome || null);
+      setBrowseMode(mode);
       if (mode === "create" && showNewSession) {
-        restoreNewSessionOnDismiss.current = true
-        setShowNewSession(false)
+        restoreNewSessionOnDismiss.current = true;
+        setShowNewSession(false);
       }
-      browserSheetRef.current?.expand()
+      browserSheetRef.current?.expand();
     },
     [serverHome, showNewSession],
-  )
+  );
 
   const onBrowserSelect = useCallback(
     (directory: string) => {
-      restoreNewSessionOnDismiss.current = false
+      restoreNewSessionOnDismiss.current = false;
       if (browseMode === "switch") {
-        handleSwitchDirectory(directory)
-        dirSheetRef.current?.close()
+        handleSwitchDirectory(directory);
+        dirSheetRef.current?.close();
       } else {
-        onCreateInDirectory(directory)
+        onCreateInDirectory(directory);
       }
     },
     [browseMode, handleSwitchDirectory, onCreateInDirectory],
-  )
+  );
 
   const onBrowserDismiss = useCallback(() => {
     if (restoreNewSessionOnDismiss.current) {
-      restoreNewSessionOnDismiss.current = false
-      setShowNewSession(true)
+      restoreNewSessionOnDismiss.current = false;
+      setShowNewSession(true);
     }
-  }, [])
+  }, []);
 
   const onFabPress = () => {
     // Quick create in current project
-    onCreateSession()
-  }
+    onCreateSession();
+  };
 
   const onFabLongPress = () => {
     // Show modal with more options
-    setCustomDir("")
-    setShowNewSession(true)
-  }
+    setCustomDir("");
+    setShowNewSession(true);
+  };
 
   if (!activeConnection) {
     return (
       <View style={[styles.emptyContainer, isDark && styles.containerDark]}>
-        <Ionicons name="server-outline" size={64} color={isDark ? "#444444" : "#cccccc"} />
-        <Text style={[styles.emptyTitle, isDark && styles.textDark]}>{t("sessionsList.empty.noConnectionTitle")}</Text>
+        <Ionicons
+          name="server-outline"
+          size={64}
+          color={isDark ? "#444444" : "#cccccc"}
+        />
+        <Text style={[styles.emptyTitle, isDark && styles.textDark]}>
+          {t("sessionsList.empty.noConnectionTitle")}
+        </Text>
         <Text style={[styles.emptySubtitle, isDark && styles.metaDark]}>
           {t("sessionsList.empty.noConnectionSubtitle")}
         </Text>
@@ -447,7 +560,9 @@ export default function SessionsScreen() {
           onPress={() => router.push("/connection/add")}
           testID="add-connection-button"
         >
-          <Text style={[styles.addButtonText, isDark && styles.addButtonTextDark]}>
+          <Text
+            style={[styles.addButtonText, isDark && styles.addButtonTextDark]}
+          >
             {t("sessionsList.empty.addConnectionButton")}
           </Text>
         </TouchableOpacity>
@@ -456,7 +571,9 @@ export default function SessionsScreen() {
           onPress={() => Linking.openURL(SETUP_GUIDE_URL)}
           testID="setup-guide-link"
         >
-          <Text style={styles.setupGuideLinkText}>{t("sessionsList.empty.setupGuideLink")}</Text>
+          <Text style={styles.setupGuideLinkText}>
+            {t("sessionsList.empty.setupGuideLink")}
+          </Text>
         </TouchableOpacity>
         {/* No-server activation path (retention): a fully offline scripted
             demo, isolated from real connect/session state — see app/demo.tsx. */}
@@ -465,13 +582,22 @@ export default function SessionsScreen() {
           onPress={() => router.push("/demo")}
           testID="try-demo-button"
         >
-          <Ionicons name="play-circle-outline" size={16} color={isDark ? "#a78bfa" : "#6d28d9"} />
-          <Text style={[styles.tryDemoButtonText, isDark && styles.tryDemoButtonTextDark]}>
+          <Ionicons
+            name="play-circle-outline"
+            size={16}
+            color={isDark ? "#a78bfa" : "#6d28d9"}
+          />
+          <Text
+            style={[
+              styles.tryDemoButtonText,
+              isDark && styles.tryDemoButtonTextDark,
+            ]}
+          >
             {t("sessionsList.empty.tryDemoButton")}
           </Text>
         </TouchableOpacity>
       </View>
-    )
+    );
   }
 
   // The SSE loop stopped retrying because the server rejected our
@@ -481,10 +607,18 @@ export default function SessionsScreen() {
   if (authError) {
     return (
       <View style={[styles.emptyContainer, isDark && styles.containerDark]}>
-        <Ionicons name="lock-closed-outline" size={64} color={isDark ? "#444444" : "#cccccc"} />
-        <Text style={[styles.emptyTitle, isDark && styles.textDark]}>{t("sessionsList.empty.authFailedTitle")}</Text>
+        <Ionicons
+          name="lock-closed-outline"
+          size={64}
+          color={isDark ? "#444444" : "#cccccc"}
+        />
+        <Text style={[styles.emptyTitle, isDark && styles.textDark]}>
+          {t("sessionsList.empty.authFailedTitle")}
+        </Text>
         <Text style={[styles.emptySubtitle, isDark && styles.metaDark]}>
-          {t("sessionsList.empty.authFailedSubtitle", { name: activeConnection.name })}
+          {t("sessionsList.empty.authFailedSubtitle", {
+            name: activeConnection.name,
+          })}
         </Text>
         <View style={styles.authErrorButtonRow}>
           <TouchableOpacity
@@ -492,7 +626,9 @@ export default function SessionsScreen() {
             onPress={() => router.push(`/connection/${activeConnection.id}`)}
             testID="fix-connection-button"
           >
-            <Text style={[styles.addButtonText, isDark && styles.addButtonTextDark]}>
+            <Text
+              style={[styles.addButtonText, isDark && styles.addButtonTextDark]}
+            >
               {t("sessionsList.empty.checkCredentialsButton")}
             </Text>
           </TouchableOpacity>
@@ -502,18 +638,22 @@ export default function SessionsScreen() {
               // authError is cleared inside connect() itself once the retry
               // attempt starts (see src/stores/events.ts), so a manual
               // set() here isn't needed — just kick the SSE state machine.
-              reconnect()
+              reconnect();
             }}
             testID="retry-connection-button"
           >
-            <Text style={[styles.addButtonText, isDark && styles.addButtonTextDark]}>{t("common.retry")}</Text>
+            <Text
+              style={[styles.addButtonText, isDark && styles.addButtonTextDark]}
+            >
+              {t("common.retry")}
+            </Text>
           </TouchableOpacity>
         </View>
       </View>
-    )
+    );
   }
 
-  const shortPath = getShortPath(currentProject)
+  const shortPath = getShortPath(currentProject);
 
   return (
     <View style={[styles.container, isDark && styles.containerDark]}>
@@ -526,20 +666,37 @@ export default function SessionsScreen() {
         testID="connection-status-bar"
       >
         <View style={styles.connectionInfo}>
-          <View style={[styles.connectionDot, { backgroundColor: "#22c55e" }]} testID="connection-status-dot" />
-          <Text style={[styles.connectionName, isDark && styles.textDark]} numberOfLines={1}>
+          <View
+            style={[styles.connectionDot, { backgroundColor: "#22c55e" }]}
+            testID="connection-status-dot"
+          />
+          <Text
+            style={[styles.connectionName, isDark && styles.textDark]}
+            numberOfLines={1}
+          >
             {activeConnection.name}
           </Text>
           {shortPath && (
             <>
-              <Ionicons name="folder" size={14} color={isDark ? "#888888" : "#666666"} />
-              <Text style={[styles.projectPath, isDark && styles.metaDark]} numberOfLines={1}>
+              <Ionicons
+                name="folder"
+                size={14}
+                color={isDark ? "#888888" : "#666666"}
+              />
+              <Text
+                style={[styles.projectPath, isDark && styles.metaDark]}
+                numberOfLines={1}
+              >
                 {shortPath}
               </Text>
             </>
           )}
         </View>
-        <Ionicons name="swap-horizontal-outline" size={16} color={isDark ? "#666666" : "#999999"} />
+        <Ionicons
+          name="swap-horizontal-outline"
+          size={16}
+          color={isDark ? "#666666" : "#999999"}
+        />
       </TouchableOpacity>
 
       {error && (
@@ -550,10 +707,16 @@ export default function SessionsScreen() {
 
       <FlatList
         data={rows}
-        keyExtractor={(row) => (row.type === "header" ? `dir:${row.directory}` : row.session.id)}
+        keyExtractor={(row) =>
+          row.type === "header" ? `dir:${row.directory}` : row.session.id
+        }
         renderItem={({ item: row }) =>
           row.type === "header" ? (
-            <GroupHeader row={row} isDark={isDark} onToggle={() => toggleGroup(row.directory)} />
+            <GroupHeader
+              row={row}
+              isDark={isDark}
+              onToggle={() => toggleGroup(row.directory)}
+            />
           ) : (
             <SessionItem
               session={row.session}
@@ -564,20 +727,31 @@ export default function SessionsScreen() {
           )
         }
         refreshControl={
-          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={isDark ? "#ffffff" : "#0a0a0a"} />
+          <RefreshControl
+            refreshing={refreshing}
+            onRefresh={onRefresh}
+            tintColor={isDark ? "#ffffff" : "#0a0a0a"}
+          />
         }
         ListEmptyComponent={
           isLoading ? (
             <View style={styles.loadingContainer}>
-              <ActivityIndicator size="large" color={isDark ? "#ffffff" : "#0a0a0a"} />
+              <ActivityIndicator
+                size="large"
+                color={isDark ? "#ffffff" : "#0a0a0a"}
+              />
             </View>
           ) : (
             <View style={styles.emptyList}>
-              <Text style={[styles.emptyListText, isDark && styles.metaDark]}>{t("sessionsList.empty.noSessions")}</Text>
+              <Text style={[styles.emptyListText, isDark && styles.metaDark]}>
+                {t("sessionsList.empty.noSessions")}
+              </Text>
             </View>
           )
         }
-        contentContainerStyle={sessions.length === 0 ? styles.emptyContent : undefined}
+        contentContainerStyle={
+          sessions.length === 0 ? styles.emptyContent : undefined
+        }
       />
 
       {/* FAB to create new session */}
@@ -593,17 +767,35 @@ export default function SessionsScreen() {
 
       {/* New Session Info Modal */}
       <Modal visible={showNewSession} animationType="slide" transparent>
-        <KeyboardAvoidingView style={styles.modalOverlay} behavior={Platform.OS === "ios" ? "padding" : "height"}>
-          <TouchableOpacity style={styles.modalDismiss} activeOpacity={1} onPress={() => setShowNewSession(false)} />
-          <View style={[styles.modalContent, isDark && styles.modalContentDark]}>
+        <KeyboardAvoidingView
+          style={styles.modalOverlay}
+          behavior={Platform.OS === "ios" ? "padding" : "height"}
+        >
+          <TouchableOpacity
+            style={styles.modalDismiss}
+            activeOpacity={1}
+            onPress={() => setShowNewSession(false)}
+          />
+          <View
+            style={[styles.modalContent, isDark && styles.modalContentDark]}
+          >
             <View style={styles.modalHeader}>
-              <Text style={[styles.modalTitle, isDark && styles.textDark]}>{t("sessionsList.newSessionModal.title")}</Text>
+              <Text style={[styles.modalTitle, isDark && styles.textDark]}>
+                {t("sessionsList.newSessionModal.title")}
+              </Text>
               <TouchableOpacity onPress={() => setShowNewSession(false)}>
-                <Ionicons name="close" size={24} color={isDark ? "#ffffff" : "#0a0a0a"} />
+                <Ionicons
+                  name="close"
+                  size={24}
+                  color={isDark ? "#ffffff" : "#0a0a0a"}
+                />
               </TouchableOpacity>
             </View>
 
-            <ScrollView style={styles.modalScrollBody} keyboardShouldPersistTaps="handled">
+            <ScrollView
+              style={styles.modalScrollBody}
+              keyboardShouldPersistTaps="handled"
+            >
               {/* Current directory — tapping creates session immediately */}
               <Text style={[styles.modalLabel, isDark && styles.metaDark]}>
                 {t("sessionsList.newSessionModal.currentProjectLabel")}
@@ -613,23 +805,44 @@ export default function SessionsScreen() {
                 onPress={() => onCreateInDirectory()}
                 disabled={isCreating}
               >
-                <Ionicons name="folder" size={20} color={isDark ? "#8b5cf6" : "#6d28d9"} />
-                <Text style={[styles.modalDirText, isDark && styles.textDark]} numberOfLines={2}>
-                  {currentProject?.path?.absolute || activeConnection?.directory || t("sessionsList.newSessionModal.serverDefault")}
+                <Ionicons
+                  name="folder"
+                  size={20}
+                  color={isDark ? "#8b5cf6" : "#6d28d9"}
+                />
+                <Text
+                  style={[styles.modalDirText, isDark && styles.textDark]}
+                  numberOfLines={2}
+                >
+                  {currentProject?.path?.absolute ||
+                    activeConnection?.directory ||
+                    t("sessionsList.newSessionModal.serverDefault")}
                 </Text>
-                <Ionicons name="arrow-forward-circle" size={20} color={isDark ? "#8b5cf6" : "#6d28d9"} />
+                <Ionicons
+                  name="arrow-forward-circle"
+                  size={20}
+                  color={isDark ? "#8b5cf6" : "#6d28d9"}
+                />
               </TouchableOpacity>
 
               {/* Recent projects */}
               {recentDirectories.length > 0 && (
                 <>
-                  <Text style={[styles.modalLabel, isDark && styles.metaDark, { marginTop: 16 }]}>
+                  <Text
+                    style={[
+                      styles.modalLabel,
+                      isDark && styles.metaDark,
+                      { marginTop: 16 },
+                    ]}
+                  >
                     {t("sessionsList.newSessionModal.recentProjectsLabel")}
                   </Text>
                   {recentDirectories.map((dir) => {
-                    const short = dir.split("/").filter(Boolean).pop() || dir
+                    const short = dir.split("/").filter(Boolean).pop() || dir;
                     const isCurrent =
-                      dir === (currentProject?.path?.absolute || activeConnection?.directory)
+                      dir ===
+                      (currentProject?.path?.absolute ||
+                        activeConnection?.directory);
                     return (
                       <TouchableOpacity
                         key={dir}
@@ -644,7 +857,13 @@ export default function SessionsScreen() {
                         <Ionicons
                           name="folder-outline"
                           size={18}
-                          color={isCurrent ? "#8b5cf6" : isDark ? "#888888" : "#666666"}
+                          color={
+                            isCurrent
+                              ? "#8b5cf6"
+                              : isDark
+                                ? "#888888"
+                                : "#666666"
+                          }
                         />
                         <View style={styles.projectRowContent}>
                           <Text
@@ -657,89 +876,163 @@ export default function SessionsScreen() {
                           >
                             {short}
                           </Text>
-                          <Text style={[styles.projectRowPath, isDark && styles.metaDark]} numberOfLines={1}>
+                          <Text
+                            style={[
+                              styles.projectRowPath,
+                              isDark && styles.metaDark,
+                            ]}
+                            numberOfLines={1}
+                          >
                             {dir}
                           </Text>
                         </View>
-                        {isCurrent && <Ionicons name="checkmark-circle" size={18} color="#8b5cf6" />}
+                        {isCurrent && (
+                          <Ionicons
+                            name="checkmark-circle"
+                            size={18}
+                            color="#8b5cf6"
+                          />
+                        )}
                       </TouchableOpacity>
-                    )
+                    );
                   })}
                 </>
               )}
 
               {/* Server-known projects (excluding current) */}
-              {serverProjects.filter((p) => p.path?.absolute !== currentProject?.path?.absolute).length > 0 && (
+              {serverProjects.filter(
+                (p) => p.path?.absolute !== currentProject?.path?.absolute,
+              ).length > 0 && (
                 <>
-                  <Text style={[styles.modalLabel, isDark && styles.metaDark, { marginTop: 16 }]}>
+                  <Text
+                    style={[
+                      styles.modalLabel,
+                      isDark && styles.metaDark,
+                      { marginTop: 16 },
+                    ]}
+                  >
                     {t("sessionsList.newSessionModal.serverProjectsLabel")}
                   </Text>
                   {serverProjects
-                    .filter((p) => p.path?.absolute !== currentProject?.path?.absolute)
+                    .filter(
+                      (p) =>
+                        p.path?.absolute !== currentProject?.path?.absolute,
+                    )
                     .map((p) => {
-                      const short = p.name || p.path?.absolute?.split("/").filter(Boolean).pop() || p.id
+                      const short =
+                        p.name ||
+                        p.path?.absolute?.split("/").filter(Boolean).pop() ||
+                        p.id;
                       return (
                         <TouchableOpacity
                           key={p.id}
-                          style={[styles.projectRow, isDark && styles.projectRowDark]}
+                          style={[
+                            styles.projectRow,
+                            isDark && styles.projectRowDark,
+                          ]}
                           onPress={() => onCreateInDirectory(p.path?.absolute)}
                           disabled={isCreating}
                         >
-                          <Ionicons name="code-slash-outline" size={18} color={isDark ? "#888888" : "#666666"} />
+                          <Ionicons
+                            name="code-slash-outline"
+                            size={18}
+                            color={isDark ? "#888888" : "#666666"}
+                          />
                           <View style={styles.projectRowContent}>
-                            <Text style={[styles.projectRowName, isDark && styles.textDark]} numberOfLines={1}>
+                            <Text
+                              style={[
+                                styles.projectRowName,
+                                isDark && styles.textDark,
+                              ]}
+                              numberOfLines={1}
+                            >
                               {short}
                             </Text>
                             {p.path?.absolute && (
-                              <Text style={[styles.projectRowPath, isDark && styles.metaDark]} numberOfLines={1}>
+                              <Text
+                                style={[
+                                  styles.projectRowPath,
+                                  isDark && styles.metaDark,
+                                ]}
+                                numberOfLines={1}
+                              >
                                 {p.path.absolute}
                               </Text>
                             )}
                           </View>
                         </TouchableOpacity>
-                      )
+                      );
                     })}
                 </>
               )}
 
               {/* Browse the server's filesystem instead of typing a path */}
               <TouchableOpacity
-                style={[styles.projectRow, isDark && styles.projectRowDark, { marginTop: 16 }]}
+                style={[
+                  styles.projectRow,
+                  isDark && styles.projectRowDark,
+                  { marginTop: 16 },
+                ]}
                 onPress={() =>
-                  openBrowser(currentProject?.path?.absolute || activeConnection?.directory || null, "create")
+                  openBrowser(
+                    currentProject?.path?.absolute ||
+                      activeConnection?.directory ||
+                      null,
+                    "create",
+                  )
                 }
                 disabled={isCreating}
                 testID="browse-folders-button"
               >
-                <Ionicons name="folder-open-outline" size={18} color={isDark ? "#8b5cf6" : "#6d28d9"} />
+                <Ionicons
+                  name="folder-open-outline"
+                  size={18}
+                  color={isDark ? "#8b5cf6" : "#6d28d9"}
+                />
                 <View style={styles.projectRowContent}>
-                  <Text style={[styles.projectRowName, isDark && styles.textDark]}>
+                  <Text
+                    style={[styles.projectRowName, isDark && styles.textDark]}
+                  >
                     {t("sessionsList.newSessionModal.browseFoldersLabel")}
                   </Text>
-                  <Text style={[styles.projectRowPath, isDark && styles.metaDark]}>
+                  <Text
+                    style={[styles.projectRowPath, isDark && styles.metaDark]}
+                  >
                     {t("sessionsList.newSessionModal.browseFoldersHint")}
                   </Text>
                 </View>
-                <Ionicons name="chevron-forward" size={16} color={isDark ? "#666666" : "#999999"} />
+                <Ionicons
+                  name="chevron-forward"
+                  size={16}
+                  color={isDark ? "#666666" : "#999999"}
+                />
               </TouchableOpacity>
 
               {/* Manual path input fallback */}
-              <Text style={[styles.modalLabel, isDark && styles.metaDark, { marginTop: 16 }]}>
+              <Text
+                style={[
+                  styles.modalLabel,
+                  isDark && styles.metaDark,
+                  { marginTop: 16 },
+                ]}
+              >
                 {t("sessionsList.newSessionModal.enterPathLabel")}
               </Text>
               <TextInput
                 style={[styles.modalInput, isDark && styles.modalInputDark]}
-                placeholder={serverHome ? `${serverHome}/...` : "/path/to/project"}
+                placeholder={
+                  serverHome ? `${serverHome}/...` : "/path/to/project"
+                }
                 placeholderTextColor={isDark ? "#666666" : "#999999"}
                 value={customDir}
                 onChangeText={(text) => {
                   // Expand ~ to server home directory
                   if (serverHome && text.startsWith("~/")) {
-                    setCustomDir(serverHome + text.slice(1))
+                    setCustomDir(serverHome + text.slice(1));
                   } else if (serverHome && text === "~") {
-                    setCustomDir(serverHome)
+                    setCustomDir(serverHome);
                   } else {
-                    setCustomDir(text)
+                    setCustomDir(text);
                   }
                 }}
                 autoCapitalize="none"
@@ -752,13 +1045,27 @@ export default function SessionsScreen() {
                     style={[styles.pathChip, isDark && styles.pathChipDark]}
                     onPress={() => setCustomDir(serverHome)}
                   >
-                    <Text style={[styles.pathChipText, isDark && styles.pathChipTextDark]}>~</Text>
+                    <Text
+                      style={[
+                        styles.pathChipText,
+                        isDark && styles.pathChipTextDark,
+                      ]}
+                    >
+                      ~
+                    </Text>
                   </TouchableOpacity>
                   <TouchableOpacity
                     style={[styles.pathChip, isDark && styles.pathChipDark]}
                     onPress={() => setCustomDir(serverHome + "/")}
                   >
-                    <Text style={[styles.pathChipText, isDark && styles.pathChipTextDark]}>~/</Text>
+                    <Text
+                      style={[
+                        styles.pathChipText,
+                        isDark && styles.pathChipTextDark,
+                      ]}
+                    >
+                      ~/
+                    </Text>
                   </TouchableOpacity>
                 </View>
               )}
@@ -777,11 +1084,21 @@ export default function SessionsScreen() {
                   disabled={isCreating}
                 >
                   {isCreating ? (
-                    <ActivityIndicator size="small" color={isDark ? "#0a0a0a" : "#ffffff"} />
+                    <ActivityIndicator
+                      size="small"
+                      color={isDark ? "#0a0a0a" : "#ffffff"}
+                    />
                   ) : (
-                    <Text style={[styles.modalButtonTextPrimary, isDark && styles.modalButtonTextPrimaryDark]}>
+                    <Text
+                      style={[
+                        styles.modalButtonTextPrimary,
+                        isDark && styles.modalButtonTextPrimaryDark,
+                      ]}
+                    >
                       {t("sessionsList.newSessionModal.createInButton", {
-                        dir: customDir.split("/").filter(Boolean).pop() || customDir,
+                        dir:
+                          customDir.split("/").filter(Boolean).pop() ||
+                          customDir,
                       })}
                     </Text>
                   )}
@@ -798,9 +1115,17 @@ export default function SessionsScreen() {
                   disabled={isCreating}
                 >
                   {isCreating ? (
-                    <ActivityIndicator size="small" color={isDark ? "#0a0a0a" : "#ffffff"} />
+                    <ActivityIndicator
+                      size="small"
+                      color={isDark ? "#0a0a0a" : "#ffffff"}
+                    />
                   ) : (
-                    <Text style={[styles.modalButtonTextPrimary, isDark && styles.modalButtonTextPrimaryDark]}>
+                    <Text
+                      style={[
+                        styles.modalButtonTextPrimary,
+                        isDark && styles.modalButtonTextPrimaryDark,
+                      ]}
+                    >
                       {t("sessionsList.newSessionModal.createSessionButton")}
                     </Text>
                   )}
@@ -817,9 +1142,15 @@ export default function SessionsScreen() {
           style={[styles.modalOverlay, { justifyContent: "center" }]}
           behavior={Platform.OS === "ios" ? "padding" : "height"}
         >
-          <TouchableOpacity style={styles.modalDismiss} activeOpacity={1} onPress={() => setRenaming(null)} />
+          <TouchableOpacity
+            style={styles.modalDismiss}
+            activeOpacity={1}
+            onPress={() => setRenaming(null)}
+          />
           <View style={[styles.renameCard, isDark && styles.renameCardDark]}>
-            <Text style={[styles.renameTitle, isDark && styles.textDark]}>{t("sessionsList.renameModal.title")}</Text>
+            <Text style={[styles.renameTitle, isDark && styles.textDark]}>
+              {t("sessionsList.renameModal.title")}
+            </Text>
             <TextInput
               style={[styles.modalInput, isDark && styles.modalInputDark]}
               value={renameText}
@@ -832,21 +1163,39 @@ export default function SessionsScreen() {
               autoCorrect={false}
             />
             <View style={styles.renameActions}>
-              <TouchableOpacity style={[styles.renameBtn, styles.renameBtnCancel]} onPress={() => setRenaming(null)}>
-                <Text style={styles.renameBtnCancelText}>{t("common.cancel")}</Text>
+              <TouchableOpacity
+                style={[styles.renameBtn, styles.renameBtnCancel]}
+                onPress={() => setRenaming(null)}
+              >
+                <Text style={styles.renameBtnCancelText}>
+                  {t("common.cancel")}
+                </Text>
               </TouchableOpacity>
               <TouchableOpacity
-                style={[styles.renameBtn, styles.modalButtonPrimary, isDark && styles.modalButtonPrimaryDark]}
+                style={[
+                  styles.renameBtn,
+                  styles.modalButtonPrimary,
+                  isDark && styles.modalButtonPrimaryDark,
+                ]}
                 onPress={submitRename}
                 disabled={!renameText.trim()}
               >
-                <Text style={[styles.modalButtonTextPrimary, isDark && styles.modalButtonTextPrimaryDark]}>
+                <Text
+                  style={[
+                    styles.modalButtonTextPrimary,
+                    isDark && styles.modalButtonTextPrimaryDark,
+                  ]}
+                >
                   {t("common.save")}
                 </Text>
               </TouchableOpacity>
             </View>
           </View>
-          <TouchableOpacity style={styles.modalDismiss} activeOpacity={1} onPress={() => setRenaming(null)} />
+          <TouchableOpacity
+            style={styles.modalDismiss}
+            activeOpacity={1}
+            onPress={() => setRenaming(null)}
+          />
         </KeyboardAvoidingView>
       </Modal>
 
@@ -859,7 +1208,12 @@ export default function SessionsScreen() {
         isDark={isDark}
         onSwitch={handleSwitchDirectory}
         onBrowse={() =>
-          openBrowser(activeConnection?.directory || currentProject?.path?.absolute || null, "switch")
+          openBrowser(
+            activeConnection?.directory ||
+              currentProject?.path?.absolute ||
+              null,
+            "switch",
+          )
         }
       />
 
@@ -874,7 +1228,7 @@ export default function SessionsScreen() {
         onDismiss={onBrowserDismiss}
       />
     </View>
-  )
+  );
 }
 
 const styles = StyleSheet.create({
@@ -1323,4 +1677,4 @@ const styles = StyleSheet.create({
     fontWeight: "600",
     color: "#888888",
   },
-})
+});
