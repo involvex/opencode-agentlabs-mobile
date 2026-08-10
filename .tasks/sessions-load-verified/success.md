@@ -1,1 +1,0 @@
-Task is done when **CI CUA smoke test** run completes with `sessions_reload` phase reporting **success** in the GitHub Actions log — meaning the app loaded pre-existing sessions from the server AND showed them after navigating back from a session view. Observable at: https://github.com/dzianisv/opencode-mobile/actions

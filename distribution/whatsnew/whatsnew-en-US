@@ -1,3 +1,0 @@
-v0.4.12 — Global recent sessions
-
-Recent Sessions now shows every session across all your projects automatically — no need to pick a folder or directory first. The list is populated globally as soon as you connect, and falls back to per-directory listing on older servers.

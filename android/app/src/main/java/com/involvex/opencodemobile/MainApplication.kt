@@ -1,4 +1,4 @@
-package cc.agentlabs.opencode
+package com.involvex.opencodemobile
 
 import android.app.Application
 import android.content.res.Configuration

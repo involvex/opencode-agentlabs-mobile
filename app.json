@@ -8,7 +8,7 @@
     "userInterfaceStyle": "automatic",
     "icon": "./assets/icon.png",
     "android": {
-      "package": "cc.agentlabs.opencode",
+      "package": "com.involvex.opencodemobile",
       "versionCode": 40,
       "adaptiveIcon": {
         "foregroundImage": "./assets/adaptive-icon.png",

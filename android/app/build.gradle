@@ -87,9 +87,9 @@ android {
     buildToolsVersion rootProject.ext.buildToolsVersion
     compileSdk rootProject.ext.compileSdkVersion
 
-    namespace 'cc.agentlabs.opencode'
+    namespace 'com.involvex.opencodemobile'
     defaultConfig {
-        applicationId 'cc.agentlabs.opencode'
+        applicationId 'com.involvex.opencodemobile'
         minSdkVersion rootProject.ext.minSdkVersion
         targetSdkVersion rootProject.ext.targetSdkVersion
         versionCode 40

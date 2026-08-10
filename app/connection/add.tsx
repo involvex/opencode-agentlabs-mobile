@@ -9,7 +9,6 @@ import {
   useColorScheme,
   ActivityIndicator,
   Alert,
-  Linking,
 } from "react-native";
 import { router } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
@@ -20,10 +19,6 @@ import { probeConnection, shareReport } from "../../src/lib/diagnostics";
 import { parseUrl } from "../../src/lib/diagnostics-classify";
 import { buildAuth } from "../../src/lib/auth";
 import { AnalyticsEvent, track } from "../../src/lib/analytics";
-import {
-  submitWaitlistSignup,
-  buildWaitlistMailtoUrl,
-} from "../../src/lib/waitlist";
 
 export default function AddConnectionScreen() {
   const colorScheme = useColorScheme();
@@ -42,10 +37,6 @@ export default function AddConnectionScreen() {
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [isConnecting, setIsConnecting] = useState(false);
-  const [waitlistEmail, setWaitlistEmail] = useState("");
-  const [waitlistState, setWaitlistState] = useState<
-    "idle" | "submitting" | "joined"
-  >("idle");
 
   const buildUrl = () => {
     if (mode === "advanced") return url.trim();
@@ -222,32 +213,6 @@ export default function AddConnectionScreen() {
     );
   };
 
-  const handleJoinWaitlist = async () => {
-    if (waitlistState === "submitting") return;
-    setWaitlistState("submitting");
-    const result = await submitWaitlistSignup(waitlistEmail);
-    if (result.ok) {
-      setWaitlistState("joined");
-      return;
-    }
-    setWaitlistState("idle");
-    if (result.fallback) {
-      // API unreachable/broken: fall back to the pre-#87 mailto path so the
-      // signup still reaches the support inbox instead of being lost.
-      try {
-        await Linking.openURL(buildWaitlistMailtoUrl(result.email));
-      } catch {
-        // No mail app either — tell the user instead of failing silently.
-        Alert.alert(
-          t("connection.add.waitlist.alertTitle"),
-          t("connection.add.waitlist.fallbackMessage"),
-        );
-      }
-    } else {
-      Alert.alert(t("connection.add.waitlist.alertTitle"), result.error);
-    }
-  };
-
   // Quick connect mode - simplified
   if (mode === "quick") {
     return (
@@ -414,74 +379,6 @@ export default function AddConnectionScreen() {
             {"\n"}
             <Text style={styles.code}>opencode serve --hostname 0.0.0.0</Text>
           </Text>
-        </View>
-
-        {/* OpenCode Connect — Coming Soon */}
-        <View style={[styles.connectCard, isDark && styles.connectCardDark]}>
-          <View style={styles.connectCardHeader}>
-            <Ionicons name="cloud-done-outline" size={28} color="#6366f1" />
-            <View style={styles.connectCardTitles}>
-              <Text
-                style={[styles.connectCardTitle, isDark && styles.textDark]}
-              >
-                {t("connection.add.quick.connectCardTitle")}
-              </Text>
-              <View style={styles.connectCardBadge}>
-                <Text style={styles.connectCardBadgeText}>
-                  {t("connection.add.quick.connectCardBadge")}
-                </Text>
-              </View>
-            </View>
-          </View>
-          <Text style={[styles.connectCardDesc, isDark && styles.hintDark]}>
-            {t("connection.add.quick.connectCardDesc")}
-          </Text>
-          {waitlistState === "joined" ? (
-            <View style={styles.waitlistSuccess} testID="waitlist-success">
-              <Ionicons name="checkmark-circle" size={20} color="#22c55e" />
-              <Text
-                style={[styles.waitlistSuccessText, isDark && styles.textDark]}
-              >
-                {t("connection.add.waitlist.successText")}
-              </Text>
-            </View>
-          ) : (
-            <>
-              <TextInput
-                style={[
-                  styles.input,
-                  isDark && styles.inputDark,
-                  { marginTop: 12 },
-                ]}
-                placeholder="your@email.com"
-                placeholderTextColor={isDark ? "#666666" : "#999999"}
-                value={waitlistEmail}
-                onChangeText={setWaitlistEmail}
-                autoCapitalize="none"
-                autoCorrect={false}
-                keyboardType="email-address"
-                editable={waitlistState !== "submitting"}
-                testID="waitlist-email-input"
-              />
-              <TouchableOpacity
-                style={styles.waitlistButton}
-                onPress={handleJoinWaitlist}
-                disabled={waitlistState === "submitting"}
-                testID="waitlist-submit-button"
-              >
-                {waitlistState === "submitting" ? (
-                  <ActivityIndicator size="small" color="#ffffff" />
-                ) : (
-                  <>
-                    <Ionicons name="mail-outline" size={16} color="#ffffff" />
-                    <Text style={styles.waitlistButtonText}>
-                      {t("connection.add.waitlist.joinButton")}
-                    </Text>
-                  </>
-                )}
-              </TouchableOpacity>
-            </>
-          )}
         </View>
 
         {/* Advanced mode link */}
@@ -900,77 +797,5 @@ const styles = StyleSheet.create({
     color: "#0a0a0a",
     marginTop: 32,
     marginBottom: 8,
-  },
-  connectCard: {
-    backgroundColor: "#f0f0ff",
-    borderRadius: 12,
-    padding: 16,
-    marginTop: 24,
-    borderWidth: 1,
-    borderColor: "#c7d2fe",
-  },
-  connectCardDark: {
-    backgroundColor: "#1e1b4b",
-    borderColor: "#3730a3",
-  },
-  connectCardHeader: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 12,
-    marginBottom: 8,
-  },
-  connectCardTitles: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 8,
-    flexWrap: "wrap",
-  },
-  connectCardTitle: {
-    fontSize: 16,
-    fontWeight: "700",
-    color: "#0a0a0a",
-  },
-  connectCardBadge: {
-    backgroundColor: "#6366f1",
-    paddingHorizontal: 8,
-    paddingVertical: 2,
-    borderRadius: 4,
-  },
-  connectCardBadgeText: {
-    color: "#ffffff",
-    fontSize: 11,
-    fontWeight: "600",
-  },
-  connectCardDesc: {
-    fontSize: 13,
-    color: "#666666",
-    lineHeight: 20,
-  },
-  waitlistButton: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "center",
-    gap: 8,
-    padding: 12,
-    borderRadius: 8,
-    backgroundColor: "#6366f1",
-    marginTop: 12,
-  },
-  waitlistButtonText: {
-    fontSize: 15,
-    fontWeight: "600",
-    color: "#ffffff",
-  },
-  waitlistSuccess: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 8,
-    marginTop: 12,
-  },
-  waitlistSuccessText: {
-    flex: 1,
-    fontSize: 13,
-    color: "#0a0a0a",
-    lineHeight: 20,
   },
 });
