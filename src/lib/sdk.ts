@@ -9,6 +9,17 @@ import { apiErrorFor } from "./api-error";
 import { loadSessionList } from "./session-list";
 import type { FileRoot } from "./file-roots";
 
+export interface PtyInfo {
+  id: string;
+  title: string;
+  command: string;
+  args: string[];
+  cwd: string;
+  status: "running" | "exited";
+  pid: number;
+  exitCode?: number;
+}
+
 export { ApiAuthError, isAuthError } from "./api-error";
 
 export interface ClientConfig {
@@ -591,6 +602,50 @@ export function createClient(config: ClientConfig) {
 
     config: {
       get: () => request<unknown>(config, "/config"),
+    },
+
+    pty: {
+      list: (directory?: string) => {
+        const qs = directory
+          ? `?location[directory]=${encodeURIComponent(directory)}`
+          : "";
+        return request<PtyInfo[]>(config, `/api/pty${qs}`);
+      },
+      create: (
+        params: {
+          command?: string;
+          args?: string[];
+          cwd?: string;
+          title?: string;
+        },
+        directory?: string,
+      ) => {
+        const qs = new URLSearchParams();
+        if (directory) qs.set("location[directory]", directory);
+        const suffix = qs.toString() ? `?${qs.toString()}` : "";
+        return request<PtyInfo>(config, `/api/pty${suffix}`, {
+          method: "POST",
+          body: JSON.stringify(params || {}),
+        });
+      },
+      get: (ptyID: string, directory?: string) => {
+        const qs = directory
+          ? `?location[directory]=${encodeURIComponent(directory)}`
+          : "";
+        return request<PtyInfo>(config, `/api/pty/${ptyID}${qs}`);
+      },
+      remove: (ptyID: string, directory?: string) =>
+        request<void>(
+          config,
+          `/api/pty/${ptyID}${directory ? "?location[directory]=" + encodeURIComponent(directory) : ""}`,
+          { method: "DELETE" },
+        ),
+      connectToken: (ptyID: string) =>
+        request<{ ticket: string; expires_in: number }>(
+          config,
+          `/api/pty/${ptyID}/connect-token`,
+          { method: "POST", headers: { "x-opencode-ticket": "1" } },
+        ),
     },
   };
 }

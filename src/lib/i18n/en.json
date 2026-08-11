@@ -54,6 +54,12 @@
         "description": "Learn how to use OpenCode"
       }
     },
+    "terminal": {
+      "fontSize": {
+        "label": "Terminal font size",
+        "description": "Font size for the terminal view ({{size}}px)"
+      }
+    },
     "language": {
       "label": "Language",
       "title": "Choose Language",
@@ -430,6 +436,15 @@
         "hoursAgo": "{{count}}h ago",
         "daysAgo": "{{count}}d ago"
       }
+    },
+    "terminal": {
+      "title": "Terminal",
+      "connecting": "Connecting to terminal...",
+      "connected": "Connected",
+      "disconnected": "Disconnected",
+      "error": "Terminal connection failed",
+      "placeholder": "Type a command...",
+      "closeMessage": "The terminal session will keep running on the server."
     }
   },
   "demo": {

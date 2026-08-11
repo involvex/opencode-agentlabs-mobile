@@ -102,7 +102,14 @@ export default function SettingsScreen() {
   const { t } = useTranslation();
 
   const { settings, hasBiometrics, updateSettings, lock } = useAuth();
-  const { notifications, setNotification, locale, setLocale } = useSettings();
+  const {
+    notifications,
+    setNotification,
+    locale,
+    setLocale,
+    terminalFontSize,
+    setTerminalFontSize,
+  } = useSettings();
   const [osGranted, setOsGranted] = useState<boolean | null>(null);
   const [telemetryUpdating, setTelemetryUpdating] = useState(false);
 
@@ -319,6 +326,41 @@ export default function SettingsScreen() {
           }
         />
         <SettingRow
+          icon="text"
+          label={t("settings.terminal.fontSize.label")}
+          description={t("settings.terminal.fontSize.description", {
+            size: terminalFontSize,
+          })}
+          isDark={isDark}
+          right={
+            <View style={styles.fontSizeControls}>
+              <TouchableOpacity
+                onPress={() => setTerminalFontSize(terminalFontSize - 1)}
+                disabled={terminalFontSize <= 10}
+                style={[
+                  styles.fontSizeButton,
+                  terminalFontSize <= 10 && styles.fontSizeButtonDisabled,
+                ]}
+              >
+                <Ionicons name="remove" size={18} color="#ffffff" />
+              </TouchableOpacity>
+              <Text style={[styles.fontSizeValue, isDark && styles.textDark]}>
+                {terminalFontSize}
+              </Text>
+              <TouchableOpacity
+                onPress={() => setTerminalFontSize(terminalFontSize + 1)}
+                disabled={terminalFontSize >= 18}
+                style={[
+                  styles.fontSizeButton,
+                  terminalFontSize >= 18 && styles.fontSizeButtonDisabled,
+                ]}
+              >
+                <Ionicons name="add" size={18} color="#ffffff" />
+              </TouchableOpacity>
+            </View>
+          }
+        />
+        <SettingRow
           icon="information-circle"
           label={t("settings.about.version")}
           description="1.0.0"
@@ -451,6 +493,29 @@ const styles = StyleSheet.create({
   footerText: {
     fontSize: 13,
     color: "#999999",
+    textAlign: "center",
+  },
+  fontSizeControls: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+  },
+  fontSizeButton: {
+    width: 28,
+    height: 28,
+    borderRadius: 14,
+    backgroundColor: "#22c55e",
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  fontSizeButtonDisabled: {
+    backgroundColor: "#cccccc",
+  },
+  fontSizeValue: {
+    fontSize: 16,
+    fontWeight: "600",
+    color: "#0a0a0a",
+    minWidth: 24,
     textAlign: "center",
   },
 });

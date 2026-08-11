@@ -11,12 +11,14 @@ interface Settings {
   pageSize: number;
   notifications: Record<Category, boolean>;
   locale: LocalePreference;
+  terminalFontSize: number;
 }
 
 const DEFAULTS: Settings = {
   pageSize: 25,
   notifications: { ...defaultPreferences },
   locale: "system",
+  terminalFontSize: 13,
 };
 
 interface SettingsState extends Settings {
@@ -25,6 +27,11 @@ interface SettingsState extends Settings {
   setPageSize: (size: number) => Promise<void>;
   setNotification: (category: Category, enabled: boolean) => Promise<void>;
   setLocale: (locale: LocalePreference) => Promise<void>;
+  setTerminalFontSize: (size: number) => Promise<void>;
+}
+
+function clampTerminalFontSize(size: number): number {
+  return Math.max(10, Math.min(18, size));
 }
 
 function snapshot(get: () => SettingsState): Settings {
@@ -32,6 +39,7 @@ function snapshot(get: () => SettingsState): Settings {
     pageSize: get().pageSize,
     notifications: get().notifications,
     locale: get().locale,
+    terminalFontSize: get().terminalFontSize,
   };
 }
 
@@ -72,5 +80,11 @@ export const useSettings = create<SettingsState>((set, get) => ({
     set({ locale });
     setAppLocale(locale); // applies immediately
     await persist({ ...snapshot(get), locale });
+  },
+
+  setTerminalFontSize: async (size) => {
+    const clamped = clampTerminalFontSize(size);
+    set({ terminalFontSize: clamped });
+    await persist({ ...snapshot(get), terminalFontSize: clamped });
   },
 }));
