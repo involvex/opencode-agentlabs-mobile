@@ -100,6 +100,9 @@ function TerminalSocket({
       () => {
         setWsState("disconnected");
       },
+      () => {
+        setWsState("connected");
+      },
     );
 
     return () => {
@@ -248,6 +251,7 @@ export default function TerminalView({
     status: ptyStatus,
     error: ptyError,
     retry: retryPty,
+    ticket,
   } = usePtySession(sessionClient, sessionDirectory);
 
   const wsUrl = useMemo(() => {
@@ -258,8 +262,9 @@ export default function TerminalView({
       directory: sessionDirectory,
       username: username || "opencode",
       password: password || "",
+      ticket: ticket ?? undefined,
     });
-  }, [ptyId, sessionDirectory, baseUrl, username, password]);
+  }, [ptyId, sessionDirectory, baseUrl, username, password, ticket]);
 
   if (ptyStatus === "loading" || (ptyStatus === "idle" && !ptyId)) {
     return (

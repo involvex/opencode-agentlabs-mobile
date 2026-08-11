@@ -28,7 +28,7 @@
         {
           "icon": "./assets/icon.png",
           "color": "#ffffff",
-          "sounds": []
+          "sounds": ["./assets/sounds/ping.wav"]
         }
       ],
       [

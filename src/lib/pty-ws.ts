@@ -16,6 +16,7 @@ export interface PtyWsUrlOptions {
   cursor?: number;
   username?: string;
   password?: string;
+  ticket?: string;
 }
 
 export function buildPtyWsUrl(opts: PtyWsUrlOptions): string {
@@ -24,6 +25,7 @@ export function buildPtyWsUrl(opts: PtyWsUrlOptions): string {
     ptyId: opts.ptyId,
     directory: opts.directory,
     hasAuth: !!(opts.username && opts.password),
+    hasTicket: !!opts.ticket,
   });
   if (typeof URL === "undefined") {
     throw new Error("URL is not available in this environment.");
@@ -35,7 +37,9 @@ export function buildPtyWsUrl(opts: PtyWsUrlOptions): string {
   httpUrl.searchParams.set("directory", opts.directory);
   httpUrl.searchParams.set("cursor", String(opts.cursor ?? 0));
 
-  if (opts.username && opts.password) {
+  if (opts.ticket) {
+    httpUrl.searchParams.set("ticket", opts.ticket);
+  } else if (opts.username && opts.password) {
     httpUrl.searchParams.set(
       "auth_token",
       encodeAuthToken(opts.username, opts.password),
@@ -48,16 +52,19 @@ export function buildPtyWsUrl(opts: PtyWsUrlOptions): string {
 
 export type PtyOutputHandler = (chunk: string) => void;
 export type PtyCloseHandler = () => void;
+export type PtyOpenHandler = () => void;
 
 export class PtyWebSocket {
   private ws: WebSocket | null = null;
   private outputHandler: PtyOutputHandler = () => {};
   private closeHandler: PtyCloseHandler = () => {};
+  private openHandler: PtyOpenHandler = () => {};
 
   connect(
     url: string,
     onOutput: PtyOutputHandler,
     onClose: PtyCloseHandler,
+    onOpen?: PtyOpenHandler,
   ): void {
     console.log("[PtyWS] connect", {
       url,
@@ -65,6 +72,7 @@ export class PtyWebSocket {
     });
     this.outputHandler = onOutput;
     this.closeHandler = onClose;
+    this.openHandler = onOpen || (() => {});
 
     if (typeof WebSocket === "undefined") {
       console.error("[PtyWS] WebSocket is not available in this environment.");
@@ -75,9 +83,32 @@ export class PtyWebSocket {
     this.ws = new WebSocket(url);
     this.ws.binaryType = "arraybuffer";
 
+    // Log readyState changes
+    const logReadyState = () => {
+      if (!this.ws) return;
+      const states = ["CONNECTING", "OPEN", "CLOSING", "CLOSED"];
+      console.log(
+        "[PtyWS] readyState",
+        states[this.ws.readyState] ?? this.ws.readyState,
+      );
+    };
+
+    // Initial state
+    logReadyState();
+
+    // Connection timeout (10s)
+    const connectTimeout = setTimeout(() => {
+      if (this.ws && this.ws.readyState === WebSocket.CONNECTING) {
+        console.log("[PtyWS] connection timeout, closing");
+        this.ws.close(1000, "connection timeout");
+      }
+    }, 10000);
+
     this.ws.onopen = () => {
+      clearTimeout(connectTimeout);
+      logReadyState();
       console.log("[PtyWS] onopen");
-      // Ready for input; state is driven by caller via onOutput/onClose.
+      this.openHandler();
     };
 
     this.ws.onmessage = (event) => {
@@ -100,8 +131,14 @@ export class PtyWebSocket {
       }
     };
 
-    this.ws.onclose = () => {
-      console.log("[PtyWS] onclose");
+    this.ws.onclose = (event) => {
+      clearTimeout(connectTimeout);
+      logReadyState();
+      console.log("[PtyWS] onclose", {
+        code: event.code,
+        reason: event.reason,
+        wasClean: event.wasClean,
+      });
       this.closeHandler();
     };
     this.ws.onerror = (err) => {
