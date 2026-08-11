@@ -145,10 +145,6 @@ cannot be traced to a reviewed source commit.
 - Sentry diagnostic payloads that match the consent copy: no server address,
   port, URL, credential, code, prompt, session title, or directory leaves the
   device.
-- Versioned Play screenshots, checksums, provenance, and intended website
-  placement in this repository.
-- A versioned Next.js source for the Vercel site, replacing its untracked
-  working copy before future visual changes.
 
 ### Non-Goals
 
@@ -186,9 +182,5 @@ cannot be traced to a reviewed source commit.
 - [ ] No Sentry payload of any kind - event, breadcrumb, tag, context,
   transaction/span name, or `serverName` - contains a server host, port, URL,
   credential, prompt, code, session title, or directory.
-- [ ] Seven full-resolution Play screenshots are versioned with source URL,
-  retrieval date, SHA-256, dimensions, and website placement.
-- [ ] `https://opencode.agentlabs.cc` serves the approved screenshots from
-  versioned source after its Vercel deployment.
 - [ ] Material signals become implementation issues only after a maintainer
   reproduces them in the affected user channel.

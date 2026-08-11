@@ -45,7 +45,5 @@ android/.gradle
 .supervisor
 .expo
 assets
-website
 tests
 docs
-docs-site

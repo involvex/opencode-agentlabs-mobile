@@ -213,7 +213,6 @@ material threshold -> deduplicated GitHub issue -> reviewed PR
 | Material issue upsert | Workflow `actions/github-script` | Locates a stable signal fingerprint and creates or updates an issue only after a material threshold. |
 | Sentry privacy implementation | `src/lib/sentry.ts`, `src/lib/scrub.ts` | Separate P1 prerequisite: remove user-controlled server data from events, breadcrumbs, tags, contexts, and span names before an event leaves device. |
 | Screenshot source of truth | `distribution/reference-screenshots/play-v1/manifest.json` | Records Play asset provenance, checksum, dimensions, and page placement. |
-| Vercel website | `website/` | Versioned Next.js source deployed to existing `opencode-mobile-site` project. |
 
 ### Data and Privacy Boundaries
 

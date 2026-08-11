@@ -28,9 +28,7 @@ export default [
       "dist/",
       "babel.config.js",
       "src/assets/terminal-shell-html.ts",
-      "website/",
       "docs/",
-      "docs-site/",
     ],
   },
 ];

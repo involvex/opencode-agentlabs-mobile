@@ -92,7 +92,6 @@ There is no finish line — keep compounding.
 - **Play Store**: `cc.agentlabs.opencode` is live on the **internal testing** track.
 - **Website**: `https://opencode.agentlabs.cc` is live (HTTP 200).
 - **CUA E2E**: the `sessions_reload` phase is green in CI (v0.4.6 run `28002986180` ✓). Deterministic ADB-based assertion helpers now back the feature scenarios.
-- **Demo**: 10× sped-up demo at `docs-site/demo.mp4`, embedded on the site.
 - **Support**: `support@agentlabs.cc` → `dzianisvv+agentlabscc@gmail.com` via Cloudflare email routing.
 
 ## Current mission: grow installs (no terminal done-state)
