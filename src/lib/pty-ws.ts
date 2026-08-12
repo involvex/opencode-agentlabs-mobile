@@ -31,7 +31,7 @@ export function buildPtyWsUrl(opts: PtyWsUrlOptions): string {
     throw new Error("URL is not available in this environment.");
   }
   const httpUrl = new URL(
-    `/pty/${opts.ptyId}/connect`,
+    `/api/pty/${opts.ptyId}/connect`,
     opts.baseUrl.endsWith("/") ? opts.baseUrl : `${opts.baseUrl}/`,
   );
   // opencode v2 serves the pty connect route at /api/pty/:id/connect and

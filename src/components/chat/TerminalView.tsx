@@ -33,6 +33,11 @@ interface Props {
 type WsState = "connecting" | "connected" | "disconnected" | "error";
 type TerminalMode = "server" | "local";
 
+const lineStyles = StyleSheet.create({
+  line: { color: "#1a1a1a", lineHeight: 20 },
+  lineDark: { color: "#e5e5e5" },
+});
+
 function AnsiLine({
   text,
   isDark,
@@ -44,7 +49,9 @@ function AnsiLine({
 }) {
   const segments = useMemo(() => ansiToSegments(text, isDark), [text, isDark]);
   return (
-    <Text style={[styles.line, isDark && styles.lineDark, { fontSize }]}>
+    <Text
+      style={[lineStyles.line, isDark && lineStyles.lineDark, { fontSize }]}
+    >
       {segments.map((seg) => (
         <Text key={seg.text} style={seg.style}>
           {seg.text}
@@ -173,17 +180,14 @@ function TerminalSocket({
         style={[styles.output, isDark && styles.outputDark]}
         contentContainerStyle={styles.outputContent}
       >
-        {output.map((line) => {
-          const idx = output.indexOf(line);
-          return (
-            <AnsiLine
-              key={`${idx}:${line.slice(0, 32)}`}
-              text={line}
-              isDark={isDark}
-              fontSize={terminalFontSize}
-            />
-          );
-        })}
+        {output.map((line, idx) => (
+          <AnsiLine
+            key={`${idx}:${line.slice(0, 32)}`}
+            text={line}
+            isDark={isDark}
+            fontSize={terminalFontSize}
+          />
+        ))}
         {wsState !== "connected" && (
           <Text
             style={[

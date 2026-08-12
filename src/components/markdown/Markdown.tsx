@@ -74,6 +74,10 @@ class CustomRenderer extends Renderer {
       { fontStyle: "normal", fontWeight: "normal" },
     ]);
   }
+
+  html(_text: string | ReactNode[], _styles?: TextStyle): ReactNode {
+    return null;
+  }
 }
 
 const mono = Platform.OS === "ios" ? "Menlo" : "monospace";
