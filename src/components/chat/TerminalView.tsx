@@ -14,6 +14,10 @@ import { usePtySession } from "../../hooks/use-pty-session";
 import { buildPtyWsUrl, PtyWebSocket } from "../../lib/pty-ws";
 import { ansiToSegments } from "../../lib/ansi-to-style";
 import { useSettings } from "../../stores/settings";
+import {
+  executeLocalCommand,
+  isLocalTerminalAvailable,
+} from "../../lib/local-terminal";
 import type { Client } from "../../lib/sdk";
 
 interface Props {
@@ -27,6 +31,7 @@ interface Props {
 }
 
 type WsState = "connecting" | "connected" | "disconnected" | "error";
+type TerminalMode = "server" | "local";
 
 function AnsiLine({
   text,
@@ -49,17 +54,23 @@ function AnsiLine({
   );
 }
 
+interface TerminalSocketProps {
+  wsUrl: string;
+  isDark: boolean;
+  terminalFontSize: number;
+  onClose: () => void;
+  sessionDirectory: string | undefined;
+  onWsError: () => void;
+}
+
 function TerminalSocket({
   wsUrl,
   isDark,
   terminalFontSize,
   onClose,
-}: {
-  wsUrl: string;
-  isDark: boolean;
-  terminalFontSize: number;
-  onClose: () => void;
-}) {
+  sessionDirectory,
+  onWsError,
+}: TerminalSocketProps) {
   const [output, setOutput] = useState<string[]>([]);
   const [input, setInput] = useState("");
   const [wsState, setWsState] = useState<WsState>("connecting");
@@ -99,6 +110,7 @@ function TerminalSocket({
       },
       () => {
         setWsState("disconnected");
+        onWsError();
       },
       () => {
         setWsState("connected");
@@ -109,7 +121,7 @@ function TerminalSocket({
       ws.close();
       wsRef.current = null;
     };
-  }, [wsUrl]);
+  }, [wsUrl, onWsError]);
 
   const handleSend = useCallback(() => {
     const trimmed = input.trim();
@@ -151,7 +163,7 @@ function TerminalSocket({
           />
         </TouchableOpacity>
         <Text style={[styles.headerTitle, isDark && styles.headerTitleDark]}>
-          Terminal
+          Terminal (Server)
         </Text>
         <View style={[styles.statusDot, { backgroundColor: statusColor }]} />
       </View>
@@ -234,6 +246,149 @@ function TerminalSocket({
   );
 }
 
+function LocalTerminalView({
+  isDark,
+  terminalFontSize,
+  sessionDirectory,
+  onClose,
+  onSwitchToServer,
+}: {
+  isDark: boolean;
+  terminalFontSize: number;
+  sessionDirectory: string | undefined;
+  onClose: () => void;
+  onSwitchToServer?: () => void;
+}) {
+  const [output, setOutput] = useState<string[]>([
+    "Local terminal ready. Type commands to execute on device.",
+  ]);
+  const [input, setInput] = useState("");
+  const [executing, setExecuting] = useState(false);
+  const scrollRef = useRef<ScrollView>(null);
+  const cwdRef = useRef(sessionDirectory || "/");
+
+  const handleSend = useCallback(async () => {
+    const trimmed = input.trim();
+    if (!trimmed || executing) return;
+
+    setExecuting(true);
+    setOutput((prev) => [...prev, `$ ${trimmed}`]);
+    setInput("");
+
+    try {
+      const result = await executeLocalCommand(trimmed, cwdRef.current);
+      const lines = [result.stdout, result.stderr].filter(Boolean).join("\n");
+      if (lines) {
+        setOutput((prev) => [...prev, ...lines.split("\n")]);
+      }
+      if (result.exitCode !== 0) {
+        setOutput((prev) => [...prev, `[Exit code: ${result.exitCode}]`]);
+      }
+    } catch (error) {
+      setOutput((prev) => [
+        ...prev,
+        `Error: ${error instanceof Error ? error.message : String(error)}`,
+      ]);
+    } finally {
+      setExecuting(false);
+      scrollRef.current?.scrollToEnd({ animated: true });
+    }
+  }, [input, executing]);
+
+  const handleClose = useCallback(() => {
+    onClose();
+  }, [onClose]);
+
+  return (
+    <View style={[styles.container, isDark && styles.containerDark]}>
+      <View style={styles.header}>
+        <TouchableOpacity onPress={handleClose} hitSlop={8}>
+          <Ionicons
+            name="close"
+            size={22}
+            color={isDark ? "#888888" : "#666666"}
+          />
+        </TouchableOpacity>
+        <Text style={[styles.headerTitle, isDark && styles.headerTitleDark]}>
+          Terminal (Local)
+        </Text>
+        {onSwitchToServer && (
+          <TouchableOpacity
+            onPress={onSwitchToServer}
+            hitSlop={8}
+            style={styles.switchButton}
+          >
+            <Text style={styles.switchButtonText}>Server</Text>
+          </TouchableOpacity>
+        )}
+        <View style={[styles.statusDot, { backgroundColor: "#22c55e" }]} />
+      </View>
+
+      <ScrollView
+        ref={scrollRef}
+        style={[styles.output, isDark && styles.outputDark]}
+        contentContainerStyle={styles.outputContent}
+      >
+        {output.map((line, idx) => (
+          <AnsiLine
+            key={`local-${idx}-${line.slice(0, 32)}`}
+            text={line}
+            isDark={isDark}
+            fontSize={terminalFontSize}
+          />
+        ))}
+      </ScrollView>
+
+      <View
+        style={[
+          styles.inputBar,
+          { paddingBottom: Math.max(12, 0) },
+          isDark && styles.inputBarDark,
+        ]}
+      >
+        <Text
+          style={[
+            styles.prompt,
+            isDark && styles.promptDark,
+            { fontSize: terminalFontSize },
+          ]}
+        >
+          {"$ "}
+        </Text>
+        <TextInput
+          style={[
+            styles.input,
+            isDark && styles.inputDark,
+            { fontSize: terminalFontSize },
+          ]}
+          value={input}
+          onChangeText={setInput}
+          onSubmitEditing={handleSend}
+          returnKeyType="send"
+          autoFocus
+          placeholder="Type a command..."
+          placeholderTextColor={isDark ? "#666666" : "#999999"}
+          autoCapitalize="none"
+          autoCorrect={false}
+          spellCheck={false}
+          testID="local-terminal-input"
+          editable={!executing}
+        />
+        <TouchableOpacity
+          onPress={handleSend}
+          disabled={!input.trim() || executing}
+          style={[
+            styles.sendButton,
+            (!input.trim() || executing) && styles.sendButtonDisabled,
+          ]}
+        >
+          <Ionicons name="send" size={18} color="#ffffff" />
+        </TouchableOpacity>
+      </View>
+    </View>
+  );
+}
+
 export default function TerminalView({
   sessionDirectory,
   sessionClient,
@@ -245,6 +400,9 @@ export default function TerminalView({
 }: Props) {
   const { t } = useTranslation();
   const terminalFontSize = useSettings((s) => s.terminalFontSize);
+  const [mode, setMode] = useState<TerminalMode>("server");
+  const [wsFailed, setWsFailed] = useState(false);
+  const localAvailable = isLocalTerminalAvailable();
 
   const {
     ptyId,
@@ -266,7 +424,41 @@ export default function TerminalView({
     });
   }, [ptyId, sessionDirectory, baseUrl, username, password, ticket]);
 
-  if (ptyStatus === "loading" || (ptyStatus === "idle" && !ptyId)) {
+  const showServerLoading =
+    mode === "server" &&
+    (ptyStatus === "loading" || (ptyStatus === "idle" && !ptyId)) &&
+    !wsFailed;
+  const showServerError =
+    mode === "server" && (ptyStatus === "error" || !wsUrl || wsFailed);
+
+  // Stable callback so the TerminalSocket effect (keyed only on wsUrl) does not
+  // tear down and reconnect the socket on every parent re-render.
+  const handleWsError = useCallback(() => setWsFailed(true), []);
+
+  const switchToServer = useCallback(() => {
+    setWsFailed(false);
+    setMode("server");
+  }, []);
+
+  // When the server PTY socket cannot be reached, fall back to the on-device
+  // local terminal automatically. Derived (not stored) to avoid an extra render
+  // pass.
+  const effectiveMode: TerminalMode =
+    wsFailed && localAvailable && mode === "server" ? "local" : mode;
+
+  if (effectiveMode === "local") {
+    return (
+      <LocalTerminalView
+        isDark={isDark}
+        terminalFontSize={terminalFontSize}
+        sessionDirectory={sessionDirectory}
+        onClose={onClose}
+        onSwitchToServer={localAvailable ? switchToServer : undefined}
+      />
+    );
+  }
+
+  if (showServerLoading) {
     return (
       <View style={[styles.container, isDark && styles.containerDark]}>
         <View style={styles.header}>
@@ -292,7 +484,7 @@ export default function TerminalView({
     );
   }
 
-  if (ptyStatus === "error" || !wsUrl) {
+  if (showServerError) {
     return (
       <View style={[styles.container, isDark && styles.containerDark]}>
         <View style={styles.header}>
@@ -317,12 +509,22 @@ export default function TerminalView({
           <Text style={[styles.errorText, isDark && styles.errorTextDark]}>
             {ptyError ||
               t("session.terminal.error", "Terminal connection failed")}
+            {localAvailable &&
+              "\n\nServer PTY not available. Try Local Terminal instead."}
           </Text>
           <TouchableOpacity style={styles.retryButton} onPress={retryPty}>
             <Text style={styles.retryButtonText}>
-              {t("common.retry", "Retry")}
+              {t("common.retry", "Retry Server")}
             </Text>
           </TouchableOpacity>
+          {localAvailable && (
+            <TouchableOpacity
+              style={[styles.retryButton, styles.localButton]}
+              onPress={() => setMode("local")}
+            >
+              <Text style={styles.retryButtonText}>Use Local Terminal</Text>
+            </TouchableOpacity>
+          )}
         </View>
       </View>
     );
@@ -331,10 +533,12 @@ export default function TerminalView({
   return (
     <TerminalSocket
       key={wsUrl}
-      wsUrl={wsUrl}
+      wsUrl={wsUrl!}
       isDark={isDark}
       terminalFontSize={terminalFontSize}
       onClose={onClose}
+      sessionDirectory={sessionDirectory}
+      onWsError={handleWsError}
     />
   );
 }
@@ -385,10 +589,11 @@ const styles = StyleSheet.create({
     color: "#888888",
   },
   errorText: {
-    fontSize: 15,
+    fontSize: 14,
     color: "#ef4444",
     textAlign: "center",
     marginTop: 12,
+    lineHeight: 20,
   },
   errorTextDark: {
     color: "#f87171",
@@ -398,6 +603,10 @@ const styles = StyleSheet.create({
     paddingHorizontal: 24,
     paddingVertical: 10,
     borderRadius: 8,
+    marginTop: 8,
+  },
+  localButton: {
+    backgroundColor: "#3b82f6",
     marginTop: 8,
   },
   retryButtonText: {
@@ -481,5 +690,16 @@ const styles = StyleSheet.create({
   },
   sendButtonDisabled: {
     backgroundColor: "#cccccc",
+  },
+  switchButton: {
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: 6,
+    backgroundColor: "#333333",
+  },
+  switchButtonText: {
+    color: "#ffffff",
+    fontSize: 12,
+    fontWeight: "600",
   },
 });

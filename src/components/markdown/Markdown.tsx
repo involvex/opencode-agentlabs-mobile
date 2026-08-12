@@ -1,4 +1,4 @@
-import { useMemo, type ReactNode } from "react";
+import { useMemo, type ReactNode, Component, ErrorInfo } from "react";
 import {
   View,
   Text,
@@ -10,6 +10,7 @@ import {
 } from "react-native";
 import { useMarkdown, Renderer } from "react-native-marked";
 import { CodeBlock } from "./CodeBlock";
+import { log } from "../../lib/logbuffer";
 
 // react-native-marked's base Renderer hardcodes `selectable` on every plain
 // text node it produces (text/strong/em/del/heading/codespan). On Android,
@@ -161,6 +162,56 @@ const darkTheme = {
   hr: { ...lightTheme.hr, backgroundColor: "#2a2a2a" },
 };
 
+interface MarkdownContentProps {
+  children: string;
+  renderer: Renderer;
+  theme: typeof lightTheme;
+  isDark: boolean;
+}
+
+function MarkdownContent({
+  children,
+  renderer,
+  theme,
+  isDark,
+}: MarkdownContentProps) {
+  const elements = useMarkdown(children ?? "", {
+    renderer,
+    styles: theme,
+    colorScheme: isDark ? "dark" : "light",
+  });
+
+  return <View style={{ backgroundColor: "transparent" }}>{elements}</View>;
+}
+
+class MarkdownErrorBoundary extends Component<
+  { children: ReactNode },
+  { error: Error | null }
+> {
+  state = { error: null };
+
+  static getDerivedStateFromError(error: Error) {
+    return { error };
+  }
+
+  componentDidCatch(error: Error, _info: ErrorInfo) {
+    log.error("markdown", "useMarkdown crashed", error.message);
+  }
+
+  render() {
+    const { error } = this.state;
+    const { children } = this.props;
+
+    if (error) {
+      return (
+        <Text style={{ color: "#ef4444" }}>Failed to render markdown</Text>
+      );
+    }
+
+    return <>{children}</>;
+  }
+}
+
 interface Props {
   children: string;
 }
@@ -181,22 +232,13 @@ export function Markdown({ children }: Props) {
   // eslint-disable-next-line react-hooks/exhaustive-deps -- `children` is intentionally a dep to reset the slugger per unique value
   const renderer = useMemo(() => new CustomRenderer(), [children]);
 
-  // react-native-marked's default <RNMarkdown> export renders blocks inside a
-  // FlatList. Chat messages are rendered inside app/session/[id].tsx's own
-  // *inverted* FlatList (each row a MessageBubble) — nesting one
-  // VirtualizedList inside another, especially an inverted one, is a known
-  // React Native footgun where the inner list's content can fail to lay out
-  // (renders zero height) instead of just warning. We already force
-  // scrollEnabled: false and a large initialNumToRender here, which defeats
-  // virtualization anyway, so there's nothing to lose by rendering the parsed
-  // blocks directly with the useMarkdown hook instead (issue #104).
-  const elements = useMarkdown(children ?? "", {
-    renderer,
-    styles: theme,
-    colorScheme: isDark ? "dark" : "light",
-  });
-
   if (!children?.trim()) return null;
 
-  return <View style={{ backgroundColor: "transparent" }}>{elements}</View>;
+  return (
+    <MarkdownErrorBoundary>
+      <MarkdownContent renderer={renderer} theme={theme} isDark={isDark}>
+        {children}
+      </MarkdownContent>
+    </MarkdownErrorBoundary>
+  );
 }

@@ -132,7 +132,7 @@ async function ensureChannel() {
     name: "Session Prompts & Updates",
     importance: Notifications.AndroidImportance.HIGH,
     vibrationPattern: [0, 250, 250, 250],
-    sound: "default",
+    sound: "ping",
   });
 }
 
@@ -162,7 +162,7 @@ export async function send(payload: Payload) {
         category: payload.category,
         sessionId: payload.sessionId,
       } satisfies NotificationData as Record<string, unknown>,
-      sound: "default",
+      sound: Platform.OS === "android" ? "ping" : "ping.wav",
       ...(Platform.OS === "android" ? { channelId: "prompts" } : {}),
     },
     trigger: null,

@@ -34,7 +34,10 @@ export function buildPtyWsUrl(opts: PtyWsUrlOptions): string {
     `/pty/${opts.ptyId}/connect`,
     opts.baseUrl.endsWith("/") ? opts.baseUrl : `${opts.baseUrl}/`,
   );
-  httpUrl.searchParams.set("directory", opts.directory);
+  // opencode v2 serves the pty connect route at /api/pty/:id/connect and
+  // resolves the working directory from the `location[directory]` query param
+  // (the legacy v1 route used `/pty/:id/connect?directory=...`).
+  httpUrl.searchParams.set("location[directory]", opts.directory);
   httpUrl.searchParams.set("cursor", String(opts.cursor ?? 0));
 
   if (opts.ticket) {
@@ -96,11 +99,24 @@ export class PtyWebSocket {
     // Initial state
     logReadyState();
 
-    // Connection timeout (10s)
+    // Guard so the close path fires exactly once even if both the timeout
+    // and the underlying socket's onclose/onerror run.
+    let settled = false;
+    const settle = () => {
+      if (settled) return;
+      settled = true;
+      clearTimeout(connectTimeout);
+      this.closeHandler();
+    };
+
+    // Connection timeout (10s). React Native may not deliver onclose for a
+    // socket that is still CONNECTING when we close it, so invoke the close
+    // handler directly here as well.
     const connectTimeout = setTimeout(() => {
       if (this.ws && this.ws.readyState === WebSocket.CONNECTING) {
         console.log("[PtyWS] connection timeout, closing");
         this.ws.close(1000, "connection timeout");
+        settle();
       }
     }, 10000);
 
@@ -132,18 +148,17 @@ export class PtyWebSocket {
     };
 
     this.ws.onclose = (event) => {
-      clearTimeout(connectTimeout);
       logReadyState();
       console.log("[PtyWS] onclose", {
         code: event.code,
         reason: event.reason,
         wasClean: event.wasClean,
       });
-      this.closeHandler();
+      settle();
     };
     this.ws.onerror = (err) => {
       console.error("[PtyWS] error", err);
-      this.closeHandler();
+      settle();
     };
   }
 
