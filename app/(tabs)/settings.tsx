@@ -6,7 +6,6 @@ import {
   TouchableOpacity,
   Switch,
   StyleSheet,
-  useColorScheme,
   Linking,
   Alert,
 } from "react-native";
@@ -15,6 +14,7 @@ import { useTranslation } from "react-i18next";
 import { router } from "expo-router";
 import { useAuth } from "../../src/stores/auth";
 import { useSettings } from "../../src/stores/settings";
+import { useTheme } from "../../src/lib/theme";
 import { useEvents } from "../../src/stores/events";
 import { useSessions } from "../../src/stores/sessions";
 import { useConnections } from "../../src/stores/connections";
@@ -102,8 +102,7 @@ function SettingSection({
 }
 
 export default function SettingsScreen() {
-  const colorScheme = useColorScheme();
-  const isDark = colorScheme === "dark";
+  const isDark = useTheme();
   const { t } = useTranslation();
 
   const { settings, hasBiometrics, updateSettings, lock } = useAuth();
@@ -118,6 +117,8 @@ export default function SettingsScreen() {
     setDebugMode,
     density,
     setDensity,
+    theme,
+    setTheme,
   } = useSettings();
   const reconnect = useEvents((s) => s.connect);
   const [osGranted, setOsGranted] = useState<boolean | null>(null);
@@ -394,6 +395,54 @@ export default function SettingsScreen() {
                     style={[
                       styles.densityButtonText,
                       density === d && styles.densityButtonTextActive,
+                      isDark && styles.densityButtonTextDark,
+                    ]}
+                  >
+                    {d.charAt(0).toUpperCase() + d.slice(1)}
+                  </Text>
+                </TouchableOpacity>
+              ))}
+            </View>
+          }
+        />
+
+        <SettingRow
+          icon="moon-outline"
+          label={t("settings.appearance.theme.label")}
+          description={t("settings.appearance.theme.description", {
+            value: theme,
+          })}
+          isDark={isDark}
+          right={
+            <View style={styles.densityControls}>
+              {(["light", "dark", "auto"] as const).map((d) => (
+                <TouchableOpacity
+                  key={d}
+                  style={[
+                    styles.densityButton,
+                    theme === d && styles.densityButtonActive,
+                    isDark && styles.densityButtonDark,
+                    theme === d && isDark && styles.densityButtonActiveDark,
+                  ]}
+                  onPress={() => setTheme(d)}
+                >
+                  <Ionicons
+                    name={
+                      d === "light"
+                        ? "sunny-outline"
+                        : d === "dark"
+                          ? "moon-outline"
+                          : "phone-portrait-outline"
+                    }
+                    size={16}
+                    color={
+                      theme === d ? "#ffffff" : isDark ? "#aaaaaa" : "#666666"
+                    }
+                  />
+                  <Text
+                    style={[
+                      styles.densityButtonText,
+                      theme === d && styles.densityButtonTextActive,
                       isDark && styles.densityButtonTextDark,
                     ]}
                   >

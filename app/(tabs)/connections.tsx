@@ -4,7 +4,6 @@ import {
   FlatList,
   TouchableOpacity,
   StyleSheet,
-  useColorScheme,
   Alert,
 } from "react-native";
 import { router } from "expo-router";
@@ -12,6 +11,7 @@ import { Ionicons } from "@expo/vector-icons";
 import { useTranslation } from "react-i18next";
 import { useConnections } from "../../src/stores/connections";
 import { useSettings } from "../../src/stores/settings";
+import { useTheme } from "../../src/lib/theme";
 import type { ServerConnection } from "../../src/lib/types";
 
 const PAGE_SIZE_OPTIONS = [10, 25, 50, 100, 200] as const;
@@ -125,8 +125,7 @@ function ConnectionItem({
 }
 
 export default function ConnectionsScreen() {
-  const colorScheme = useColorScheme();
-  const isDark = colorScheme === "dark";
+  const isDark = useTheme();
   const { t } = useTranslation();
 
   const {

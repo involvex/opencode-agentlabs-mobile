@@ -1,12 +1,7 @@
 import { useEffect, useRef } from "react";
 import { Stack, router } from "expo-router";
 import { StatusBar } from "expo-status-bar";
-import {
-  useColorScheme,
-  View,
-  ActivityIndicator,
-  AppState,
-} from "react-native";
+import { View, ActivityIndicator, AppState } from "react-native";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 import { BottomSheetModalProvider } from "@gorhom/bottom-sheet";
@@ -17,6 +12,7 @@ import { useConnections } from "../src/stores/connections";
 import { useEvents } from "../src/stores/events";
 import { useCatalog } from "../src/stores/catalog";
 import { useSettings } from "../src/stores/settings";
+import { useTheme } from "../src/lib/theme";
 import { AuthGate } from "../src/components/AuthGate";
 import { ErrorBoundary } from "../src/components/ErrorBoundary";
 import * as notifications from "../src/lib/notifications";
@@ -24,8 +20,7 @@ import * as notifications from "../src/lib/notifications";
 const queryClient = new QueryClient();
 
 function RootLayout() {
-  const colorScheme = useColorScheme();
-  const isDark = colorScheme === "dark";
+  const isDark = useTheme();
   const { t } = useTranslation();
 
   const { initialize: initAuth, isLoading: authLoading } = useAuth();

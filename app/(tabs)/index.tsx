@@ -6,7 +6,6 @@ import {
   ScrollView,
   TouchableOpacity,
   StyleSheet,
-  useColorScheme,
   RefreshControl,
   ActivityIndicator,
   Modal,
@@ -23,6 +22,7 @@ import { useSessions } from "../../src/stores/sessions";
 import { useConnections } from "../../src/stores/connections";
 import { useEvents } from "../../src/stores/events";
 import { useCatalog } from "../../src/stores/catalog";
+import { useTheme } from "../../src/lib/theme";
 import type BottomSheet from "@gorhom/bottom-sheet";
 import type { Session, Project } from "../../src/lib/sdk";
 import {
@@ -234,8 +234,7 @@ function getShortPath(
 }
 
 export default function SessionsScreen() {
-  const colorScheme = useColorScheme();
-  const isDark = colorScheme === "dark";
+  const isDark = useTheme();
   const { t } = useTranslation();
   const [showNewSession, setShowNewSession] = useState(false);
   const [customDir, setCustomDir] = useState("");

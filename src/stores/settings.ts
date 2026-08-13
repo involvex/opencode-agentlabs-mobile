@@ -8,6 +8,7 @@ import type { LocalePreference } from "../lib/i18n/locale-resolve";
 const SETTINGS_KEY = "opencode_settings";
 
 export type Density = "compact" | "default" | "comfortable";
+export type Theme = "light" | "dark" | "auto";
 
 interface Settings {
   pageSize: number;
@@ -16,6 +17,7 @@ interface Settings {
   terminalFontSize: number;
   debugMode: boolean;
   density: Density;
+  theme: Theme;
 }
 
 const DEFAULTS: Settings = {
@@ -25,6 +27,7 @@ const DEFAULTS: Settings = {
   terminalFontSize: 13,
   debugMode: false,
   density: "default",
+  theme: "auto",
 };
 
 interface SettingsState extends Settings {
@@ -36,6 +39,7 @@ interface SettingsState extends Settings {
   setTerminalFontSize: (size: number) => Promise<void>;
   setDebugMode: (enabled: boolean) => Promise<void>;
   setDensity: (density: Density) => Promise<void>;
+  setTheme: (theme: Theme) => Promise<void>;
 }
 
 function clampTerminalFontSize(size: number): number {
@@ -50,6 +54,7 @@ function snapshot(get: () => SettingsState): Settings {
     terminalFontSize: get().terminalFontSize,
     debugMode: get().debugMode,
     density: get().density,
+    theme: get().theme,
   };
 }
 
@@ -106,5 +111,10 @@ export const useSettings = create<SettingsState>((set, get) => ({
   setDensity: async (density) => {
     set({ density });
     await persist({ ...snapshot(get), density });
+  },
+
+  setTheme: async (theme) => {
+    set({ theme });
+    await persist({ ...snapshot(get), theme });
   },
 }));

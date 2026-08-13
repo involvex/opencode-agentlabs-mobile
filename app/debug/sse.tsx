@@ -4,15 +4,14 @@ import {
   FlatList,
   TouchableOpacity,
   StyleSheet,
-  useColorScheme,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { useEvents } from "../../src/stores/events";
+import { useTheme } from "../../src/lib/theme";
 import type { SSEEvent } from "../../src/stores/events";
 
 export default function SSEInspectorScreen() {
-  const colorScheme = useColorScheme();
-  const isDark = colorScheme === "dark";
+  const isDark = useTheme();
   const eventLog = useEvents((s) => s.eventLog);
   const clearEventLog = useEvents((s) => s.clearEventLog);
   const connected = useEvents((s) => s.connected);

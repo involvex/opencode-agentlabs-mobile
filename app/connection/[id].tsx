@@ -6,7 +6,6 @@ import {
   TouchableOpacity,
   ScrollView,
   StyleSheet,
-  useColorScheme,
   ActivityIndicator,
   Alert,
 } from "react-native";
@@ -15,6 +14,7 @@ import { Ionicons } from "@expo/vector-icons";
 import { useTranslation } from "react-i18next";
 import { useConnections } from "../../src/stores/connections";
 import { useEvents } from "../../src/stores/events";
+import { useTheme } from "../../src/lib/theme";
 import type { ConnectionType } from "../../src/lib/types";
 import { probeConnection, shareReport } from "../../src/lib/diagnostics";
 import { parseUrl } from "../../src/lib/diagnostics-classify";
@@ -35,8 +35,7 @@ const CONNECTION_TYPES: {
 
 export default function EditConnectionScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
-  const colorScheme = useColorScheme();
-  const isDark = colorScheme === "dark";
+  const isDark = useTheme();
   const { t } = useTranslation();
 
   const { connections, updateConnection, removeConnection, testConnection } =

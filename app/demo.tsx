@@ -5,12 +5,12 @@ import {
   ScrollView,
   TouchableOpacity,
   StyleSheet,
-  useColorScheme,
   Linking,
 } from "react-native";
 import { Stack, useRouter } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
 import { useTranslation } from "react-i18next";
+import { useTheme } from "../src/lib/theme";
 import { MessageBubble, PermissionPrompt } from "../src/components/chat";
 import {
   buildDemoScript,
@@ -35,8 +35,7 @@ import {
 // calls sessionClient.permission.reply the way app/session/[id].tsx does.
 export default function DemoScreen() {
   const router = useRouter();
-  const colorScheme = useColorScheme();
-  const isDark = colorScheme === "dark";
+  const isDark = useTheme();
   const { t } = useTranslation();
 
   // Built once per mount from pure, hardcoded data (src/lib/demo-script.ts).

@@ -6,7 +6,6 @@ import {
   TouchableOpacity,
   ScrollView,
   StyleSheet,
-  useColorScheme,
   ActivityIndicator,
   Alert,
 } from "react-native";
@@ -14,6 +13,7 @@ import { router } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
 import { useTranslation } from "react-i18next";
 import { useConnections } from "../../src/stores/connections";
+import { useTheme } from "../../src/lib/theme";
 import type { ConnectionType } from "../../src/lib/types";
 import { probeConnection, shareReport } from "../../src/lib/diagnostics";
 import { parseUrl } from "../../src/lib/diagnostics-classify";
@@ -21,8 +21,7 @@ import { buildAuth } from "../../src/lib/auth";
 import { AnalyticsEvent, track } from "../../src/lib/analytics";
 
 export default function AddConnectionScreen() {
-  const colorScheme = useColorScheme();
-  const isDark = colorScheme === "dark";
+  const isDark = useTheme();
   const { t } = useTranslation();
 
   const { addConnection, testConnection } = useConnections();

@@ -6,7 +6,6 @@ import {
   TextInput,
   TouchableOpacity,
   StyleSheet,
-  useColorScheme,
   KeyboardAvoidingView,
   Platform,
   ActivityIndicator,
@@ -46,6 +45,7 @@ import { useEvents, refreshPending } from "../../src/stores/events";
 import { useConnections } from "../../src/stores/connections";
 import { useAuth } from "../../src/stores/auth";
 import { useCatalog } from "../../src/stores/catalog";
+import { useTheme } from "../../src/lib/theme";
 import { useSpeech } from "../../src/lib/speech";
 
 // --- Builtin slash commands ---
@@ -85,8 +85,7 @@ export default function SessionScreen() {
     directory?: string;
   }>();
   const router = useRouter();
-  const colorScheme = useColorScheme();
-  const isDark = colorScheme === "dark";
+  const isDark = useTheme();
   const insets = useSafeAreaInsets();
   const { t } = useTranslation();
 
