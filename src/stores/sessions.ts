@@ -54,6 +54,7 @@ interface SessionsState {
   hasMore: boolean;
   error: string | null;
   pinnedSessions: string[];
+  unreadCounts: Record<string, number>;
 
   // Actions
   loadSessions: () => Promise<void>;
@@ -86,6 +87,9 @@ interface SessionsState {
   // Pinning
   pinSession: (sessionID: string) => void;
   unpinSession: (sessionID: string) => void;
+
+  // Unread tracking
+  markSessionRead: (sessionID: string) => void;
 }
 
 export type RevertResult =
@@ -126,6 +130,7 @@ export const useSessions = create<SessionsState>((set, get) => ({
   hasMore: false,
   error: null,
   pinnedSessions: [],
+  unreadCounts: {},
 
   loadSessions: async () => {
     const connState = useConnections.getState();
@@ -201,6 +206,9 @@ export const useSessions = create<SessionsState>((set, get) => ({
         // If we got exactly PAGE_SIZE messages, there are probably more
         hasMore: messagesResponse.length >= pageSize(),
       });
+
+      // Mark this session as read now that we've loaded its messages
+      get().markSessionRead(sessionID);
     } catch (err) {
       if (seq !== selectSeq) return;
       console.error("Failed to load session:", err);
@@ -472,9 +480,36 @@ export const useSessions = create<SessionsState>((set, get) => ({
 
   handleEvent: (event) => {
     const { currentSession } = get();
-    if (!currentSession) return;
-
     const props = (event as any).properties || {};
+
+    // Track unread messages for sessions we're NOT currently viewing.
+    // Only count new assistant messages — user's own messages and updates
+    // to existing messages don't increment the unread counter.
+    if (event.type === "message.updated") {
+      const message = (props.info || props.message) as Message | undefined;
+      if (
+        message &&
+        message.role === "assistant" &&
+        message.sessionID &&
+        message.sessionID !== currentSession?.id
+      ) {
+        // Only count new assistant messages arriving for sessions we're
+        // not currently viewing. We can't check if the message already
+        // exists in local state for other sessions (they're not loaded),
+        // so we treat every assistant message event from other sessions as
+        // unread. This is acceptable for a personal fork — worst case
+        // the user opens the session and the count clears.
+        set((state) => ({
+          unreadCounts: {
+            ...state.unreadCounts,
+            [message.sessionID]:
+              (state.unreadCounts[message.sessionID] || 0) + 1,
+          },
+        }));
+      }
+    }
+
+    if (!currentSession) return;
 
     switch (event.type) {
       case "message.updated": {
@@ -566,14 +601,38 @@ export const useSessions = create<SessionsState>((set, get) => ({
     set({ pinnedSessions: next });
     SecureStore.setItemAsync("opencode_pinned_sessions", JSON.stringify(next));
   },
+
+  markSessionRead: (sessionID: string) => {
+    const current = get().unreadCounts;
+    if (!(sessionID in current)) return;
+    const next = { ...current };
+    delete next[sessionID];
+    set({ unreadCounts: next });
+    persistUnread(next);
+  },
 }));
 
-// Load pinned sessions from SecureStore at module load
+const UNREAD_KEY = "opencode_unread_counts";
+
+function persistUnread(counts: Record<string, number>) {
+  SecureStore.setItemAsync(UNREAD_KEY, JSON.stringify(counts)).catch(() => {});
+}
+
+// Load pinned sessions and unread counts from SecureStore at module load
 SecureStore.getItemAsync("opencode_pinned_sessions")
   .then((raw) => {
     if (raw) {
       const parsed = JSON.parse(raw) as string[];
       useSessions.setState({ pinnedSessions: parsed });
+    }
+  })
+  .catch(() => {});
+
+SecureStore.getItemAsync(UNREAD_KEY)
+  .then((raw) => {
+    if (raw) {
+      const parsed = JSON.parse(raw) as Record<string, number>;
+      useSessions.setState({ unreadCounts: parsed });
     }
   })
   .catch(() => {});

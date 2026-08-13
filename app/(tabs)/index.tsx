@@ -62,6 +62,7 @@ function SessionItem({
   session,
   isDark,
   pinned,
+  unreadCount,
   onRename,
   onDelete,
   onPin,
@@ -69,6 +70,7 @@ function SessionItem({
   session: Session;
   isDark: boolean;
   pinned: boolean;
+  unreadCount?: number;
   onRename: () => void;
   onDelete: () => void;
   onPin: () => void;
@@ -150,6 +152,19 @@ function SessionItem({
           size={16}
           color={isDark ? "#8b5cf6" : "#8b5cf6"}
         />
+      )}
+      {unreadCount && unreadCount > 0 && (
+        <View
+          style={[
+            styles.unreadBadge,
+            unreadCount > 9 && styles.unreadBadgeLarge,
+            isDark && styles.unreadBadgeDark,
+          ]}
+        >
+          <Text style={styles.unreadBadgeText}>
+            {unreadCount > 9 ? "9+" : unreadCount}
+          </Text>
+        </View>
       )}
       <Ionicons
         name="chevron-forward"
@@ -258,6 +273,7 @@ export default function SessionsScreen() {
     pinSession,
     unpinSession,
     pinnedSessions,
+    unreadCounts,
   } = useSessions();
   const {
     activeConnection,
@@ -776,6 +792,7 @@ export default function SessionsScreen() {
               session={row.session}
               isDark={isDark}
               pinned={pinnedSessions.includes(row.session.id)}
+              unreadCount={unreadCounts[row.session.id]}
               onRename={() => handleRename(row.session)}
               onDelete={() => handleDelete(row.session)}
               onPin={() => {
@@ -1380,6 +1397,30 @@ const styles = StyleSheet.create({
   },
   sessionItemDark: {
     borderBottomColor: "#1a1a1a",
+  },
+  unreadBadge: {
+    minWidth: 20,
+    height: 20,
+    paddingHorizontal: 5,
+    borderRadius: 10,
+    backgroundColor: "#22c55e",
+    justifyContent: "center",
+    alignItems: "center",
+    marginRight: 8,
+  },
+  unreadBadgeLarge: {
+    minWidth: 24,
+    paddingHorizontal: 7,
+    borderRadius: 12,
+  },
+  unreadBadgeDark: {
+    backgroundColor: "#22c55e",
+  },
+  unreadBadgeText: {
+    fontSize: 11,
+    fontWeight: "700",
+    color: "#ffffff",
+    lineHeight: 14,
   },
   sessionContent: {
     flex: 1,
