@@ -1,4 +1,5 @@
 import { create } from "zustand";
+import * as SecureStore from "expo-secure-store";
 import {
   ApiError,
   type Session,
@@ -52,6 +53,7 @@ interface SessionsState {
   loadingMore: boolean;
   hasMore: boolean;
   error: string | null;
+  pinnedSessions: string[];
 
   // Actions
   loadSessions: () => Promise<void>;
@@ -80,6 +82,10 @@ interface SessionsState {
 
   // Event handling
   handleEvent: (event: Event) => void;
+
+  // Pinning
+  pinSession: (sessionID: string) => void;
+  unpinSession: (sessionID: string) => void;
 }
 
 export type RevertResult =
@@ -119,6 +125,7 @@ export const useSessions = create<SessionsState>((set, get) => ({
   loadingMore: false,
   hasMore: false,
   error: null,
+  pinnedSessions: [],
 
   loadSessions: async () => {
     const connState = useConnections.getState();
@@ -545,4 +552,28 @@ export const useSessions = create<SessionsState>((set, get) => ({
       }
     }
   },
+
+  pinSession: (sessionID: string) => {
+    const existing = get().pinnedSessions;
+    if (existing.includes(sessionID)) return;
+    const next = [...existing, sessionID];
+    set({ pinnedSessions: next });
+    SecureStore.setItemAsync("opencode_pinned_sessions", JSON.stringify(next));
+  },
+
+  unpinSession: (sessionID: string) => {
+    const next = get().pinnedSessions.filter((id) => id !== sessionID);
+    set({ pinnedSessions: next });
+    SecureStore.setItemAsync("opencode_pinned_sessions", JSON.stringify(next));
+  },
 }));
+
+// Load pinned sessions from SecureStore at module load
+SecureStore.getItemAsync("opencode_pinned_sessions")
+  .then((raw) => {
+    if (raw) {
+      const parsed = JSON.parse(raw) as string[];
+      useSessions.setState({ pinnedSessions: parsed });
+    }
+  })
+  .catch(() => {});

@@ -12,8 +12,13 @@ import {
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { useTranslation } from "react-i18next";
+import { router } from "expo-router";
 import { useAuth } from "../../src/stores/auth";
 import { useSettings } from "../../src/stores/settings";
+import { useEvents } from "../../src/stores/events";
+import { useSessions } from "../../src/stores/sessions";
+import { useConnections } from "../../src/stores/connections";
+import * as Clipboard from "expo-clipboard";
 import {
   categories,
   categoryMeta,
@@ -109,7 +114,12 @@ export default function SettingsScreen() {
     setLocale,
     terminalFontSize,
     setTerminalFontSize,
+    debugMode,
+    setDebugMode,
+    density,
+    setDensity,
   } = useSettings();
+  const reconnect = useEvents((s) => s.connect);
   const [osGranted, setOsGranted] = useState<boolean | null>(null);
   const [telemetryUpdating, setTelemetryUpdating] = useState(false);
 
@@ -361,6 +371,43 @@ export default function SettingsScreen() {
           }
         />
         <SettingRow
+          icon="resize-outline"
+          label={t("settings.appearance.density.label")}
+          description={t("settings.appearance.density.description", {
+            value: density,
+          })}
+          isDark={isDark}
+          right={
+            <View style={styles.densityControls}>
+              {(["compact", "default", "comfortable"] as const).map((d) => (
+                <TouchableOpacity
+                  key={d}
+                  style={[
+                    styles.densityButton,
+                    density === d && styles.densityButtonActive,
+                    isDark && styles.densityButtonDark,
+                    density === d && isDark && styles.densityButtonActiveDark,
+                  ]}
+                  onPress={() => setDensity(d)}
+                >
+                  <Text
+                    style={[
+                      styles.densityButtonText,
+                      density === d && styles.densityButtonTextActive,
+                      isDark && styles.densityButtonTextDark,
+                    ]}
+                  >
+                    {d.charAt(0).toUpperCase() + d.slice(1)}
+                  </Text>
+                </TouchableOpacity>
+              ))}
+            </View>
+          }
+        />
+      </SettingSection>
+
+      <SettingSection title={t("settings.sections.about")} isDark={isDark}>
+        <SettingRow
           icon="information-circle"
           label={t("settings.about.version")}
           description="1.0.0"
@@ -396,6 +443,97 @@ export default function SettingsScreen() {
             />
           }
         />
+      </SettingSection>
+
+      <SettingSection title={t("settings.sections.developer")} isDark={isDark}>
+        <SettingRow
+          icon="bug-outline"
+          label={t("settings.developer.debugMode.label")}
+          description={t("settings.developer.debugMode.description")}
+          isDark={isDark}
+          right={
+            <Switch
+              value={debugMode}
+              onValueChange={setDebugMode}
+              trackColor={{ false: "#767577", true: "#22c55e" }}
+            />
+          }
+        />
+        {debugMode && (
+          <>
+            <SettingRow
+              icon="eye-outline"
+              label={t("settings.developer.sseInspector.label")}
+              description={t("settings.developer.sseInspector.description")}
+              isDark={isDark}
+              onPress={() => router.push("/debug/sse")}
+              right={
+                <Ionicons
+                  name="chevron-forward"
+                  size={20}
+                  color={isDark ? "#666666" : "#999999"}
+                />
+              }
+            />
+            <SettingRow
+              icon="refresh-outline"
+              label={t("settings.developer.forceReconnect.label")}
+              description={t("settings.developer.forceReconnect.description")}
+              isDark={isDark}
+              onPress={() => {
+                const client = useConnections.getState().client;
+                if (!client) {
+                  Alert.alert(
+                    t("settings.developer.reconnectAlert.title"),
+                    t("settings.developer.reconnectAlert.message"),
+                  );
+                  return;
+                }
+                reconnect();
+                Alert.alert(
+                  t("settings.developer.reconnectAlert.title"),
+                  t("settings.developer.reconnectAlert.message"),
+                );
+              }}
+            />
+            <SettingRow
+              icon="document-text-outline"
+              label={t("settings.developer.dumpState.label")}
+              description={t("settings.developer.dumpState.description")}
+              isDark={isDark}
+              onPress={async () => {
+                const sessions = useSessions.getState();
+                const connections = useConnections.getState();
+                const events = useEvents.getState();
+                const dump = {
+                  sessions: {
+                    sessions: sessions.sessions,
+                    currentSession: sessions.currentSession,
+                    sending: sessions.sending,
+                  },
+                  connections: {
+                    activeConnection: connections.activeConnection,
+                    connectionIds: connections.connections.map((c) => c.id),
+                  },
+                  events: {
+                    connected: events.connected,
+                    authError: events.authError,
+                    reconnectAttempts: events.reconnectAttempts,
+                    lastDisconnectAt: events.lastDisconnectAt,
+                    sessionStatus: events.sessionStatus,
+                    statusText: events.statusText,
+                  },
+                };
+                const json = JSON.stringify(dump, null, 2);
+                await Clipboard.setStringAsync(json);
+                Alert.alert(
+                  t("settings.developer.dumpAlert.title"),
+                  t("settings.developer.dumpAlert.message"),
+                );
+              }}
+            />
+          </>
+        )}
       </SettingSection>
 
       <View style={styles.footer}>
@@ -494,6 +632,38 @@ const styles = StyleSheet.create({
     fontSize: 13,
     color: "#999999",
     textAlign: "center",
+  },
+  densityControls: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 4,
+  },
+  densityButton: {
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 6,
+    borderWidth: 1,
+    borderColor: "#e5e5e5",
+  },
+  densityButtonActive: {
+    backgroundColor: "#0a0a0a",
+  },
+  densityButtonDark: {
+    borderColor: "#2a2a2a",
+  },
+  densityButtonActiveDark: {
+    backgroundColor: "#ffffff",
+  },
+  densityButtonText: {
+    fontSize: 13,
+    fontWeight: "500",
+    color: "#666666",
+  },
+  densityButtonTextActive: {
+    color: "#ffffff",
+  },
+  densityButtonTextDark: {
+    color: "#888888",
   },
   fontSizeControls: {
     flexDirection: "row",

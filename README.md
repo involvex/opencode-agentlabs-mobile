@@ -198,7 +198,6 @@ This is a **private fork** with no public release / store publish planned. There
 - **Dev build**: `npx expo run:android`
 - **Release build**: `npx expo run:android --variant release` (installs to connected device/emulator)
 
-
 We welcome bug reports, feature requests, and pull requests. See [CONTRIBUTING.md](CONTRIBUTING.md) for how to set up a dev environment and the contribution process.
 
 ---

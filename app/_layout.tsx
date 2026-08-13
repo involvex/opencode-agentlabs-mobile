@@ -148,6 +148,13 @@ function RootLayout() {
                       presentation: "modal",
                     }}
                   />
+                  <Stack.Screen
+                    name="debug/sse"
+                    options={{
+                      title: "SSE Events",
+                      presentation: "modal",
+                    }}
+                  />
                 </Stack>
                 <StatusBar style={isDark ? "light" : "dark"} />
               </AuthGate>

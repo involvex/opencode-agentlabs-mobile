@@ -7,11 +7,15 @@ import type { LocalePreference } from "../lib/i18n/locale-resolve";
 
 const SETTINGS_KEY = "opencode_settings";
 
+export type Density = "compact" | "default" | "comfortable";
+
 interface Settings {
   pageSize: number;
   notifications: Record<Category, boolean>;
   locale: LocalePreference;
   terminalFontSize: number;
+  debugMode: boolean;
+  density: Density;
 }
 
 const DEFAULTS: Settings = {
@@ -19,6 +23,8 @@ const DEFAULTS: Settings = {
   notifications: { ...defaultPreferences },
   locale: "system",
   terminalFontSize: 13,
+  debugMode: false,
+  density: "default",
 };
 
 interface SettingsState extends Settings {
@@ -28,6 +34,8 @@ interface SettingsState extends Settings {
   setNotification: (category: Category, enabled: boolean) => Promise<void>;
   setLocale: (locale: LocalePreference) => Promise<void>;
   setTerminalFontSize: (size: number) => Promise<void>;
+  setDebugMode: (enabled: boolean) => Promise<void>;
+  setDensity: (density: Density) => Promise<void>;
 }
 
 function clampTerminalFontSize(size: number): number {
@@ -40,6 +48,8 @@ function snapshot(get: () => SettingsState): Settings {
     notifications: get().notifications,
     locale: get().locale,
     terminalFontSize: get().terminalFontSize,
+    debugMode: get().debugMode,
+    density: get().density,
   };
 }
 
@@ -86,5 +96,15 @@ export const useSettings = create<SettingsState>((set, get) => ({
     const clamped = clampTerminalFontSize(size);
     set({ terminalFontSize: clamped });
     await persist({ ...snapshot(get), terminalFontSize: clamped });
+  },
+
+  setDebugMode: async (enabled) => {
+    set({ debugMode: enabled });
+    await persist({ ...snapshot(get), debugMode: enabled });
+  },
+
+  setDensity: async (density) => {
+    set({ density });
+    await persist({ ...snapshot(get), density });
   },
 }));

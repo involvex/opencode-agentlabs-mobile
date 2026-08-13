@@ -41,6 +41,7 @@ import {
   type Attachment,
 } from "../../src/components/chat";
 import { useSessions, type RevertResult } from "../../src/stores/sessions";
+import { shareSession } from "../../src/lib/export";
 import { useEvents, refreshPending } from "../../src/stores/events";
 import { useConnections } from "../../src/stores/connections";
 import { useAuth } from "../../src/stores/auth";
@@ -804,6 +805,10 @@ export default function SessionScreen() {
             }}
             onScrollToTop={() => {
               flatListRef.current?.scrollToEnd({ animated: true });
+            }}
+            onExport={() => {
+              const { currentSession, parts } = useSessions.getState();
+              shareSession(currentSession, messages || [], parts);
             }}
             onClose={() => setShowInfo(false)}
           />

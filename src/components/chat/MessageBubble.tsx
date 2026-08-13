@@ -1,4 +1,4 @@
-import { memo } from "react";
+import { memo, useCallback } from "react";
 import {
   View,
   Text,
@@ -7,11 +7,16 @@ import {
   ScrollView,
   TouchableOpacity,
   Dimensions,
+  Alert,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
+import * as Clipboard from "expo-clipboard";
+import { useTranslation } from "react-i18next";
 import { Markdown } from "../markdown";
 import { ToolCallCard } from "./ToolCallCard";
 import { ReasoningBlock } from "./ReasoningBlock";
+import { useDensity } from "../../lib/density";
+import { formatRelativeTime, formatAbsoluteTime } from "../../lib/time-format";
 import type { Message, Part } from "../../lib/sdk";
 
 const SCREEN_WIDTH = Dimensions.get("window").width;
@@ -34,6 +39,8 @@ interface Props {
 // built-in block-level memoization that eliminates re-renders for stable blocks
 export const MessageBubble = memo(
   function MessageBubble({ message, parts, isDark, onLongPress }: Props) {
+    const { t } = useTranslation();
+    const density = useDensity();
     const isUser = message.role === "user";
 
     const textParts = parts.filter((p) => p.type === "text");
@@ -45,23 +52,37 @@ export const MessageBubble = memo(
     const text = textParts.map((p) => p.text).join("\n") || "";
     const reasoning = reasoningParts.map((p) => p.text).join("\n") || "";
 
+    const handleTimestampPress = useCallback(() => {
+      const abs = formatAbsoluteTime(message.time.created);
+      Alert.alert(t("chat.message.timestamp"), abs, [
+        { text: t("common.cancel"), style: "cancel" },
+        {
+          text: t("chat.message.copyTimestamp"),
+          onPress: () => Clipboard.setStringAsync(abs),
+        },
+      ]);
+    }, [message.time.created, t]);
+
     return (
       <TouchableOpacity
         activeOpacity={isUser && onLongPress ? 0.7 : 1}
         onLongPress={
-          isUser && onLongPress ? () => onLongPress(message.id) : undefined
+          isUser && onLongPress
+            ? () => onLongPress(message.id)
+            : handleTimestampPress
         }
-        disabled={!isUser || !onLongPress}
+        disabled={!isUser && !onLongPress && !handleTimestampPress}
         style={[
           s.bubble,
           isUser ? s.user : s.assistant,
           isUser && isDark && s.userDark,
           !isUser && isDark && s.assistantDark,
+          { padding: 12 * density.padding, marginBottom: 16 * density.padding },
         ]}
         testID={`chat-bubble-${message.role}`}
       >
         {/* Role indicator */}
-        <View style={s.header}>
+        <View style={[s.header, { gap: 6 * density.gap }]}>
           <Ionicons
             name={isUser ? "person" : "sparkles"}
             size={14}
@@ -81,6 +102,16 @@ export const MessageBubble = memo(
             </Text>
           )}
         </View>
+
+        <Text
+          style={[
+            s.timestamp,
+            isDark && s.timestampDark,
+            { fontSize: 10 * density.font, marginTop: 2 * density.gap },
+          ]}
+        >
+          {formatRelativeTime(message.time.created)}
+        </Text>
 
         {/* Image attachments */}
         {fileParts.length > 0 && (
@@ -187,6 +218,14 @@ const s = StyleSheet.create({
     overflow: "hidden",
   },
   modelTagDark: { backgroundColor: "#2a2a2a", color: "#888888" },
+
+  timestamp: {
+    fontSize: 10,
+    color: "#999999",
+  },
+  timestampDark: {
+    color: "#666666",
+  },
 
   messageText: { fontSize: 15, lineHeight: 22, color: "#0a0a0a" },
   markdownWrap: { marginHorizontal: -4 },

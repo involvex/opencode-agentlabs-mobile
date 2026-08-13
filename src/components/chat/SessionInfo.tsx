@@ -21,6 +21,7 @@ interface Props {
   loadingAll: boolean;
   onLoadAll: () => void;
   onScrollToTop: () => void;
+  onExport: () => void;
   onClose: () => void;
 }
 
@@ -65,6 +66,7 @@ export function SessionInfo({
   loadingAll,
   onLoadAll,
   onScrollToTop,
+  onExport,
   onClose,
 }: Props) {
   const { t } = useTranslation();
@@ -283,6 +285,21 @@ export function SessionInfo({
               {loadingAll
                 ? t("chat.sessionInfo.loading")
                 : t("chat.sessionInfo.loadAllMessages")}
+            </Text>
+          </TouchableOpacity>
+        )}
+        {messages.length > 0 && (
+          <TouchableOpacity
+            style={[s.action, isDark && s.actionDark]}
+            onPress={onExport}
+          >
+            <Ionicons
+              name="share-outline"
+              size={14}
+              color={isDark ? "#888888" : "#666666"}
+            />
+            <Text style={[s.actionText, isDark && s.dimDark]}>
+              {t("chat.sessionInfo.exportSession")}
             </Text>
           </TouchableOpacity>
         )}

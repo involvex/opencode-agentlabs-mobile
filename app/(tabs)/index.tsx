@@ -61,13 +61,17 @@ function formatTime(
 function SessionItem({
   session,
   isDark,
+  pinned,
   onRename,
   onDelete,
+  onPin,
 }: {
   session: Session;
   isDark: boolean;
+  pinned: boolean;
   onRename: () => void;
   onDelete: () => void;
+  onPin: () => void;
 }) {
   const { t } = useTranslation();
 
@@ -84,6 +88,12 @@ function SessionItem({
   const onLongPress = () => {
     Alert.alert(session.title || t("sessionsList.untitledSession"), undefined, [
       { text: t("common.cancel"), style: "cancel" },
+      {
+        text: pinned
+          ? t("sessionsList.actions.unpin")
+          : t("sessionsList.actions.pin"),
+        onPress: onPin,
+      },
       { text: t("sessionsList.actions.rename"), onPress: onRename },
       { text: t("common.delete"), style: "destructive", onPress: onDelete },
     ]);
@@ -134,6 +144,13 @@ function SessionItem({
           )}
         </View>
       </View>
+      {pinned && (
+        <Ionicons
+          name="push-pin"
+          size={16}
+          color={isDark ? "#8b5cf6" : "#8b5cf6"}
+        />
+      )}
       <Ionicons
         name="chevron-forward"
         size={20}
@@ -239,6 +256,9 @@ export default function SessionsScreen() {
     loadSessions,
     createSession,
     deleteSession,
+    pinSession,
+    unpinSession,
+    pinnedSessions,
   } = useSessions();
   const {
     activeConnection,
@@ -277,7 +297,13 @@ export default function SessionsScreen() {
   // Flatten sessions into header+item rows. Skip headers entirely when
   // everything lives in one directory — a lone header adds noise, not clarity.
   const rows = useMemo<ListRow[]>(() => {
-    const groups = groupByDirectory(sessions);
+    const sorted = [...sessions].sort((a, b) => {
+      const aPinned = pinnedSessions.includes(a.id);
+      const bPinned = pinnedSessions.includes(b.id);
+      if (aPinned === bPinned) return 0;
+      return aPinned ? -1 : 1;
+    });
+    const groups = groupByDirectory(sorted);
     if (groups.length <= 1) {
       return sessions.map((session) => ({ type: "session", session }));
     }
@@ -297,7 +323,7 @@ export default function SessionsScreen() {
       }
     }
     return out;
-  }, [sessions, collapsedDirs]);
+  }, [sessions, collapsedDirs, pinnedSessions]);
 
   // Fetch server-known projects when the new session modal opens
   useEffect(() => {
@@ -724,8 +750,16 @@ export default function SessionsScreen() {
             <SessionItem
               session={row.session}
               isDark={isDark}
+              pinned={pinnedSessions.includes(row.session.id)}
               onRename={() => handleRename(row.session)}
               onDelete={() => handleDelete(row.session)}
+              onPin={() => {
+                if (pinnedSessions.includes(row.session.id)) {
+                  unpinSession(row.session.id);
+                } else {
+                  pinSession(row.session.id);
+                }
+              }}
             />
           )
         }

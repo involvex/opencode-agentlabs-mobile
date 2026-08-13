@@ -6,8 +6,15 @@ import { sanitizeBody } from "../lib/notify-format";
 import { statusFromPart } from "../lib/status-labels";
 import { AnalyticsEvent, track } from "../lib/analytics";
 import { isAuthError } from "../lib/api-error";
+import { useSettings } from "./settings";
 import { isSessionActuallyIdle } from "../lib/session-status-reconcile";
 import type { Client, Part, Session, Message } from "../lib/sdk";
+
+export interface SSEEvent {
+  type: string;
+  properties: Record<string, unknown>;
+  timestamp: number;
+}
 
 // Session status from the server
 type SessionStatus =
@@ -17,6 +24,7 @@ type SessionStatus =
 
 interface EventsState {
   connected: boolean;
+  eventLog: SSEEvent[];
   // Set when the last connection attempt failed with 401/403 — the server
   // rejected our credentials, not a transient network issue. The reconnect
   // loop stops retrying in this case (see connect()) since hammering a
@@ -58,6 +66,8 @@ interface EventsState {
 
   connect: () => void;
   disconnect: () => void;
+  getEventLog: () => SSEEvent[];
+  clearEventLog: () => void;
 }
 
 let controller: AbortController | null = null;
@@ -168,6 +178,7 @@ async function resyncBusySessions() {
 
 export const useEvents = create<EventsState>((set, get) => ({
   connected: false,
+  eventLog: [] as SSEEvent[],
   authError: false,
   reconnectAttempts: 0,
   lastDisconnectAt: null,
@@ -500,6 +511,14 @@ export const useEvents = create<EventsState>((set, get) => ({
               break;
             }
           }
+
+          // Log for SSE inspector (ring buffer, max 500 entries)
+          if (useSettings.getState().debugMode) {
+            const log = { type, properties: props, timestamp: Date.now() };
+            set((state) => ({
+              eventLog: [...state.eventLog.slice(-499), log],
+            }));
+          }
         }
 
         scheduleReconnect(new Error("Event stream closed"));
@@ -550,6 +569,10 @@ export const useEvents = create<EventsState>((set, get) => ({
       statusText: {},
       permissions: {},
       questions: {},
+      eventLog: [],
     });
   },
+
+  getEventLog: () => get().eventLog,
+  clearEventLog: () => set({ eventLog: [] }),
 }));

@@ -13,7 +13,8 @@
       "security": "Security",
       "notifications": "Notifications",
       "privacy": "Privacy",
-      "about": "About"
+      "about": "About",
+      "developer": "Developer"
     },
     "security": {
       "biometricOpen": {
@@ -66,6 +67,38 @@
       "system": "System Default",
       "en": "English",
       "zhHans": "Simplified Chinese"
+    },
+    "appearance": {
+      "density": {
+        "label": "Density",
+        "description": "Select UI density ({{value}})"
+      }
+    },
+    "developer": {
+      "debugMode": {
+        "label": "Debug Mode",
+        "description": "Show advanced debugging tools"
+      },
+      "sseInspector": {
+        "label": "SSE Event Inspector",
+        "description": "View raw SSE events in real time"
+      },
+      "forceReconnect": {
+        "label": "Force Reconnect",
+        "description": "Immediately reconnect the event stream"
+      },
+      "reconnectAlert": {
+        "title": "Reconnecting",
+        "message": "The SSE event stream is reconnecting."
+      },
+      "dumpState": {
+        "label": "Dump State to Clipboard",
+        "description": "Copy app state (sessions, connections, events) to clipboard"
+      },
+      "dumpAlert": {
+        "title": "State Copied",
+        "message": "App state has been copied to clipboard."
+      }
     },
     "footer": {
       "appName": "OpenCode Mobile",
@@ -255,7 +288,9 @@
     },
     "filesCount": "{{count}} files",
     "actions": {
-      "rename": "Rename"
+      "rename": "Rename",
+      "pin": "Pin",
+      "unpin": "Unpin"
     },
     "alerts": {
       "renameFailedTitle": "Rename failed",
@@ -356,6 +391,10 @@
       "always": "Always",
       "allow": "Allow"
     },
+    "message": {
+      "timestamp": "Message timestamp",
+      "copyTimestamp": "Copy absolute time"
+    },
     "questionPrompt": {
       "headerFallback": "Question",
       "answerPlaceholder": "Type your answer...",
@@ -414,6 +453,7 @@
       "noUsageData": "No usage data yet",
       "loading": "Loading...",
       "loadAllMessages": "Load all messages",
+      "exportSession": "Export to Markdown",
       "jumpToBeginning": "Jump to beginning",
       "pills": {
         "in": "In",
