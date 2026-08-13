@@ -69,6 +69,8 @@ interface ConnectionsState {
   switchDirectory: (directory?: string) => Promise<void>;
   // Record a directory as recently used
   addRecentDirectory: (directory: string) => Promise<void>;
+  // Reorder connections (for drag-to-reorder UI)
+  reorderConnections: (newOrder: ServerConnection[]) => void;
 }
 
 function generateId(): string {
@@ -464,5 +466,12 @@ export const useConnections = create<ConnectionsState>((set, get) => ({
     ].slice(0, MAX_RECENT_DIRS);
     set({ recentDirectories: updated });
     await SecureStore.setItemAsync(RECENT_DIRS_KEY, JSON.stringify(updated));
+  },
+
+  reorderConnections: (newOrder) => {
+    set({ connections: newOrder });
+    SecureStore.setItemAsync(CONNECTIONS_KEY, JSON.stringify(newOrder)).catch(
+      () => {},
+    );
   },
 }));

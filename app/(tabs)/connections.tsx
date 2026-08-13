@@ -11,7 +11,7 @@ import { Ionicons } from "@expo/vector-icons";
 import { useTranslation } from "react-i18next";
 import { useConnections } from "../../src/stores/connections";
 import { useSettings } from "../../src/stores/settings";
-import { useTheme } from "../../src/lib/theme";
+import { useTheme, useAccentColor } from "../../src/lib/theme";
 import type { ServerConnection } from "../../src/lib/types";
 
 const PAGE_SIZE_OPTIONS = [10, 25, 50, 100, 200] as const;
@@ -19,6 +19,7 @@ const PAGE_SIZE_OPTIONS = [10, 25, 50, 100, 200] as const;
 function ConnectionItem({
   connection,
   isDark,
+  accent,
   isActive,
   onSelect,
   onEdit,
@@ -26,6 +27,7 @@ function ConnectionItem({
 }: {
   connection: ServerConnection;
   isDark: boolean;
+  accent: string;
   isActive: boolean;
   onSelect: () => void;
   onEdit: () => void;
@@ -62,7 +64,7 @@ function ConnectionItem({
         <Ionicons
           name={typeIcon}
           size={24}
-          color={isActive ? "#22c55e" : isDark ? "#888888" : "#666666"}
+          color={isActive ? "#22c55e" : accent}
         />
       </View>
       <View style={styles.connectionContent}>
@@ -102,6 +104,11 @@ function ConnectionItem({
         >
           {connection.url}
         </Text>
+        {connection.directory && (
+          <Text style={[styles.connectionDir, isDark && styles.metaDark]}>
+            {connection.directory}
+          </Text>
+        )}
         {connection.lastConnected && (
           <Text style={[styles.connectionMeta, isDark && styles.metaDark]}>
             {t("connectionsList.lastConnected", {
@@ -126,6 +133,7 @@ function ConnectionItem({
 
 export default function ConnectionsScreen() {
   const isDark = useTheme();
+  const accent = useAccentColor();
   const { t } = useTranslation();
 
   const {
@@ -160,6 +168,7 @@ export default function ConnectionsScreen() {
           <ConnectionItem
             connection={item}
             isDark={isDark}
+            accent={accent}
             isActive={activeConnection?.id === item.id}
             onSelect={() => setActiveConnection(item.id)}
             onEdit={() => router.push(`/connection/${item.id}`)}
@@ -248,10 +257,10 @@ export default function ConnectionsScreen() {
 
       {/* FAB to add connection */}
       <TouchableOpacity
-        style={[styles.fab, isDark && styles.fabDark]}
+        style={[styles.fab, { backgroundColor: accent }]}
         onPress={() => router.push("/connection/add")}
       >
-        <Ionicons name="add" size={28} color={isDark ? "#0a0a0a" : "#ffffff"} />
+        <Ionicons name="add" size={28} color="#ffffff" />
       </TouchableOpacity>
     </View>
   );
@@ -348,6 +357,11 @@ const styles = StyleSheet.create({
   },
   connectionUrlActive: {
     color: "#888888",
+  },
+  connectionDir: {
+    fontSize: 11,
+    color: "#999999",
+    marginTop: 2,
   },
   connectionMeta: {
     fontSize: 12,
