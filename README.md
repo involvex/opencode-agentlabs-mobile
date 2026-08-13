@@ -161,7 +161,7 @@ OpenCode Mobile is a thin client. It speaks the opencode HTTP + SSE API: listing
 
 ## Supporters and Sponsors
 
-OpenCode Mobile is built and maintained by [VIBE TECHNOLOGIES, LLC](https://agentlabs.cc/opencode). GitHub Sponsors help cover Sentry, EAS Build, and CI costs (~$60/month). The opencode Cloud hosted backend (planned, $10/mo) is the long-term revenue model.
+OpenCode Mobile is built and maintained by [VIBE TECHNOLOGIES, LLC](https://agentlabs.cc/opencode). GitHub Sponsors help cover Sentry and CI costs (~$60/month). The opencode Cloud hosted backend (planned, $10/mo) is the long-term revenue model.
 
 If OpenCode Mobile saves you time, consider sponsoring:
 
@@ -191,7 +191,13 @@ Near-term priorities:
 
 ---
 
-## Contributing
+## Building
+
+This is a **private fork** with no public release / store publish planned. There is no EAS access. Builds are produced locally and distributed as signed APKs or test builds.
+
+- **Dev build**: `npx expo run:android`
+- **Release build**: `npx expo run:android --variant release` (installs to connected device/emulator)
+
 
 We welcome bug reports, feature requests, and pull requests. See [CONTRIBUTING.md](CONTRIBUTING.md) for how to set up a dev environment and the contribution process.
 

@@ -14,7 +14,7 @@ This doc is the operational answer to **"how do we make money without killing th
 | What's paid? | **opencode Cloud** — managed hosted opencode server. $10/mo individual, $30/mo team. Separate proprietary product. |
 | Why this works | Tailscale ($45M ARR) + Bitwarden + sst's own OpenCode Zen ($Xm ARR) all run this exact model. OSS client, paid hosted service. |
 | Why not paid app on Play? | MIT lets anyone repackage. License checks get stripped by community forks within days. F-Droid flags as `Tracking`. Real-world examples (every project that tried this) ended in resentment + zero revenue. |
-| Bridge revenue while Cloud is built | GitHub Sponsors (Supporter $5 / Backer $15 / Business $50) → covers Sentry (~$26/mo) + EAS Build (~$30/mo) + CI. Cap: ~$1.5k MRR. |
+| Bridge revenue while Cloud is built | GitHub Sponsors (Supporter $5 / Backer $15 / Business $50) → covers Sentry (~$26/mo) + CI. Cap: ~$1.5k MRR. |
 
 ---
 
@@ -199,7 +199,7 @@ Adjacent multi-agent platforms: **Paseo** (6.6k stars beta, biggest threat), **V
 | Apple/Google policy change blocks AI client apps | Low | High | Already an established category (Cursor, Codex, Claude mobile). Stay clean on Data Safety + ATS. |
 | Identity verification (Play) or Apple enrollment rejected | Low | High | We have D-U-N-S + legal entity. Resolve case-by-case. |
 | Cloud MVP delayed, free users churn before revenue starts | High | Medium | Bridge with GitHub Sponsors. Sequence carefully — don't promise Cloud before it ships. |
-| Sentry / Vercel / EAS pricing increases | Low | Low | All have free tiers covering 1000s of users. Self-host alternatives exist (Sentry self-hosted, Coolify for site). |
+| Sentry / Vercel pricing increases | Low | Low | All have free tiers covering 1000s of users. Self-host alternatives exist (Sentry self-hosted, Coolify for site). |
 | LLC liability around AI agent code execution | Medium | Medium | Terms of Service makes user responsible for their own opencode server + code changes. Don't run code on our infra in v1. |
 
 ---
@@ -212,7 +212,7 @@ Adjacent multi-agent platforms: **Paseo** (6.6k stars beta, biggest threat), **V
 | 2026-05-24 | Default monetization = "Subscriptions" in Play Console | Optimistic for opencode Cloud; not enforced in client |
 | 2026-05-24 | "Yes — earning money" + "Subscriptions" in Play Console signup | Future-proof for Cloud upsell |
 | 2026-05-24 | Apple ID = support@agentlabs.cc (not Gmail) | Apple recommends domain-matched email for org accounts |
-| 2026-05-24 | EAS Build for iOS CI | Zero Mac infra; managed certs; $0 free tier |
+| 2026-05-24 | Local Android builds via Gradle; no EAS | Private fork, no store release planned, no EAS access |
 | 2026-05-24 | Sentry opt-in default OFF | F-Droid parity + cleaner data safety form |
 | 2026-05-24 | `agentlabs.cc/opencode` subdomain (not path) | Cleaner URLs, separate Vercel project, dedicated landing |
 
