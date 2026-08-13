@@ -113,6 +113,8 @@ export default function SettingsScreen() {
     setLocale,
     terminalFontSize,
     setTerminalFontSize,
+    chatFontSize,
+    setChatFontSize,
     debugMode,
     setDebugMode,
     density,
@@ -366,6 +368,41 @@ export default function SettingsScreen() {
                 style={[
                   styles.fontSizeButton,
                   terminalFontSize >= 18 && styles.fontSizeButtonDisabled,
+                ]}
+              >
+                <Ionicons name="add" size={18} color="#ffffff" />
+              </TouchableOpacity>
+            </View>
+          }
+        />
+        <SettingRow
+          icon="chatbubble-outline"
+          label={t("settings.appearance.chatFontSize.label")}
+          description={t("settings.appearance.chatFontSize.description", {
+            size: chatFontSize,
+          })}
+          isDark={isDark}
+          right={
+            <View style={styles.fontSizeControls}>
+              <TouchableOpacity
+                onPress={() => setChatFontSize(chatFontSize - 1)}
+                disabled={chatFontSize <= 12}
+                style={[
+                  styles.fontSizeButton,
+                  chatFontSize <= 12 && styles.fontSizeButtonDisabled,
+                ]}
+              >
+                <Ionicons name="remove" size={18} color="#ffffff" />
+              </TouchableOpacity>
+              <Text style={[styles.fontSizeValue, isDark && styles.textDark]}>
+                {chatFontSize}
+              </Text>
+              <TouchableOpacity
+                onPress={() => setChatFontSize(chatFontSize + 1)}
+                disabled={chatFontSize >= 20}
+                style={[
+                  styles.fontSizeButton,
+                  chatFontSize >= 20 && styles.fontSizeButtonDisabled,
                 ]}
               >
                 <Ionicons name="add" size={18} color="#ffffff" />

@@ -16,6 +16,7 @@ import { Markdown } from "../markdown";
 import { ToolCallCard } from "./ToolCallCard";
 import { ReasoningBlock } from "./ReasoningBlock";
 import { useDensity } from "../../lib/density";
+import { useSettings } from "../../stores/settings";
 import { formatRelativeTime, formatAbsoluteTime } from "../../lib/time-format";
 import { useReactions } from "../../stores/reactions";
 import type { Message, Part } from "../../lib/sdk";
@@ -44,6 +45,7 @@ export const MessageBubble = memo(
   function MessageBubble({ message, parts, isDark, onLongPress }: Props) {
     const { t } = useTranslation();
     const density = useDensity();
+    const chatFontSize = useSettings((s) => s.chatFontSize);
     const isUser = message.role === "user";
 
     const textParts = parts.filter((p) => p.type === "text");
@@ -196,7 +198,14 @@ export const MessageBubble = memo(
         {/* Message text */}
         {text.length > 0 &&
           (isUser ? (
-            <Text style={[s.messageText, isDark && s.textWhite]} selectable>
+            <Text
+              style={[
+                s.messageText,
+                isDark && s.textWhite,
+                { fontSize: chatFontSize },
+              ]}
+              selectable
+            >
               {text}
             </Text>
           ) : (

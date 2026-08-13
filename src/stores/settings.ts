@@ -15,6 +15,7 @@ interface Settings {
   notifications: Record<Category, boolean>;
   locale: LocalePreference;
   terminalFontSize: number;
+  chatFontSize: number;
   debugMode: boolean;
   density: Density;
   theme: Theme;
@@ -26,6 +27,7 @@ const DEFAULTS: Settings = {
   notifications: { ...defaultPreferences },
   locale: "system",
   terminalFontSize: 13,
+  chatFontSize: 15,
   debugMode: false,
   density: "default",
   theme: "auto",
@@ -39,6 +41,7 @@ interface SettingsState extends Settings {
   setNotification: (category: Category, enabled: boolean) => Promise<void>;
   setLocale: (locale: LocalePreference) => Promise<void>;
   setTerminalFontSize: (size: number) => Promise<void>;
+  setChatFontSize: (size: number) => Promise<void>;
   setDebugMode: (enabled: boolean) => Promise<void>;
   setDensity: (density: Density) => Promise<void>;
   setTheme: (theme: Theme) => Promise<void>;
@@ -49,12 +52,17 @@ function clampTerminalFontSize(size: number): number {
   return Math.max(10, Math.min(18, size));
 }
 
+function clampChatFontSize(size: number): number {
+  return Math.max(12, Math.min(20, size));
+}
+
 function snapshot(get: () => SettingsState): Settings {
   return {
     pageSize: get().pageSize,
     notifications: get().notifications,
     locale: get().locale,
     terminalFontSize: get().terminalFontSize,
+    chatFontSize: get().chatFontSize,
     debugMode: get().debugMode,
     density: get().density,
     theme: get().theme,
@@ -105,6 +113,12 @@ export const useSettings = create<SettingsState>((set, get) => ({
     const clamped = clampTerminalFontSize(size);
     set({ terminalFontSize: clamped });
     await persist({ ...snapshot(get), terminalFontSize: clamped });
+  },
+
+  setChatFontSize: async (size: number) => {
+    const clamped = clampChatFontSize(size);
+    set({ chatFontSize: clamped });
+    await persist({ ...snapshot(get), chatFontSize: clamped });
   },
 
   setDebugMode: async (enabled) => {

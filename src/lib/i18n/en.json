@@ -80,6 +80,10 @@
       "accentColor": {
         "label": "Accent Color",
         "description": "Choose your app accent color"
+      },
+      "chatFontSize": {
+        "label": "Chat Font Size",
+        "description": "Body text size in messages ({{size}}px)"
       }
     },
     "developer": {
