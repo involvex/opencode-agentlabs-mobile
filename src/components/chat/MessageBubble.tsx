@@ -90,7 +90,7 @@ export const MessageBubble = memo(
       ]);
     }, [t, handleReactionPress]);
 
-    const messageReactions = useReactions((s) => s.reactions[message.id] || []);
+    const messageReactions = useReactions((s) => s.reactions[message.id]);
 
     return (
       <TouchableOpacity
@@ -219,7 +219,7 @@ export const MessageBubble = memo(
         )}
 
         {/* Reactions */}
-        {messageReactions.length > 0 && (
+        {messageReactions && messageReactions.length > 0 && (
           <View style={s.reactionsRow}>
             {messageReactions.map((emoji) => {
               const count = messageReactions.filter((e) => e === emoji).length;
