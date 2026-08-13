@@ -29,6 +29,9 @@ export interface ClientConfig {
     username: string;
     password: string;
   };
+  // Custom HTTP headers to send with every request (e.g. bearer tokens,
+  // API keys for reverse proxies). Merged on top of auto-generated headers.
+  extraHeaders?: Record<string, string>;
 }
 
 export interface Session {
@@ -199,7 +202,11 @@ export class ApiError extends Error {
 }
 
 function createHeaders(config: ClientConfig): HeadersInit {
-  return buildRequestHeaders(config);
+  const base = buildRequestHeaders(config);
+  if (config.extraHeaders) {
+    return { ...base, ...config.extraHeaders };
+  }
+  return base;
 }
 
 // `timeoutMs` lets specific callers (e.g. the onboarding health-check) fail

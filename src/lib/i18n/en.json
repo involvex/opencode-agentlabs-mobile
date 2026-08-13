@@ -183,6 +183,10 @@
       "authentication": "Authentication",
       "username": "Username",
       "password": "Password",
+      "customHeaders": "Custom Headers",
+      "addHeader": "Add Header",
+      "headerKey": "Header name",
+      "headerValue": "Header value",
       "alerts": {
         "enterName": "Please enter a connection name",
         "enterUrl": "Please enter a server URL",

@@ -27,6 +27,7 @@ const CONNECTION_TEST_TIMEOUT_MS = 12_000;
 interface ClientBase {
   baseUrl: string;
   auth?: { username: string; password: string };
+  extraHeaders?: Record<string, string>;
 }
 
 interface ConnectionsState {
@@ -74,14 +75,31 @@ function generateId(): string {
   return Crypto.randomUUID().replace(/-/g, "").slice(0, 16);
 }
 
+const HEADERS_PREFIX = "opencode_headers_";
+
 function buildClient(
   url: string,
   directory?: string,
   auth?: { username: string; password: string },
+  extraHeaders?: Record<string, string>,
 ): { client: Client; base: ClientBase } {
-  const base: ClientBase = { baseUrl: url, auth };
-  const client = createClient({ baseUrl: url, directory, auth });
+  const base: ClientBase = { baseUrl: url, auth, extraHeaders };
+  const client = createClient({ baseUrl: url, directory, auth, extraHeaders });
   return { client, base };
+}
+
+async function loadAuthHeaders(
+  connectionID: string,
+): Promise<Record<string, string> | undefined> {
+  const raw = await SecureStore.getItemAsync(
+    `${HEADERS_PREFIX}${connectionID}`,
+  );
+  if (!raw) return undefined;
+  try {
+    return JSON.parse(raw) as Record<string, string>;
+  } catch {
+    return undefined;
+  }
 }
 
 export const useConnections = create<ConnectionsState>((set, get) => ({
@@ -120,7 +138,8 @@ export const useConnections = create<ConnectionsState>((set, get) => ({
           `${PASSWORDS_PREFIX}${active.id}`,
         );
         const auth = buildAuth(active.username, password);
-        const built = buildClient(active.url, active.directory, auth);
+        const headers = await loadAuthHeaders(active.id);
+        const built = buildClient(active.url, active.directory, auth, headers);
         client = built.client;
         base = built.base;
         // Fetch current project info and server paths
@@ -182,10 +201,12 @@ export const useConnections = create<ConnectionsState>((set, get) => ({
     if (newConnection.active) {
       activeConnection = newConnection;
       const auth = buildAuth(newConnection.username, password);
+      const headers = await loadAuthHeaders(newConnection.id);
       const built = buildClient(
         newConnection.url,
         newConnection.directory,
         auth,
+        headers,
       );
       client = built.client;
       base = built.base;
@@ -217,8 +238,9 @@ export const useConnections = create<ConnectionsState>((set, get) => ({
   removeConnection: async (id) => {
     const connections = get().connections.filter((c) => c.id !== id);
 
-    // Remove stored password
+    // Remove stored password and auth headers
     await SecureStore.deleteItemAsync(`${PASSWORDS_PREFIX}${id}`);
+    await SecureStore.deleteItemAsync(`${HEADERS_PREFIX}${id}`);
     await SecureStore.setItemAsync(
       CONNECTIONS_KEY,
       JSON.stringify(connections),
@@ -281,7 +303,8 @@ export const useConnections = create<ConnectionsState>((set, get) => ({
         `${PASSWORDS_PREFIX}${active.id}`,
       );
       const auth = buildAuth(active.username, password);
-      const built = buildClient(active.url, active.directory, auth);
+      const headers = await loadAuthHeaders(active.id);
+      const built = buildClient(active.url, active.directory, auth, headers);
       client = built.client;
       base = built.base;
 
@@ -361,7 +384,8 @@ export const useConnections = create<ConnectionsState>((set, get) => ({
         `${PASSWORDS_PREFIX}${id}`,
       );
       const auth = buildAuth(active.username, password);
-      const built = buildClient(active.url, active.directory, auth);
+      const headers = await loadAuthHeaders(id);
+      const built = buildClient(active.url, active.directory, auth, headers);
       try {
         const [project, paths] = await Promise.all([
           built.client.project.current().catch(() => null),
@@ -407,7 +431,12 @@ export const useConnections = create<ConnectionsState>((set, get) => ({
     // Reuse current client if directory matches
     const active = get().activeConnection;
     if (active?.directory === directory) return get().client;
-    return createClient({ baseUrl: base.baseUrl, directory, auth: base.auth });
+    return createClient({
+      baseUrl: base.baseUrl,
+      directory,
+      auth: base.auth,
+      extraHeaders: base.extraHeaders,
+    });
   },
 
   switchDirectory: async (directory) => {

@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import {
   View,
   Text,
@@ -19,6 +19,7 @@ import type { ConnectionType } from "../../src/lib/types";
 import { probeConnection, shareReport } from "../../src/lib/diagnostics";
 import { parseUrl } from "../../src/lib/diagnostics-classify";
 import { buildAuth } from "../../src/lib/auth";
+import * as SecureStore from "expo-secure-store";
 
 // labelKey (not literal text): this is a module-level constant evaluated
 // before i18next is guaranteed ready, so the label is resolved with t() at
@@ -51,6 +52,29 @@ export default function EditConnectionScreen() {
   const [password, setPassword] = useState("");
   const [isTesting, setIsTesting] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
+
+  // Custom auth headers — loaded from SecureStore on mount, edited inline.
+  const [headerEdits, setHeaderEdits] = useState<
+    { key: string; value: string }[]
+  >([]);
+  const [showHeaders, setShowHeaders] = useState(false);
+
+  useEffect(() => {
+    if (id && connection) {
+      SecureStore.getItemAsync(`opencode_headers_${id}`)
+        .then((raw) => {
+          if (raw) {
+            try {
+              const parsed = JSON.parse(raw) as Record<string, string>;
+              setHeaderEdits(
+                Object.entries(parsed).map(([key, value]) => ({ key, value })),
+              );
+            } catch {}
+          }
+        })
+        .catch(() => {});
+    }
+  }, [id, connection]);
 
   // Reset local form state when the connection prop changes (e.g. list
   // updated).  Calling setState during render is the React-recommended
@@ -166,11 +190,30 @@ export default function EditConnectionScreen() {
           url: url.trim(),
           directory: directory.trim() || undefined,
           username: username.trim() || undefined,
+          authHeaderKeys: headerEdits
+            .map((h) => h.key.trim())
+            .filter((k) => k.length > 0),
         },
         // Empty = keep existing password (the field loads blank); a typed value
         // rotates it in SecureStore.
         password || undefined,
       );
+
+      // Persist custom auth headers to SecureStore (separate from the main
+      // connection record, since they're sensitive tokens/keys).
+      const headersToSave: Record<string, string> = {};
+      for (const h of headerEdits) {
+        const k = h.key.trim();
+        if (k && h.value) headersToSave[k] = h.value;
+      }
+      if (Object.keys(headersToSave).length > 0) {
+        await SecureStore.setItemAsync(
+          `opencode_headers_${connection.id}`,
+          JSON.stringify(headersToSave),
+        );
+      } else {
+        await SecureStore.deleteItemAsync(`opencode_headers_${connection.id}`);
+      }
       // If this was the active connection, the SSE loop may have stopped
       // retrying after a prior 401 (see events.ts) — reconnect now with the
       // freshly saved credentials instead of leaving the user stuck until
@@ -329,6 +372,96 @@ export default function EditConnectionScreen() {
         onChangeText={setPassword}
         secureTextEntry
       />
+
+      {/* Custom Auth Headers */}
+      <View style={styles.headerSection}>
+        <TouchableOpacity
+          style={styles.headerToggle}
+          onPress={() => setShowHeaders(!showHeaders)}
+        >
+          <Text style={[styles.label, isDark && styles.labelDark]}>
+            {t("connection.shared.customHeaders")}
+          </Text>
+          <Ionicons
+            name={showHeaders ? "chevron-up" : "chevron-down"}
+            size={20}
+            color={isDark ? "#ffffff" : "#0a0a0a"}
+          />
+        </TouchableOpacity>
+
+        {showHeaders && (
+          <View style={styles.headerList}>
+            {headerEdits.map((h, idx) => (
+              <View key={idx} style={styles.headerRow}>
+                <TextInput
+                  style={[
+                    styles.input,
+                    styles.headerKey,
+                    isDark && styles.inputDark,
+                  ]}
+                  placeholder={t("connection.shared.headerKey")}
+                  placeholderTextColor={isDark ? "#666666" : "#999999"}
+                  value={h.key}
+                  onChangeText={(val) =>
+                    setHeaderEdits(
+                      headerEdits.map((e, i) =>
+                        i === idx ? { ...e, key: val } : e,
+                      ),
+                    )
+                  }
+                  autoCapitalize="none"
+                  autoCorrect={false}
+                />
+                <TextInput
+                  style={[
+                    styles.input,
+                    styles.headerValue,
+                    isDark && styles.inputDark,
+                  ]}
+                  placeholder={t("connection.shared.headerValue")}
+                  placeholderTextColor={isDark ? "#666666" : "#999999"}
+                  value={h.value}
+                  onChangeText={(val) =>
+                    setHeaderEdits(
+                      headerEdits.map((e, i) =>
+                        i === idx ? { ...e, value: val } : e,
+                      ),
+                    )
+                  }
+                  secureTextEntry
+                />
+                <TouchableOpacity
+                  onPress={() =>
+                    setHeaderEdits(headerEdits.filter((_, i) => i !== idx))
+                  }
+                  style={styles.headerRemoveBtn}
+                >
+                  <Ionicons
+                    name="remove-circle"
+                    size={20}
+                    color={isDark ? "#ef4444" : "#ef4444"}
+                  />
+                </TouchableOpacity>
+              </View>
+            ))}
+            <TouchableOpacity
+              style={[styles.addHeaderBtn, isDark && styles.addHeaderBtnDark]}
+              onPress={() =>
+                setHeaderEdits([...headerEdits, { key: "", value: "" }])
+              }
+            >
+              <Ionicons
+                name="add"
+                size={16}
+                color={isDark ? "#ffffff" : "#0a0a0a"}
+              />
+              <Text style={[styles.addHeaderText, isDark && styles.textDark]}>
+                {t("connection.shared.addHeader")}
+              </Text>
+            </TouchableOpacity>
+          </View>
+        )}
+      </View>
 
       {/* Actions */}
       <View style={styles.actions}>
@@ -536,5 +669,52 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: "600",
     color: "#ef4444",
+  },
+
+  headerSection: {
+    marginBottom: 16,
+  },
+  headerToggle: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    paddingVertical: 8,
+  },
+  headerList: {
+    gap: 8,
+    marginTop: 8,
+  },
+  headerRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+  },
+  headerKey: {
+    flex: 1,
+    fontSize: 13,
+  },
+  headerValue: {
+    flex: 1,
+    fontSize: 13,
+  },
+  headerRemoveBtn: {
+    padding: 4,
+  },
+  addHeaderBtn: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 4,
+    paddingVertical: 8,
+    paddingHorizontal: 12,
+    borderRadius: 8,
+    backgroundColor: "#f5f5f5",
+  },
+  addHeaderBtnDark: {
+    backgroundColor: "#2a2a2a",
+  },
+  addHeaderText: {
+    fontSize: 13,
+    fontWeight: "500",
+    color: "#0a0a0a",
   },
 });

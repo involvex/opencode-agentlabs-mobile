@@ -15,6 +15,8 @@ export interface ServerConnection {
   lastConnected?: number;
   // Is this the active connection?
   active?: boolean;
+  // Custom auth headers (keys only; values stored in SecureStore)
+  authHeaderKeys?: string[];
 }
 
 export interface AppSettings {
