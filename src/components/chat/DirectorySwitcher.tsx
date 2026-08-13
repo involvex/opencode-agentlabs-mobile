@@ -1,10 +1,16 @@
 import { useState, useCallback, useMemo } from "react";
-import { View, Text, TouchableOpacity, StyleSheet } from "react-native";
+import {
+  View,
+  Text,
+  TouchableOpacity,
+  StyleSheet,
+  FlatList,
+} from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import BottomSheet, {
   BottomSheetBackdrop,
-  BottomSheetFlatList,
   BottomSheetTextInput,
+  BottomSheetView,
 } from "@gorhom/bottom-sheet";
 import { useTranslation } from "react-i18next";
 
@@ -70,7 +76,9 @@ export function DirectorySwitcher({
 
   return (
     <BottomSheet
-      ref={sheetRef}
+      ref={(innerRef) => {
+        sheetRef.current = innerRef;
+      }}
       index={-1}
       snapPoints={["45%", "70%"]}
       // See DirectoryBrowserSheet.tsx for why this is required alongside
@@ -108,135 +116,141 @@ export function DirectorySwitcher({
         )}
       </View>
 
-      {/* Custom directory input */}
-      <View style={s.inputWrap}>
-        <BottomSheetTextInput
-          style={[s.input, isDark && s.inputDark]}
-          placeholder={serverHome ? `${serverHome}/...` : "/path/to/project"}
-          placeholderTextColor={isDark ? "#666666" : "#999999"}
-          value={custom}
-          onChangeText={(text) => {
-            if (serverHome && text === "~") setCustom(serverHome);
-            else if (serverHome && text.startsWith("~/"))
-              setCustom(serverHome + text.slice(1));
-            else setCustom(text);
-          }}
-          onSubmitEditing={handleCustomSubmit}
-          returnKeyType="go"
-          autoCapitalize="none"
-          autoCorrect={false}
-        />
-        {custom.trim() && (
-          <TouchableOpacity
-            style={[s.goBtn, isDark && s.goBtnDark]}
-            onPress={handleCustomSubmit}
-          >
-            <Ionicons
-              name="arrow-forward"
-              size={18}
-              color={isDark ? "#0a0a0a" : "#ffffff"}
-            />
-          </TouchableOpacity>
-        )}
-      </View>
-
-      {/* Quick path chips */}
-      {(serverHome || onBrowse) && (
-        <View style={s.chips}>
-          {serverHome && (
-            <>
-              <TouchableOpacity
-                style={[s.chip, isDark && s.chipDark]}
-                onPress={() => setCustom(serverHome)}
-              >
-                <Text style={[s.chipText, isDark && s.chipTextDark]}>~</Text>
-              </TouchableOpacity>
-              <TouchableOpacity
-                style={[s.chip, isDark && s.chipDark]}
-                onPress={() => setCustom(serverHome + "/")}
-              >
-                <Text style={[s.chipText, isDark && s.chipTextDark]}>~/</Text>
-              </TouchableOpacity>
-            </>
-          )}
-          {onBrowse && (
+      <BottomSheetView>
+        {/* Custom directory input */}
+        <View style={s.inputWrap}>
+          <BottomSheetTextInput
+            style={[s.input, isDark && s.inputDark]}
+            placeholder={serverHome ? `${serverHome}/...` : "/path/to/project"}
+            placeholderTextColor={isDark ? "#666666" : "#999999"}
+            value={custom}
+            onChangeText={(text) => {
+              if (serverHome && text === "~") setCustom(serverHome);
+              else if (serverHome && text.startsWith("~/"))
+                setCustom(serverHome + text.slice(1));
+              else setCustom(text);
+            }}
+            onSubmitEditing={handleCustomSubmit}
+            returnKeyType="go"
+            autoCapitalize="none"
+            autoCorrect={false}
+          />
+          {custom.trim() && (
             <TouchableOpacity
-              style={[s.chip, s.chipBrowse, isDark && s.chipDark]}
-              onPress={() => {
-                sheetRef.current?.close();
-                onBrowse();
-              }}
+              style={[s.goBtn, isDark && s.goBtnDark]}
+              onPress={handleCustomSubmit}
             >
               <Ionicons
-                name="folder-open-outline"
-                size={14}
-                color={isDark ? "#8b5cf6" : "#6d28d9"}
+                name="arrow-forward"
+                size={18}
+                color={isDark ? "#0a0a0a" : "#ffffff"}
               />
-              <Text style={[s.chipText, isDark && s.chipTextDark]}>
-                {t("chat.directorySwitcher.browseLabel")}
-              </Text>
             </TouchableOpacity>
           )}
         </View>
-      )}
 
-      {/* Recent directories */}
-      <BottomSheetFlatList
-        data={items}
-        keyExtractor={(item: (typeof items)[number], i: number) =>
-          item.dir || `default-${i}`
-        }
-        renderItem={({ item }: { item: (typeof items)[number] }) => (
-          <TouchableOpacity
-            style={[s.row, isDark && s.rowDark, item.active && s.rowActive]}
-            onPress={() => handleSelect(item.dir)}
-          >
-            <View style={s.rowIcon}>
-              <Ionicons
-                name={item.dir ? "folder-outline" : "server-outline"}
-                size={20}
-                color={item.active ? "#8b5cf6" : isDark ? "#888888" : "#666666"}
-              />
-            </View>
-            <View style={s.rowContent}>
-              <Text
-                style={[
-                  s.rowLabel,
-                  isDark && s.white,
-                  item.active && s.rowLabelActive,
-                ]}
-                numberOfLines={1}
+        {/* Quick path chips */}
+        {(serverHome || onBrowse) && (
+          <View style={s.chips}>
+            {serverHome && (
+              <>
+                <TouchableOpacity
+                  style={[s.chip, isDark && s.chipDark]}
+                  onPress={() => setCustom(serverHome)}
+                >
+                  <Text style={[s.chipText, isDark && s.chipTextDark]}>~</Text>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  style={[s.chip, isDark && s.chipDark]}
+                  onPress={() => setCustom(serverHome + "/")}
+                >
+                  <Text style={[s.chipText, isDark && s.chipTextDark]}>~/</Text>
+                </TouchableOpacity>
+              </>
+            )}
+            {onBrowse && (
+              <TouchableOpacity
+                style={[s.chip, s.chipBrowse, isDark && s.chipDark]}
+                onPress={() => {
+                  sheetRef.current?.close();
+                  onBrowse();
+                }}
               >
-                {item.label}
-              </Text>
-              {item.dir && (
+                <Ionicons
+                  name="folder-open-outline"
+                  size={14}
+                  color={isDark ? "#8b5cf6" : "#6d28d9"}
+                />
+                <Text style={[s.chipText, isDark && s.chipTextDark]}>
+                  {t("chat.directorySwitcher.browseLabel")}
+                </Text>
+              </TouchableOpacity>
+            )}
+          </View>
+        )}
+
+        {/* Recent directories */}
+        <FlatList
+          style={{ flex: 1 }}
+          data={items}
+          keyExtractor={(item: (typeof items)[number], i: number) =>
+            item.dir || `default-${i}`
+          }
+          renderItem={({ item }: { item: (typeof items)[number] }) => (
+            <TouchableOpacity
+              style={[s.row, isDark && s.rowDark, item.active && s.rowActive]}
+              onPress={() => handleSelect(item.dir)}
+              activeOpacity={0.7}
+            >
+              <View style={s.rowIcon}>
+                <Ionicons
+                  name={item.dir ? "folder-outline" : "server-outline"}
+                  size={20}
+                  color={
+                    item.active ? "#8b5cf6" : isDark ? "#888888" : "#666666"
+                  }
+                />
+              </View>
+              <View style={s.rowContent}>
                 <Text
-                  style={[s.rowPath, isDark && s.dimDark]}
+                  style={[
+                    s.rowLabel,
+                    isDark && s.white,
+                    item.active && s.rowLabelActive,
+                  ]}
                   numberOfLines={1}
                 >
-                  {item.dir}
+                  {item.label}
                 </Text>
+                {item.dir && (
+                  <Text
+                    style={[s.rowPath, isDark && s.dimDark]}
+                    numberOfLines={1}
+                  >
+                    {item.dir}
+                  </Text>
+                )}
+                {!item.dir && (
+                  <Text style={[s.rowPath, isDark && s.dimDark]}>
+                    {t("chat.directorySwitcher.usesServerDir")}
+                  </Text>
+                )}
+              </View>
+              {item.active && (
+                <Ionicons name="checkmark-circle" size={20} color="#8b5cf6" />
               )}
-              {!item.dir && (
-                <Text style={[s.rowPath, isDark && s.dimDark]}>
-                  {t("chat.directorySwitcher.usesServerDir")}
-                </Text>
-              )}
-            </View>
-            {item.active && (
-              <Ionicons name="checkmark-circle" size={20} color="#8b5cf6" />
-            )}
-          </TouchableOpacity>
-        )}
-        contentContainerStyle={s.list}
-        ListHeaderComponent={
-          items.length > 1 ? (
-            <Text style={[s.section, isDark && s.dimDark]}>
-              {t("chat.directorySwitcher.recentProjectsLabel")}
-            </Text>
-          ) : null
-        }
-      />
+            </TouchableOpacity>
+          )}
+          contentContainerStyle={s.list}
+          ListHeaderComponent={
+            items.length > 1 ? (
+              <Text style={[s.section, isDark && s.dimDark]}>
+                {t("chat.directorySwitcher.recentProjectsLabel")}
+              </Text>
+            ) : null
+          }
+        />
+      </BottomSheetView>
     </BottomSheet>
   );
 }

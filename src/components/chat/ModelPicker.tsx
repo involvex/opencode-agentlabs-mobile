@@ -1,10 +1,16 @@
 import { useState, useCallback, useMemo } from "react";
-import { View, Text, TouchableOpacity, StyleSheet } from "react-native";
+import {
+  View,
+  Text,
+  TouchableOpacity,
+  StyleSheet,
+  SectionList,
+} from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import BottomSheet, {
   BottomSheetBackdrop,
-  BottomSheetSectionList,
   BottomSheetTextInput,
+  BottomSheetView,
 } from "@gorhom/bottom-sheet";
 import { useTranslation } from "react-i18next";
 
@@ -103,11 +109,11 @@ export function ModelPicker({
 
   return (
     <BottomSheet
-      ref={sheetRef}
+      ref={(innerRef) => {
+        sheetRef.current = innerRef;
+      }}
       index={-1}
       snapPoints={["50%", "80%"]}
-      // See DirectoryBrowserSheet.tsx for why this is required alongside
-      // static snapPoints (issue #104): without it the sheet can never open.
       enableDynamicSizing={false}
       enablePanDownToClose
       keyboardBehavior="interactive"
@@ -127,64 +133,74 @@ export function ModelPicker({
         if (idx === -1) setSearch("");
       }}
     >
-      <View style={s.header}>
-        <Text style={[s.title, isDark && s.textWhite]}>
-          {t("chat.modelPicker.title")}
-        </Text>
-        <BottomSheetTextInput
-          style={[s.search, isDark && s.searchDark]}
-          placeholder={t("chat.modelPicker.searchPlaceholder")}
-          placeholderTextColor={isDark ? "#666666" : "#999999"}
-          value={search}
-          onChangeText={setSearch}
-          autoCorrect={false}
-          autoCapitalize="none"
+      <BottomSheetView>
+        <View style={s.header}>
+          <Text style={[s.title, isDark && s.textWhite]}>
+            {t("chat.modelPicker.title")}
+          </Text>
+          <BottomSheetTextInput
+            style={[s.search, isDark && s.searchDark]}
+            placeholder={t("chat.modelPicker.searchPlaceholder")}
+            placeholderTextColor={isDark ? "#666666" : "#999999"}
+            value={search}
+            onChangeText={setSearch}
+            autoCorrect={false}
+            autoCapitalize="none"
+          />
+        </View>
+        <SectionList
+          style={{ flex: 1 }}
+          sections={sections}
+          keyExtractor={(item: ModelItem) =>
+            `${item.providerID}/${item.modelID}`
+          }
+          renderSectionHeader={({
+            section,
+          }: {
+            section: { title: string };
+          }) => (
+            <View style={[s.sectionHeader, isDark && s.sectionHeaderDark]}>
+              <Text style={[s.sectionTitle, isDark && s.metaDark]}>
+                {section.title}
+              </Text>
+            </View>
+          )}
+          renderItem={({ item }: { item: ModelItem }) => {
+            const active =
+              selected?.providerID === item.providerID &&
+              selected?.modelID === item.modelID;
+            return (
+              <TouchableOpacity
+                style={[
+                  s.row,
+                  isDark && s.rowDark,
+                  active && (isDark ? s.rowSelectedDark : s.rowSelected),
+                ]}
+                onPress={() => handleSelect(item.providerID, item.modelID)}
+                testID={`model-option-${item.providerID}-${item.modelID}`}
+                activeOpacity={0.7}
+              >
+                <View style={s.rowText}>
+                  <Text
+                    style={[s.rowName, isDark && s.textWhite]}
+                    numberOfLines={1}
+                  >
+                    {item.modelName || item.modelID}
+                  </Text>
+                  <Text style={[s.rowProvider, isDark && s.metaDark]}>
+                    {item.providerName || item.providerID}
+                  </Text>
+                </View>
+                {active && (
+                  <Ionicons name="checkmark-circle" size={20} color="#8b5cf6" />
+                )}
+              </TouchableOpacity>
+            );
+          }}
+          contentContainerStyle={s.content}
+          stickySectionHeadersEnabled={false}
         />
-      </View>
-      <BottomSheetSectionList
-        sections={sections}
-        keyExtractor={(item: ModelItem) => `${item.providerID}/${item.modelID}`}
-        renderSectionHeader={({ section }: { section: { title: string } }) => (
-          <View style={[s.sectionHeader, isDark && s.sectionHeaderDark]}>
-            <Text style={[s.sectionTitle, isDark && s.metaDark]}>
-              {section.title}
-            </Text>
-          </View>
-        )}
-        renderItem={({ item }: { item: ModelItem }) => {
-          const active =
-            selected?.providerID === item.providerID &&
-            selected?.modelID === item.modelID;
-          return (
-            <TouchableOpacity
-              style={[
-                s.row,
-                isDark && s.rowDark,
-                active && (isDark ? s.rowSelectedDark : s.rowSelected),
-              ]}
-              onPress={() => handleSelect(item.providerID, item.modelID)}
-              testID={`model-option-${item.providerID}-${item.modelID}`}
-            >
-              <View style={s.rowText}>
-                <Text
-                  style={[s.rowName, isDark && s.textWhite]}
-                  numberOfLines={1}
-                >
-                  {item.modelName || item.modelID}
-                </Text>
-                <Text style={[s.rowProvider, isDark && s.metaDark]}>
-                  {item.providerName || item.providerID}
-                </Text>
-              </View>
-              {active && (
-                <Ionicons name="checkmark-circle" size={20} color="#8b5cf6" />
-              )}
-            </TouchableOpacity>
-          );
-        }}
-        contentContainerStyle={s.content}
-        stickySectionHeadersEnabled
-      />
+      </BottomSheetView>
     </BottomSheet>
   );
 }

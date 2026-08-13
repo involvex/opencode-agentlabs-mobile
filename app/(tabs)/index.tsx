@@ -658,11 +658,13 @@ export default function SessionsScreen() {
 
   return (
     <View style={[styles.container, isDark && styles.containerDark]}>
-      {/* Connection indicator — tap to switch project */}
+      {/* Connection indicator — tap to switch project, long-press to browse filesystem */}
       <TouchableOpacity
         style={[styles.connectionBar, isDark && styles.connectionBarDark]}
         onPress={() => dirSheetRef.current?.expand()}
-        onLongPress={() => router.push("/(tabs)/connections")}
+        onLongPress={() =>
+          openBrowser(activeConnection?.directory || null, "switch")
+        }
         activeOpacity={0.7}
         testID="connection-status-bar"
       >

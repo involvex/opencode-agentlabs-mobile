@@ -5,12 +5,13 @@ import {
   Text,
   TouchableOpacity,
   View,
+  FlatList,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import BottomSheet, {
   BottomSheetBackdrop,
-  BottomSheetFlatList,
   BottomSheetTextInput,
+  BottomSheetView,
 } from "@gorhom/bottom-sheet";
 import { useTranslation } from "react-i18next";
 import type { Client, FileEntry } from "../../lib/sdk";
@@ -186,16 +187,11 @@ export function DirectoryBrowserSheet({
 
   return (
     <BottomSheet
-      ref={sheetRef}
+      ref={(innerRef) => {
+        sheetRef.current = innerRef;
+      }}
       index={-1}
       snapPoints={["65%", "92%"]}
-      // Static percentage snapPoints are provided above, but @gorhom/bottom-sheet
-      // v5 defaults enableDynamicSizing to true, which requires content wrapped
-      // in a size-reporting component (BottomSheetView) to ever compute a valid
-      // detent — this sheet's children are plain Views/BottomSheetFlatList, so
-      // contentHeight never resolves and the sheet can never open (expand() has
-      // no valid snap position to animate to). Disable dynamic sizing so the
-      // explicit snapPoints above are used directly. See GitHub issue #104.
       enableDynamicSizing={false}
       enablePanDownToClose
       keyboardBehavior="interactive"
@@ -213,197 +209,203 @@ export function DirectoryBrowserSheet({
       )}
       onChange={handleSheetChange}
     >
-      <View style={s.header}>
-        <Text style={[s.title, isDark && s.white]}>
-          {t("chat.directoryBrowserSheet.title")}
-        </Text>
-        <View style={s.pathRow}>
-          <TouchableOpacity
-            onPress={goUp}
-            disabled={!canGoUp}
-            hitSlop={8}
-            testID="directory-up-button"
-          >
-            <Ionicons
-              name="arrow-up-circle-outline"
-              size={22}
-              color={
-                canGoUp
-                  ? isDark
-                    ? "#8b5cf6"
-                    : "#6d28d9"
-                  : isDark
-                    ? "#3a3a3a"
-                    : "#dddddd"
-              }
-            />
-          </TouchableOpacity>
-          <Text
-            style={[s.path, isDark && s.dimDark]}
-            numberOfLines={1}
-            ellipsizeMode="head"
-          >
-            {browseDir || "…"}
+      <BottomSheetView>
+        <View style={s.header}>
+          <Text style={[s.title, isDark && s.white]}>
+            {t("chat.directoryBrowserSheet.title")}
           </Text>
-        </View>
-      </View>
-
-      {roots.length > 0 && (
-        <View style={s.rootsRow}>
-          {roots.map((root) => (
+          <View style={s.pathRow}>
             <TouchableOpacity
-              key={root.path}
-              style={[
-                s.rootChip,
-                isDark && s.rootChipDark,
-                browseDir === root.path && s.rootChipActive,
-              ]}
-              onPress={() => enter(root.path)}
-              testID={`directory-root-${root.label}`}
+              onPress={goUp}
+              disabled={!canGoUp}
+              hitSlop={8}
+              testID="directory-up-button"
             >
               <Ionicons
-                name={root.label === "Home" ? "home-outline" : "layers-outline"}
-                size={14}
+                name="arrow-up-circle-outline"
+                size={22}
                 color={
-                  browseDir === root.path
-                    ? "#ffffff"
-                    : isDark
-                      ? "#c4b5fd"
+                  canGoUp
+                    ? isDark
+                      ? "#8b5cf6"
                       : "#6d28d9"
+                    : isDark
+                      ? "#3a3a3a"
+                      : "#dddddd"
+                }
+              />
+            </TouchableOpacity>
+            <Text
+              style={[s.path, isDark && s.dimDark]}
+              numberOfLines={1}
+              ellipsizeMode="head"
+            >
+              {browseDir || "…"}
+            </Text>
+          </View>
+        </View>
+
+        {roots.length > 0 && (
+          <View style={s.rootsRow}>
+            {roots.map((root) => (
+              <TouchableOpacity
+                key={root.path}
+                style={[
+                  s.rootChip,
+                  isDark && s.rootChipDark,
+                  browseDir === root.path && s.rootChipActive,
+                ]}
+                onPress={() => enter(root.path)}
+                testID={`directory-root-${root.label}`}
+              >
+                <Ionicons
+                  name={
+                    root.label === "Home" ? "home-outline" : "layers-outline"
+                  }
+                  size={14}
+                  color={
+                    browseDir === root.path
+                      ? "#ffffff"
+                      : isDark
+                        ? "#c4b5fd"
+                        : "#6d28d9"
+                  }
+                />
+                <Text
+                  style={[
+                    s.rootChipText,
+                    isDark && s.rootChipTextDark,
+                    browseDir === root.path && s.rootChipTextActive,
+                  ]}
+                  numberOfLines={1}
+                >
+                  {root.label}
+                </Text>
+              </TouchableOpacity>
+            ))}
+          </View>
+        )}
+
+        <View style={s.inputWrap}>
+          <BottomSheetTextInput
+            style={[s.input, isDark && s.inputDark]}
+            placeholder={t("chat.directoryBrowserSheet.jumpPlaceholder")}
+            placeholderTextColor={isDark ? "#666666" : "#999999"}
+            value={jumpPath}
+            onChangeText={setJumpPath}
+            onSubmitEditing={goJump}
+            returnKeyType="go"
+            autoCapitalize="none"
+            autoCorrect={false}
+            testID="directory-jump-input"
+          />
+          {jumpPath.trim() && (
+            <TouchableOpacity
+              style={[s.goBtn, isDark && s.goBtnDark]}
+              onPress={goJump}
+            >
+              <Ionicons
+                name="arrow-forward"
+                size={18}
+                color={isDark ? "#0a0a0a" : "#ffffff"}
+              />
+            </TouchableOpacity>
+          )}
+        </View>
+
+        <FlatList
+          style={{ flex: 1 }}
+          data={entries}
+          keyExtractor={(item: FileEntry) => item.absolute}
+          renderItem={({ item }: { item: FileEntry }) => (
+            <TouchableOpacity
+              style={[s.row, isDark && s.rowDark]}
+              onPress={() => enter(item.absolute)}
+              testID={`directory-row-${item.name}`}
+              activeOpacity={0.7}
+            >
+              <Ionicons
+                name="folder-outline"
+                size={20}
+                color={
+                  item.ignored
+                    ? isDark
+                      ? "#555555"
+                      : "#bbbbbb"
+                    : isDark
+                      ? "#888888"
+                      : "#666666"
                 }
               />
               <Text
                 style={[
-                  s.rootChipText,
-                  isDark && s.rootChipTextDark,
-                  browseDir === root.path && s.rootChipTextActive,
+                  s.rowLabel,
+                  isDark && s.white,
+                  item.ignored && s.rowLabelDim,
                 ]}
                 numberOfLines={1}
               >
-                {root.label}
+                {item.name}
               </Text>
+              <Ionicons
+                name="chevron-forward"
+                size={16}
+                color={isDark ? "#555555" : "#cccccc"}
+              />
             </TouchableOpacity>
-          ))}
-        </View>
-      )}
-
-      <View style={s.inputWrap}>
-        <BottomSheetTextInput
-          style={[s.input, isDark && s.inputDark]}
-          placeholder={t("chat.directoryBrowserSheet.jumpPlaceholder")}
-          placeholderTextColor={isDark ? "#666666" : "#999999"}
-          value={jumpPath}
-          onChangeText={setJumpPath}
-          onSubmitEditing={goJump}
-          returnKeyType="go"
-          autoCapitalize="none"
-          autoCorrect={false}
-          testID="directory-jump-input"
+          )}
+          contentContainerStyle={s.list}
+          ListHeaderComponent={
+            loading ? (
+              <View style={s.centerBox}>
+                <ActivityIndicator color={isDark ? "#ffffff" : "#0a0a0a"} />
+              </View>
+            ) : error ? (
+              <View style={s.centerBox}>
+                <Text style={s.errorText}>{error}</Text>
+              </View>
+            ) : null
+          }
+          ListEmptyComponent={
+            !loading && !error ? (
+              <Text style={[s.emptyText, isDark && s.dimDark]}>
+                {browseDir
+                  ? t("chat.directoryBrowserSheet.noSubfolders")
+                  : t("chat.directoryBrowserSheet.enterPathHint")}
+              </Text>
+            ) : null
+          }
         />
-        {jumpPath.trim() && (
+
+        <View style={s.footer}>
           <TouchableOpacity
-            style={[s.goBtn, isDark && s.goBtnDark]}
-            onPress={goJump}
+            style={[
+              s.selectBtn,
+              isDark && s.selectBtnDark,
+              !browseDir && s.selectBtnDisabled,
+            ]}
+            onPress={handleUseFolder}
+            disabled={!browseDir}
+            testID="directory-select-button"
           >
             <Ionicons
-              name="arrow-forward"
+              name="checkmark-circle"
               size={18}
               color={isDark ? "#0a0a0a" : "#ffffff"}
             />
-          </TouchableOpacity>
-        )}
-      </View>
-
-      <BottomSheetFlatList
-        data={entries}
-        keyExtractor={(item: FileEntry) => item.absolute}
-        renderItem={({ item }: { item: FileEntry }) => (
-          <TouchableOpacity
-            style={[s.row, isDark && s.rowDark]}
-            onPress={() => enter(item.absolute)}
-            testID={`directory-row-${item.name}`}
-          >
-            <Ionicons
-              name="folder-outline"
-              size={20}
-              color={
-                item.ignored
-                  ? isDark
-                    ? "#555555"
-                    : "#bbbbbb"
-                  : isDark
-                    ? "#888888"
-                    : "#666666"
-              }
-            />
             <Text
-              style={[
-                s.rowLabel,
-                isDark && s.white,
-                item.ignored && s.rowLabelDim,
-              ]}
+              style={[s.selectBtnText, isDark && s.selectBtnTextDark]}
               numberOfLines={1}
             >
-              {item.name}
+              {t("chat.directoryBrowserSheet.useFolderButton", {
+                folder: browseDir
+                  ? nameOf(browseDir)
+                  : t("chat.directoryBrowserSheet.thisFolderFallback"),
+              })}
             </Text>
-            <Ionicons
-              name="chevron-forward"
-              size={16}
-              color={isDark ? "#555555" : "#cccccc"}
-            />
           </TouchableOpacity>
-        )}
-        contentContainerStyle={s.list}
-        ListHeaderComponent={
-          loading ? (
-            <View style={s.centerBox}>
-              <ActivityIndicator color={isDark ? "#ffffff" : "#0a0a0a"} />
-            </View>
-          ) : error ? (
-            <View style={s.centerBox}>
-              <Text style={s.errorText}>{error}</Text>
-            </View>
-          ) : null
-        }
-        ListEmptyComponent={
-          !loading && !error ? (
-            <Text style={[s.emptyText, isDark && s.dimDark]}>
-              {browseDir
-                ? t("chat.directoryBrowserSheet.noSubfolders")
-                : t("chat.directoryBrowserSheet.enterPathHint")}
-            </Text>
-          ) : null
-        }
-      />
-
-      <View style={s.footer}>
-        <TouchableOpacity
-          style={[
-            s.selectBtn,
-            isDark && s.selectBtnDark,
-            !browseDir && s.selectBtnDisabled,
-          ]}
-          onPress={handleUseFolder}
-          disabled={!browseDir}
-          testID="directory-select-button"
-        >
-          <Ionicons
-            name="checkmark-circle"
-            size={18}
-            color={isDark ? "#0a0a0a" : "#ffffff"}
-          />
-          <Text
-            style={[s.selectBtnText, isDark && s.selectBtnTextDark]}
-            numberOfLines={1}
-          >
-            {t("chat.directoryBrowserSheet.useFolderButton", {
-              folder: browseDir
-                ? nameOf(browseDir)
-                : t("chat.directoryBrowserSheet.thisFolderFallback"),
-            })}
-          </Text>
-        </TouchableOpacity>
-      </View>
+        </View>
+      </BottomSheetView>
     </BottomSheet>
   );
 }

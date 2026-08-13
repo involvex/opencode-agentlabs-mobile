@@ -1,8 +1,14 @@
-import { View, Text, TouchableOpacity, StyleSheet } from "react-native";
+import {
+  View,
+  Text,
+  TouchableOpacity,
+  StyleSheet,
+  FlatList,
+} from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import BottomSheet, {
   BottomSheetBackdrop,
-  BottomSheetFlatList,
+  BottomSheetView,
 } from "@gorhom/bottom-sheet";
 import { useTranslation } from "react-i18next";
 
@@ -56,11 +62,11 @@ export function VariantPicker({
 
   return (
     <BottomSheet
-      ref={sheetRef}
+      ref={(innerRef) => {
+        sheetRef.current = innerRef;
+      }}
       index={-1}
       snapPoints={["30%", "50%"]}
-      // See DirectoryBrowserSheet.tsx for why this is required alongside
-      // static snapPoints (issue #104): without it the sheet can never open.
       enableDynamicSizing={false}
       enablePanDownToClose
       backgroundStyle={isDark ? s.sheetDark : s.sheet}
@@ -74,42 +80,46 @@ export function VariantPicker({
         />
       )}
     >
-      <View style={s.header}>
-        <Text style={[s.title, isDark && s.textWhite]}>
-          {t("chat.variantPicker.title")}
-        </Text>
-      </View>
-      <BottomSheetFlatList
-        data={options}
-        keyExtractor={(item: VariantOption) => item.id ?? "auto"}
-        renderItem={({ item }: { item: VariantOption }) => {
-          const active = item.id === selected;
-          return (
-            <TouchableOpacity
-              style={[
-                s.row,
-                isDark && s.rowDark,
-                active && (isDark ? s.rowSelectedDark : s.rowSelected),
-              ]}
-              onPress={() => handleSelect(item.id)}
-              testID={`variant-option-${item.id ?? "auto"}`}
-            >
-              <View style={s.rowText}>
-                <Text style={[s.rowName, isDark && s.textWhite]}>
-                  {item.label}
-                </Text>
-                <Text style={[s.rowDesc, isDark && s.metaDark]}>
-                  {item.description}
-                </Text>
-              </View>
-              {active && (
-                <Ionicons name="checkmark-circle" size={20} color="#8b5cf6" />
-              )}
-            </TouchableOpacity>
-          );
-        }}
-        contentContainerStyle={s.content}
-      />
+      <BottomSheetView>
+        <View style={s.header}>
+          <Text style={[s.title, isDark && s.textWhite]}>
+            {t("chat.variantPicker.title")}
+          </Text>
+        </View>
+        <FlatList
+          style={{ flex: 1 }}
+          data={options}
+          keyExtractor={(item: VariantOption) => item.id ?? "auto"}
+          renderItem={({ item }: { item: VariantOption }) => {
+            const active = item.id === selected;
+            return (
+              <TouchableOpacity
+                style={[
+                  s.row,
+                  isDark && s.rowDark,
+                  active && (isDark ? s.rowSelectedDark : s.rowSelected),
+                ]}
+                onPress={() => handleSelect(item.id)}
+                testID={`variant-option-${item.id ?? "auto"}`}
+                activeOpacity={0.7}
+              >
+                <View style={s.rowText}>
+                  <Text style={[s.rowName, isDark && s.textWhite]}>
+                    {item.label}
+                  </Text>
+                  <Text style={[s.rowDesc, isDark && s.metaDark]}>
+                    {item.description}
+                  </Text>
+                </View>
+                {active && (
+                  <Ionicons name="checkmark-circle" size={20} color="#8b5cf6" />
+                )}
+              </TouchableOpacity>
+            );
+          }}
+          contentContainerStyle={s.content}
+        />
+      </BottomSheetView>
     </BottomSheet>
   );
 }

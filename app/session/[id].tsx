@@ -36,6 +36,7 @@ import {
   ImageAttachments,
   SessionInfo,
   TerminalView,
+  DirectoryBrowserSheet,
   type SlashCommand,
   type Attachment,
 } from "../../src/components/chat";
@@ -91,6 +92,8 @@ export default function SessionScreen() {
   const flatListRef = useRef<FlatList>(null);
   const modelSheetRef = useRef<BottomSheet>(null);
   const variantSheetRef = useRef<BottomSheet>(null);
+  const browserSheetRef = useRef<BottomSheet>(null);
+  const [browseStartDir, setBrowseStartDir] = useState<string | null>(null);
   const [input, setInput] = useState("");
   const [attachments, setAttachments] = useState<Attachment[]>([]);
   const [showInfo, setShowInfo] = useState(false);
@@ -116,7 +119,15 @@ export default function SessionScreen() {
   );
 
   const { authenticateForMessage } = useAuth();
-  const { client, clientForDirectory, clientBase } = useConnections();
+  const {
+    client,
+    clientForDirectory,
+    clientBase,
+    activeConnection,
+    serverHome,
+    switchDirectory,
+    addRecentDirectory,
+  } = useConnections();
   const baseUrl = clientBase?.baseUrl || "";
   const authUsername = clientBase?.auth?.username;
   const authPassword = clientBase?.auth?.password;
@@ -174,6 +185,23 @@ export default function SessionScreen() {
     useCallback((text: string) => {
       setInput((prev) => (prev ? prev + " " + text : text));
     }, []),
+  );
+
+  // Directory browser (file picker) for switching project directory from session screen
+  const openBrowser = useCallback(() => {
+    setBrowseStartDir(activeConnection?.directory || serverHome || null);
+    browserSheetRef.current?.expand();
+  }, [activeConnection?.directory, serverHome]);
+
+  const handleBrowserSelect = useCallback(
+    async (directory: string) => {
+      await switchDirectory(directory);
+      await addRecentDirectory(directory);
+      if (id) {
+        selectSession(id, directory);
+      }
+    },
+    [switchDirectory, addRecentDirectory, id, selectSession],
   );
 
   // Surface speech recognition failures (e.g. mic permission denied). Keyed
@@ -697,18 +725,27 @@ export default function SessionScreen() {
           title: currentSession?.title || t("session.titleFallback"),
           headerRight: () => (
             <View style={s.headerRight}>
-              {shortDir && (
-                <View style={[s.dirBadge, isDark && s.dirBadgeDark]}>
+              <TouchableOpacity
+                onPress={() => modelSheetRef.current?.expand()}
+                hitSlop={8}
+                testID="model-chip-header"
+              >
+                <View
+                  style={[s.modelChipHeader, isDark && s.modelChipHeaderDark]}
+                >
                   <Ionicons
-                    name="folder-outline"
+                    name="hardware-chip-outline"
                     size={14}
                     color={isDark ? "#888888" : "#666666"}
                   />
-                  <Text style={[s.dirText, isDark && s.dirTextDark]}>
-                    {shortDir}
+                  <Text
+                    style={[s.modelLabelHeader, isDark && s.metaDark]}
+                    numberOfLines={1}
+                  >
+                    {modelLabel}
                   </Text>
                 </View>
-              )}
+              </TouchableOpacity>
               <TouchableOpacity
                 onPress={() => setShowInfo((v) => !v)}
                 hitSlop={8}
@@ -1112,6 +1149,15 @@ export default function SessionScreen() {
         isDark={isDark}
         onSelect={setVariant}
       />
+
+      {/* Directory browser bottom sheet */}
+      <DirectoryBrowserSheet
+        sheetRef={browserSheetRef}
+        startDirectory={browseStartDir}
+        clientForDirectory={clientForDirectory}
+        isDark={isDark}
+        onSelect={handleBrowserSelect}
+      />
     </>
   );
 }
@@ -1209,6 +1255,17 @@ const s = StyleSheet.create({
   },
   modelChipDark: { backgroundColor: "#1a1a1a" },
   modelLabel: { fontSize: 12, color: "#666666", maxWidth: 160 },
+  modelChipHeader: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 2,
+    backgroundColor: "#f5f5f5",
+    borderRadius: 8,
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+  },
+  modelChipHeaderDark: { backgroundColor: "#1a1a1a" },
+  modelLabelHeader: { fontSize: 10, color: "#666666", maxWidth: 80 },
 
   // Variant (reasoning effort) chip
   variantChip: {
@@ -1293,7 +1350,9 @@ const s = StyleSheet.create({
   },
 
   // Header
-  headerRight: { flexDirection: "row", alignItems: "center", gap: 8 },
+  headerRight: { flexDirection: "row", alignItems: "center", gap: 6 },
+  connectionName: { fontSize: 13, fontWeight: "600", color: "#0a0a0a" },
+  connectionNameDark: { color: "#e5e5e5" },
   dirBadge: {
     flexDirection: "row",
     alignItems: "center",
