@@ -14,7 +14,7 @@ import { useTranslation } from "react-i18next";
 import { router } from "expo-router";
 import { useAuth } from "../../src/stores/auth";
 import { useSettings } from "../../src/stores/settings";
-import { useTheme } from "../../src/lib/theme";
+import { useTheme, PRESET_ACCENT_COLORS } from "../../src/lib/theme";
 import { useEvents } from "../../src/stores/events";
 import { useSessions } from "../../src/stores/sessions";
 import { useConnections } from "../../src/stores/connections";
@@ -119,6 +119,8 @@ export default function SettingsScreen() {
     setDensity,
     theme,
     setTheme,
+    accentColor,
+    setAccentColor,
   } = useSettings();
   const reconnect = useEvents((s) => s.connect);
   const [osGranted, setOsGranted] = useState<boolean | null>(null);
@@ -453,6 +455,28 @@ export default function SettingsScreen() {
             </View>
           }
         />
+
+        <SettingRow
+          icon="palette-outline"
+          label={t("settings.appearance.accentColor.label")}
+          description={t("settings.appearance.accentColor.description")}
+          isDark={isDark}
+          right={
+            <View style={styles.accentRow}>
+              {PRESET_ACCENT_COLORS.map((color) => (
+                <TouchableOpacity
+                  key={color}
+                  style={[
+                    styles.accentSwatch,
+                    { backgroundColor: color },
+                    accentColor === color && styles.accentSwatchSelected,
+                  ]}
+                  onPress={() => setAccentColor(color)}
+                />
+              ))}
+            </View>
+          }
+        />
       </SettingSection>
 
       <SettingSection title={t("settings.sections.about")} isDark={isDark}>
@@ -736,5 +760,21 @@ const styles = StyleSheet.create({
     color: "#0a0a0a",
     minWidth: 24,
     textAlign: "center",
+  },
+
+  accentRow: {
+    flexDirection: "row",
+    gap: 8,
+  },
+  accentSwatch: {
+    width: 24,
+    height: 24,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: "#d1d5db",
+  },
+  accentSwatchSelected: {
+    borderWidth: 2,
+    borderColor: "#0a0a0a",
   },
 });

@@ -2,6 +2,7 @@ import { View, Text, StyleSheet, ActivityIndicator } from "react-native";
 import { useTranslation } from "react-i18next";
 import { useEvents } from "../../stores/events";
 import { useSessions } from "../../stores/sessions";
+import { useAccentColor } from "../../lib/theme";
 
 interface Props {
   sessionID: string;
@@ -10,6 +11,7 @@ interface Props {
 
 export function StatusIndicator({ sessionID, isDark }: Props) {
   const { t } = useTranslation();
+  const accent = useAccentColor();
   const status = useEvents((s) => s.sessionStatus[sessionID]);
   const text = useEvents((s) => s.statusText[sessionID]);
   const optimistic = useSessions((s) => s.sending[sessionID]);
@@ -28,8 +30,10 @@ export function StatusIndicator({ sessionID, isDark }: Props) {
 
   return (
     <View style={[s.bar, isDark && s.barDark]}>
-      <ActivityIndicator size="small" color="#8b5cf6" />
-      <Text style={[s.text, isDark && s.textDark]}>{label}</Text>
+      <ActivityIndicator size="small" color={accent} />
+      <Text style={[s.text, isDark && s.textDark, { color: accent }]}>
+        {label}
+      </Text>
     </View>
   );
 }

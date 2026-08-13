@@ -22,7 +22,7 @@ import { useSessions } from "../../src/stores/sessions";
 import { useConnections } from "../../src/stores/connections";
 import { useEvents } from "../../src/stores/events";
 import { useCatalog } from "../../src/stores/catalog";
-import { useTheme } from "../../src/lib/theme";
+import { useTheme, useAccentColor } from "../../src/lib/theme";
 import type BottomSheet from "@gorhom/bottom-sheet";
 import type { Session, Project } from "../../src/lib/sdk";
 import {
@@ -61,6 +61,7 @@ function formatTime(
 function SessionItem({
   session,
   isDark,
+  accent,
   pinned,
   unreadCount,
   onRename,
@@ -69,6 +70,7 @@ function SessionItem({
 }: {
   session: Session;
   isDark: boolean;
+  accent: string;
   pinned: boolean;
   unreadCount?: number;
   onRename: () => void;
@@ -146,13 +148,7 @@ function SessionItem({
           )}
         </View>
       </View>
-      {pinned && (
-        <Ionicons
-          name="push-pin"
-          size={16}
-          color={isDark ? "#8b5cf6" : "#8b5cf6"}
-        />
-      )}
+      {pinned && <Ionicons name="push-pin" size={16} color={accent} />}
       {unreadCount && unreadCount > 0 && (
         <View
           style={[
@@ -191,6 +187,7 @@ type ListRow =
 function GroupHeader({
   row,
   isDark,
+  accent,
   onToggle,
 }: {
   row: {
@@ -200,6 +197,7 @@ function GroupHeader({
     collapsed: boolean;
   };
   isDark: boolean;
+  accent: string;
   onToggle: () => void;
 }) {
   return (
@@ -208,11 +206,7 @@ function GroupHeader({
       onPress={onToggle}
       activeOpacity={0.7}
     >
-      <Ionicons
-        name="folder-outline"
-        size={16}
-        color={isDark ? "#8b5cf6" : "#6d28d9"}
-      />
+      <Ionicons name="folder-outline" size={16} color={accent} />
       <Text
         style={[styles.groupHeaderText, isDark && styles.textDark]}
         numberOfLines={1}
@@ -250,6 +244,7 @@ function getShortPath(
 
 export default function SessionsScreen() {
   const isDark = useTheme();
+  const accent = useAccentColor();
   const { t } = useTranslation();
   const [showNewSession, setShowNewSession] = useState(false);
   const [customDir, setCustomDir] = useState("");
@@ -627,18 +622,19 @@ export default function SessionsScreen() {
         {/* No-server activation path (retention): a fully offline scripted
             demo, isolated from real connect/session state — see app/demo.tsx. */}
         <TouchableOpacity
-          style={[styles.tryDemoButton, isDark && styles.tryDemoButtonDark]}
+          style={[
+            styles.tryDemoButton,
+            { borderColor: accent },
+            isDark && styles.tryDemoButtonDark,
+          ]}
           onPress={() => router.push("/demo")}
           testID="try-demo-button"
         >
-          <Ionicons
-            name="play-circle-outline"
-            size={16}
-            color={isDark ? "#a78bfa" : "#6d28d9"}
-          />
+          <Ionicons name="play-circle-outline" size={16} color={accent} />
           <Text
             style={[
               styles.tryDemoButtonText,
+              { color: accent },
               isDark && styles.tryDemoButtonTextDark,
             ]}
           >
@@ -785,12 +781,14 @@ export default function SessionsScreen() {
             <GroupHeader
               row={row}
               isDark={isDark}
+              accent={accent}
               onToggle={() => toggleGroup(row.directory)}
             />
           ) : (
             <SessionItem
               session={row.session}
               isDark={isDark}
+              accent={accent}
               pinned={pinnedSessions.includes(row.session.id)}
               unreadCount={unreadCounts[row.session.id]}
               onRename={() => handleRename(row.session)}
@@ -884,11 +882,7 @@ export default function SessionsScreen() {
                 onPress={() => onCreateInDirectory()}
                 disabled={isCreating}
               >
-                <Ionicons
-                  name="folder"
-                  size={20}
-                  color={isDark ? "#8b5cf6" : "#6d28d9"}
-                />
+                <Ionicons name="folder" size={20} color={accent} />
                 <Text
                   style={[styles.modalDirText, isDark && styles.textDark]}
                   numberOfLines={2}
@@ -900,7 +894,7 @@ export default function SessionsScreen() {
                 <Ionicons
                   name="arrow-forward-circle"
                   size={20}
-                  color={isDark ? "#8b5cf6" : "#6d28d9"}
+                  color={accent}
                 />
               </TouchableOpacity>
 
@@ -937,11 +931,7 @@ export default function SessionsScreen() {
                           name="folder-outline"
                           size={18}
                           color={
-                            isCurrent
-                              ? "#8b5cf6"
-                              : isDark
-                                ? "#888888"
-                                : "#666666"
+                            isCurrent ? accent : isDark ? "#888888" : "#666666"
                           }
                         />
                         <View style={styles.projectRowContent}>
@@ -949,7 +939,7 @@ export default function SessionsScreen() {
                             style={[
                               styles.projectRowName,
                               isDark && styles.textDark,
-                              isCurrent && styles.projectRowNameActive,
+                              isCurrent && { color: accent },
                             ]}
                             numberOfLines={1}
                           >
@@ -969,7 +959,7 @@ export default function SessionsScreen() {
                           <Ionicons
                             name="checkmark-circle"
                             size={18}
-                            color="#8b5cf6"
+                            color={accent}
                           />
                         )}
                       </TouchableOpacity>
@@ -1063,11 +1053,7 @@ export default function SessionsScreen() {
                 disabled={isCreating}
                 testID="browse-folders-button"
               >
-                <Ionicons
-                  name="folder-open-outline"
-                  size={18}
-                  color={isDark ? "#8b5cf6" : "#6d28d9"}
-                />
+                <Ionicons name="folder-open-outline" size={18} color={accent} />
                 <View style={styles.projectRowContent}>
                   <Text
                     style={[styles.projectRowName, isDark && styles.textDark]}
@@ -1633,9 +1619,6 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: "600",
     color: "#0a0a0a",
-  },
-  projectRowNameActive: {
-    color: "#8b5cf6",
   },
   projectRowPath: {
     fontSize: 11,

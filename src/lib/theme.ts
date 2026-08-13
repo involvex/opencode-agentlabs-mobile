@@ -14,3 +14,18 @@ export function useTheme(): boolean {
   const system = useColorScheme();
   return resolveTheme(theme, system);
 }
+
+export function useAccentColor(): string {
+  return useSettings((s) => s.accentColor);
+}
+
+export const PRESET_ACCENT_COLORS = [
+  "#8b5cf6",
+  "#3b82f6",
+  "#10b981",
+  "#f59e0b",
+  "#ef4444",
+  "#ec4899",
+  "#6366f1",
+  "#14b8a3",
+] as const;

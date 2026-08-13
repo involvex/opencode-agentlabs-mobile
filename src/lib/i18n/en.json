@@ -76,6 +76,10 @@
       "theme": {
         "label": "Theme",
         "description": "Select app theme ({{value}})"
+      },
+      "accentColor": {
+        "label": "Accent Color",
+        "description": "Choose your app accent color"
       }
     },
     "developer": {

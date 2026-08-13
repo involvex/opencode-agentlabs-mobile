@@ -18,6 +18,7 @@ interface Settings {
   debugMode: boolean;
   density: Density;
   theme: Theme;
+  accentColor: string;
 }
 
 const DEFAULTS: Settings = {
@@ -28,6 +29,7 @@ const DEFAULTS: Settings = {
   debugMode: false,
   density: "default",
   theme: "auto",
+  accentColor: "#8b5cf6",
 };
 
 interface SettingsState extends Settings {
@@ -40,6 +42,7 @@ interface SettingsState extends Settings {
   setDebugMode: (enabled: boolean) => Promise<void>;
   setDensity: (density: Density) => Promise<void>;
   setTheme: (theme: Theme) => Promise<void>;
+  setAccentColor: (color: string) => Promise<void>;
 }
 
 function clampTerminalFontSize(size: number): number {
@@ -55,6 +58,7 @@ function snapshot(get: () => SettingsState): Settings {
     debugMode: get().debugMode,
     density: get().density,
     theme: get().theme,
+    accentColor: get().accentColor,
   };
 }
 
@@ -116,5 +120,10 @@ export const useSettings = create<SettingsState>((set, get) => ({
   setTheme: async (theme) => {
     set({ theme });
     await persist({ ...snapshot(get), theme });
+  },
+
+  setAccentColor: async (color) => {
+    set({ accentColor: color });
+    await persist({ ...snapshot(get), accentColor: color });
   },
 }));
