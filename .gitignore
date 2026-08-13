@@ -30,3 +30,4 @@ positive-S*.png
 negative-S*.png
 config.json
 -w
+tsconfig.tsbuildinfo
