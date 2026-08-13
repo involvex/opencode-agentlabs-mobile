@@ -120,6 +120,7 @@ export default function SessionScreen() {
   const baseUrl = clientBase?.baseUrl || "";
   const authUsername = clientBase?.auth?.username;
   const authPassword = clientBase?.auth?.password;
+  const loadCatalog = useCatalog((s) => s.load);
 
   // Use directory-aware client for sessions that belong to a project other than the active one
   // Extract directory into a plain variable so the React Compiler can track the dep
@@ -329,6 +330,7 @@ export default function SessionScreen() {
   useFocusEffect(
     useCallback(() => {
       if (!id) return;
+      loadCatalog();
       selectSession(id, directory).then(() => {
         // Re-fetch pending permissions/questions from the server to recover from
         // missed SSE events or failed optimistic removals
@@ -338,7 +340,7 @@ export default function SessionScreen() {
           : connState.client;
         if (c) refreshPending(c, id);
       });
-    }, [id, directory, selectSession]),
+    }, [id, directory, selectSession, loadCatalog]),
   );
 
   // Sync model chip from latest assistant message

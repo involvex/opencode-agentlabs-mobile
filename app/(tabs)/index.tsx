@@ -323,8 +323,9 @@ export default function SessionsScreen() {
       if (client) {
         loadSessions();
         refreshProject();
+        loadCatalog();
       }
-    }, [client, loadSessions, refreshProject]),
+    }, [client, loadSessions, refreshProject, loadCatalog]),
   );
 
   const onRefresh = useCallback(async () => {
