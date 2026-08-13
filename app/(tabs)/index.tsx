@@ -284,6 +284,7 @@ export default function SessionsScreen() {
   // Directories collapsed in the grouped session list. Empty by default —
   // all groups start expanded (#67).
   const [collapsedDirs, setCollapsedDirs] = useState<Set<string>>(new Set());
+  const [searchQuery, setSearchQuery] = useState("");
 
   const toggleGroup = useCallback((directory: string) => {
     setCollapsedDirs((prev) => {
@@ -297,7 +298,13 @@ export default function SessionsScreen() {
   // Flatten sessions into header+item rows. Skip headers entirely when
   // everything lives in one directory — a lone header adds noise, not clarity.
   const rows = useMemo<ListRow[]>(() => {
-    const sorted = [...sessions].sort((a, b) => {
+    const filtered = searchQuery
+      ? sessions.filter(
+          (s) =>
+            s.title?.toLowerCase().includes(searchQuery.toLowerCase()) || false,
+        )
+      : sessions;
+    const sorted = [...filtered].sort((a, b) => {
       const aPinned = pinnedSessions.includes(a.id);
       const bPinned = pinnedSessions.includes(b.id);
       if (aPinned === bPinned) return 0;
@@ -305,7 +312,7 @@ export default function SessionsScreen() {
     });
     const groups = groupByDirectory(sorted);
     if (groups.length <= 1) {
-      return sessions.map((session) => ({ type: "session", session }));
+      return sorted.map((session) => ({ type: "session", session }));
     }
     const out: ListRow[] = [];
     for (const group of groups) {
@@ -323,7 +330,7 @@ export default function SessionsScreen() {
       }
     }
     return out;
-  }, [sessions, collapsedDirs, pinnedSessions]);
+  }, [sessions, collapsedDirs, pinnedSessions, searchQuery]);
 
   // Fetch server-known projects when the new session modal opens
   useEffect(() => {
@@ -733,6 +740,25 @@ export default function SessionsScreen() {
           <Text style={styles.errorText}>{error}</Text>
         </View>
       )}
+
+      <View
+        style={[styles.searchContainer, isDark && styles.searchContainerDark]}
+      >
+        <Ionicons
+          name="search-outline"
+          size={16}
+          color={isDark ? "#888888" : "#999999"}
+        />
+        <TextInput
+          style={[styles.searchInput, isDark && styles.searchInputDark]}
+          placeholder={t("sessionsList.searchPlaceholder")}
+          placeholderTextColor={isDark ? "#666666" : "#999999"}
+          value={searchQuery}
+          onChangeText={setSearchQuery}
+          returnKeyType="search"
+          clearButtonMode="while-editing"
+        />
+      </View>
 
       <FlatList
         data={rows}
@@ -1713,5 +1739,28 @@ const styles = StyleSheet.create({
     fontSize: 15,
     fontWeight: "600",
     color: "#888888",
+  },
+
+  searchContainer: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+    marginHorizontal: 16,
+    marginVertical: 8,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    backgroundColor: "#f5f5f5",
+    borderRadius: 10,
+  },
+  searchContainerDark: {
+    backgroundColor: "#2a2a2a",
+  },
+  searchInput: {
+    flex: 1,
+    fontSize: 15,
+    color: "#0a0a0a",
+  },
+  searchInputDark: {
+    color: "#ffffff",
   },
 });

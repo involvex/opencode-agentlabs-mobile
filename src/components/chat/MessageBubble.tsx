@@ -17,9 +17,12 @@ import { ToolCallCard } from "./ToolCallCard";
 import { ReasoningBlock } from "./ReasoningBlock";
 import { useDensity } from "../../lib/density";
 import { formatRelativeTime, formatAbsoluteTime } from "../../lib/time-format";
+import { useReactions } from "../../stores/reactions";
 import type { Message, Part } from "../../lib/sdk";
 
 const SCREEN_WIDTH = Dimensions.get("window").width;
+
+const EMOJI_PICKER: string[] = ["👍", "❤️", "🎉", "🤔", "🔥", "✅", "💡", "🚀"];
 
 function isImageMime(mime?: string): boolean {
   return !!mime && mime.startsWith("image/");
@@ -63,15 +66,41 @@ export const MessageBubble = memo(
       ]);
     }, [message.time.created, t]);
 
+    const handleReactionPress = useCallback(
+      (emoji: string) => {
+        const msgReactions =
+          useReactions.getState().reactions[message.id] || [];
+        if (msgReactions.includes(emoji)) {
+          useReactions.getState().removeReaction(message.id, emoji);
+        } else {
+          useReactions.getState().addReaction(message.id, emoji);
+        }
+      },
+      [message.id],
+    );
+
+    const showReactionPicker = useCallback(() => {
+      const buttons = EMOJI_PICKER.map((emoji) => ({
+        text: emoji,
+        onPress: () => handleReactionPress(emoji),
+      }));
+      Alert.alert(t("chat.message.addReaction"), undefined, [
+        ...buttons,
+        { text: t("common.cancel"), style: "cancel" },
+      ]);
+    }, [t, handleReactionPress]);
+
+    const messageReactions = useReactions((s) => s.reactions[message.id] || []);
+
     return (
       <TouchableOpacity
         activeOpacity={isUser && onLongPress ? 0.7 : 1}
         onLongPress={
           isUser && onLongPress
             ? () => onLongPress(message.id)
-            : handleTimestampPress
+            : showReactionPicker
         }
-        disabled={!isUser && !onLongPress && !handleTimestampPress}
+        disabled={!isUser && !onLongPress}
         style={[
           s.bubble,
           isUser ? s.user : s.assistant,
@@ -101,17 +130,35 @@ export const MessageBubble = memo(
               {message.modelID}
             </Text>
           )}
+          {!isUser && (
+            <TouchableOpacity
+              onPress={handleTimestampPress}
+              style={s.timePressable}
+            >
+              <Text
+                style={[
+                  s.timestamp,
+                  isDark && s.timestampDark,
+                  { fontSize: 10 * density.font },
+                ]}
+              >
+                {formatRelativeTime(message.time.created)}
+              </Text>
+            </TouchableOpacity>
+          )}
         </View>
 
-        <Text
-          style={[
-            s.timestamp,
-            isDark && s.timestampDark,
-            { fontSize: 10 * density.font, marginTop: 2 * density.gap },
-          ]}
-        >
-          {formatRelativeTime(message.time.created)}
-        </Text>
+        {isUser && (
+          <Text
+            style={[
+              s.timestamp,
+              isDark && s.timestampDark,
+              { fontSize: 10 * density.font, marginTop: 2 * density.gap },
+            ]}
+          >
+            {formatRelativeTime(message.time.created)}
+          </Text>
+        )}
 
         {/* Image attachments */}
         {fileParts.length > 0 && (
@@ -169,6 +216,31 @@ export const MessageBubble = memo(
             {message.tokens.input + message.tokens.output} tokens
             {message.cost ? ` · $${message.cost.toFixed(4)}` : ""}
           </Text>
+        )}
+
+        {/* Reactions */}
+        {messageReactions.length > 0 && (
+          <View style={s.reactionsRow}>
+            {messageReactions.map((emoji) => {
+              const count = messageReactions.filter((e) => e === emoji).length;
+              return (
+                <TouchableOpacity
+                  key={`${emoji}-${count}`}
+                  style={[s.reactionChip, isDark && s.reactionChipDark]}
+                  onPress={() => handleReactionPress(emoji)}
+                >
+                  <Text style={s.reactionEmoji}>{emoji}</Text>
+                  {count > 1 && (
+                    <Text
+                      style={[s.reactionCount, isDark && s.reactionCountDark]}
+                    >
+                      {count}
+                    </Text>
+                  )}
+                </TouchableOpacity>
+              );
+            })}
+          </View>
         )}
       </TouchableOpacity>
     );
@@ -245,4 +317,38 @@ const s = StyleSheet.create({
   },
   imageLabel: { fontSize: 10, color: "#666666", marginTop: 2, maxWidth: 200 },
   imageLabelDark: { color: "#888888" },
+
+  timePressable: {
+    marginLeft: "auto",
+    paddingHorizontal: 8,
+    paddingVertical: 2,
+  },
+
+  reactionsRow: {
+    flexDirection: "row",
+    gap: 4,
+    marginTop: 4,
+  },
+  reactionChip: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 4,
+    backgroundColor: "#f5f5f5",
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    borderRadius: 10,
+  },
+  reactionChipDark: {
+    backgroundColor: "#2a2a2a",
+  },
+  reactionEmoji: {
+    fontSize: 12,
+  },
+  reactionCount: {
+    fontSize: 10,
+    color: "#666666",
+  },
+  reactionCountDark: {
+    color: "#888888",
+  },
 });

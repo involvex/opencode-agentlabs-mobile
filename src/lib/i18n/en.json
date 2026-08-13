@@ -287,6 +287,7 @@
       "daysAgo": "{{count}}d ago"
     },
     "filesCount": "{{count}} files",
+    "searchPlaceholder": "Search sessions...",
     "actions": {
       "rename": "Rename",
       "pin": "Pin",
@@ -393,7 +394,12 @@
     },
     "message": {
       "timestamp": "Message timestamp",
-      "copyTimestamp": "Copy absolute time"
+      "copyTimestamp": "Copy absolute time",
+      "addReaction": "Add reaction",
+      "reactions": {
+        "title": "Add reaction",
+        "toggle": "Remove reaction"
+      }
     },
     "questionPrompt": {
       "headerFallback": "Question",
