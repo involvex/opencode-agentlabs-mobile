@@ -3,16 +3,12 @@ import {
   View,
   Text,
   FlatList,
-  ScrollView,
   TouchableOpacity,
   StyleSheet,
   RefreshControl,
   ActivityIndicator,
-  Modal,
   TextInput,
   Alert,
-  KeyboardAvoidingView,
-  Platform,
   Linking,
 } from "react-native";
 import { router, useFocusEffect } from "expo-router";
@@ -22,6 +18,7 @@ import { useSessions } from "../../src/stores/sessions";
 import { useConnections } from "../../src/stores/connections";
 import { useEvents } from "../../src/stores/events";
 import { useCatalog } from "../../src/stores/catalog";
+import { useTemplates } from "../../src/stores/templates";
 import { useTheme, useAccentColor } from "../../src/lib/theme";
 import type BottomSheet from "@gorhom/bottom-sheet";
 import type { Session, Project } from "../../src/lib/sdk";
@@ -32,6 +29,8 @@ import {
 import { groupByDirectory } from "../../src/lib/session-grouping";
 import { nameOf } from "../../src/lib/path-utils";
 import { SETUP_GUIDE_URL } from "../../src/lib/links";
+import { NewSessionModal } from "../../src/components/tabs/NewSessionModal";
+import { RenameModal } from "../../src/components/tabs/RenameModal";
 
 function formatTime(
   timestamp: number,
@@ -67,6 +66,9 @@ function SessionItem({
   onRename,
   onDelete,
   onPin,
+  searchSnippet,
+  tags,
+  onAddTag,
 }: {
   session: Session;
   isDark: boolean;
@@ -76,6 +78,9 @@ function SessionItem({
   onRename: () => void;
   onDelete: () => void;
   onPin: () => void;
+  searchSnippet?: string | null;
+  tags?: string[];
+  onAddTag?: () => void;
 }) {
   const { t } = useTranslation();
 
@@ -99,6 +104,9 @@ function SessionItem({
         onPress: onPin,
       },
       { text: t("sessionsList.actions.rename"), onPress: onRename },
+      ...(onAddTag
+        ? [{ text: t("sessionsList.actions.addTag"), onPress: onAddTag }]
+        : []),
       { text: t("common.delete"), style: "destructive", onPress: onDelete },
     ]);
   };
@@ -147,6 +155,28 @@ function SessionItem({
             </View>
           )}
         </View>
+        {searchSnippet && (
+          <Text
+            style={[styles.sessionSnippet, isDark && styles.metaDark]}
+            numberOfLines={2}
+          >
+            {searchSnippet}
+          </Text>
+        )}
+        {tags && tags.length > 0 && (
+          <View style={styles.sessionTagsRow}>
+            {tags.map((tag) => (
+              <View
+                key={tag}
+                style={[styles.sessionTagChip, { borderColor: accent }]}
+              >
+                <Text style={[styles.sessionTagText, { color: accent }]}>
+                  {tag}
+                </Text>
+              </View>
+            ))}
+          </View>
+        )}
       </View>
       {pinned && <Ionicons name="push-pin" size={16} color={accent} />}
       {unreadCount && unreadCount > 0 && (
@@ -182,7 +212,11 @@ type ListRow =
       count: number;
       collapsed: boolean;
     }
-  | { type: "session"; session: Session };
+  | {
+      type: "session";
+      session: Session;
+      searchSnippet: string | null;
+    };
 
 function GroupHeader({
   row,
@@ -249,14 +283,15 @@ export default function SessionsScreen() {
   const [showNewSession, setShowNewSession] = useState(false);
   const [customDir, setCustomDir] = useState("");
   const [isCreating, setIsCreating] = useState(false);
+  const [templateName, setTemplateName] = useState("");
   const [renaming, setRenaming] = useState<Session | null>(null);
   const [renameText, setRenameText] = useState("");
   const renamingInFlight = useRef(false);
-  // Synchronous re-entrancy guard: `isCreating` state lags by a render, so a
-  // fast double-tap on the FAB / "Use this folder" would fire two session
-  // creates before the disabled state lands. This blocks the second call.
   const creatingInFlight = useRef(false);
   const [serverProjects, setServerProjects] = useState<Project[]>([]);
+  const [selectedTemplateID, setSelectedTemplateID] = useState<string | null>(
+    null,
+  );
 
   const {
     sessions,
@@ -269,6 +304,7 @@ export default function SessionsScreen() {
     unpinSession,
     pinnedSessions,
     unreadCounts,
+    searchCachedSessions,
   } = useSessions();
   const {
     activeConnection,
@@ -284,6 +320,15 @@ export default function SessionsScreen() {
   const authError = useEvents((s) => s.authError);
   const reconnect = useEvents((s) => s.connect);
   const loadCatalog = useCatalog((s) => s.load);
+
+  const {
+    templates,
+    addTemplate,
+    updateTemplate,
+    deleteTemplate,
+    load: loadTemplates,
+  } = useTemplates();
+
   const dirSheetRef = useRef<BottomSheet>(null);
   const browserSheetRef = useRef<BottomSheet>(null);
   const [browseStartDir, setBrowseStartDir] = useState<string | null>(null);
@@ -295,6 +340,9 @@ export default function SessionsScreen() {
   // all groups start expanded (#67).
   const [collapsedDirs, setCollapsedDirs] = useState<Set<string>>(new Set());
   const [searchQuery, setSearchQuery] = useState("");
+  const [cachedSearchResults, setCachedSearchResults] = useState<{
+    hits: Record<string, string>;
+  }>({ hits: {} });
 
   const toggleGroup = useCallback((directory: string) => {
     setCollapsedDirs((prev) => {
@@ -308,12 +356,33 @@ export default function SessionsScreen() {
   // Flatten sessions into header+item rows. Skip headers entirely when
   // everything lives in one directory — a lone header adds noise, not clarity.
   const rows = useMemo<ListRow[]>(() => {
-    const filtered = searchQuery
+    const q = searchQuery;
+    // Title match: filter sessions by title
+    const titleMatched = q
       ? sessions.filter(
-          (s) =>
-            s.title?.toLowerCase().includes(searchQuery.toLowerCase()) || false,
+          (s) => s.title?.toLowerCase().includes(q.toLowerCase()) || false,
         )
       : sessions;
+
+    // Cached search match: include sessions whose cached message content
+    // matches the query (works offline too)
+    const cachedMatchIDs = new Set(Object.keys(cachedSearchResults.hits));
+    const cachedMatched = q
+      ? sessions.filter((s) => cachedMatchIDs.has(s.id))
+      : [];
+
+    // Union, preserving title-first then cached-only, with pinned sorting
+    const combined = new Map<string, Session>();
+    for (const s of titleMatched) combined.set(s.id, s);
+    for (const s of cachedMatched) {
+      if (!combined.has(s.id)) {
+        combined.set(s.id, s);
+      } else {
+        combined.set(s.id, s);
+      }
+    }
+    const filtered = Array.from(combined.values());
+
     const sorted = [...filtered].sort((a, b) => {
       const aPinned = pinnedSessions.includes(a.id);
       const bPinned = pinnedSessions.includes(b.id);
@@ -322,7 +391,11 @@ export default function SessionsScreen() {
     });
     const groups = groupByDirectory(sorted);
     if (groups.length <= 1) {
-      return sorted.map((session) => ({ type: "session", session }));
+      return sorted.map((session) => ({
+        type: "session" as const,
+        session,
+        searchSnippet: cachedSearchResults.hits[session.id] ?? null,
+      }));
     }
     const out: ListRow[] = [];
     for (const group of groups) {
@@ -336,13 +409,37 @@ export default function SessionsScreen() {
       });
       if (!collapsed) {
         for (const session of group.items)
-          out.push({ type: "session", session });
+          out.push({
+            type: "session" as const,
+            session,
+            searchSnippet: cachedSearchResults.hits[session.id] ?? null,
+          });
       }
     }
     return out;
-  }, [sessions, collapsedDirs, pinnedSessions, searchQuery]);
+  }, [
+    sessions,
+    collapsedDirs,
+    pinnedSessions,
+    searchQuery,
+    cachedSearchResults,
+  ]);
 
-  // Fetch server-known projects when the new session modal opens
+  useEffect(() => {
+    let cancelled = false;
+    void searchCachedSessions(searchQuery).then((result) => {
+      if (cancelled) return;
+      const hits: Record<string, string> = {};
+      for (const hit of result.hits) {
+        hits[hit.sessionID] = hit.snippet;
+      }
+      setCachedSearchResults({ hits });
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [searchQuery, searchCachedSessions]);
+
   useEffect(() => {
     if (!showNewSession || !client) return;
     client.project
@@ -368,7 +465,8 @@ export default function SessionsScreen() {
         refreshProject();
         loadCatalog();
       }
-    }, [client, loadSessions, refreshProject, loadCatalog]),
+      loadTemplates();
+    }, [client, loadSessions, refreshProject, loadCatalog, loadTemplates]),
   );
 
   const onRefresh = useCallback(async () => {
@@ -447,11 +545,17 @@ export default function SessionsScreen() {
     try {
       const session = await createSession();
       if (session) {
+        const tpl = selectedTemplateID
+          ? templates.find((t) => t.id === selectedTemplateID)
+          : null;
         router.push({
           pathname: `/session/[id]`,
           params: {
             id: session.id,
             ...(session.directory ? { directory: session.directory } : {}),
+            ...(tpl?.model ? { templateModel: JSON.stringify(tpl.model) } : {}),
+            ...(tpl?.agent ? { templateAgent: tpl.agent } : {}),
+            ...(tpl?.prompt ? { templatePrompt: tpl.prompt } : {}),
           },
         });
       } else {
@@ -465,6 +569,77 @@ export default function SessionsScreen() {
     }
   };
 
+  const handleSaveTemplate = useCallback(async () => {
+    const name = templateName.trim();
+    const template = selectedTemplateID
+      ? templates.find((t) => t.id === selectedTemplateID)
+      : null;
+    if (!name) {
+      Alert.alert(
+        t("sessionsList.alerts.renameFailedTitle"),
+        t("sessionsList.alerts.renameFailedMessage"),
+      );
+      return;
+    }
+
+    const payload = {
+      name,
+      prompt: template?.prompt ?? "",
+      model: template?.model,
+      agent: template?.agent,
+      directory: (template?.directory ?? customDir.trim()) || undefined,
+    };
+
+    if (selectedTemplateID && template) {
+      await updateTemplate(selectedTemplateID, payload);
+    } else {
+      await addTemplate(payload);
+    }
+    setTemplateName("");
+    setSelectedTemplateID(null);
+    Alert.alert(
+      t("common.success"),
+      selectedTemplateID
+        ? t("sessionsList.newSessionModal.templateUpdated")
+        : t("sessionsList.newSessionModal.templateSaved"),
+    );
+  }, [
+    templateName,
+    selectedTemplateID,
+    templates,
+    updateTemplate,
+    addTemplate,
+    customDir,
+    t,
+  ]);
+
+  const handleDeleteTemplate = useCallback(
+    (id: string) => {
+      Alert.alert(
+        t("sessionsList.alerts.deleteTitle"),
+        t("sessionsList.alerts.deleteMessage", {
+          title:
+            templates.find((tmpl) => tmpl.id === id)?.name ||
+            t("sessionsList.newSessionModal.templateNamePlaceholder"),
+        }),
+        [
+          { text: t("common.cancel"), style: "cancel" },
+          {
+            text: t("common.delete"),
+            style: "destructive",
+            onPress: () => {
+              void deleteTemplate(id);
+              if (selectedTemplateID === id) {
+                setSelectedTemplateID(null);
+              }
+            },
+          },
+        ],
+      );
+    },
+    [deleteTemplate, selectedTemplateID, templates, t],
+  );
+
   const onCreateInDirectory = useCallback(
     async (dir?: string) => {
       if (!activeConnection) return;
@@ -473,14 +648,18 @@ export default function SessionsScreen() {
       setIsCreating(true);
 
       try {
-        // If a custom directory is specified, use a one-off client for that directory
-        // so we don't mutate the connection's default project
-        if (dir && dir.trim()) {
-          const dirClient = clientForDirectory(dir.trim());
+        const template = selectedTemplateID
+          ? templates.find((t) => t.id === selectedTemplateID)
+          : null;
+        const effectiveDir =
+          dir && dir.trim() ? dir.trim() : template?.directory;
+
+        if (effectiveDir) {
+          const dirClient = clientForDirectory(effectiveDir);
           if (!dirClient) return;
           try {
             const session = await dirClient.session.create({});
-            addRecentDirectory(dir.trim());
+            addRecentDirectory(effectiveDir);
             setShowNewSession(false);
             setCustomDir("");
             if (session) {
@@ -490,6 +669,13 @@ export default function SessionsScreen() {
                   id: session.id,
                   ...(session.directory
                     ? { directory: session.directory }
+                    : {}),
+                  ...(template?.model
+                    ? { templateModel: JSON.stringify(template.model) }
+                    : {}),
+                  ...(template?.agent ? { templateAgent: template.agent } : {}),
+                  ...(template?.prompt
+                    ? { templatePrompt: template.prompt }
                     : {}),
                 },
               });
@@ -531,6 +717,8 @@ export default function SessionsScreen() {
       clientForDirectory,
       addRecentDirectory,
       createSession,
+      selectedTemplateID,
+      templates,
       t,
     ],
   );
@@ -791,6 +979,8 @@ export default function SessionsScreen() {
               accent={accent}
               pinned={pinnedSessions.includes(row.session.id)}
               unreadCount={unreadCounts[row.session.id]}
+              searchSnippet={row.searchSnippet}
+              tags={useSessions.getState().sessionTags[row.session.id]}
               onRename={() => handleRename(row.session)}
               onDelete={() => handleDelete(row.session)}
               onPin={() => {
@@ -799,6 +989,26 @@ export default function SessionsScreen() {
                 } else {
                   pinSession(row.session.id);
                 }
+              }}
+              onAddTag={() => {
+                Alert.prompt(
+                  t("sessionsList.addTagTitle"),
+                  t("sessionsList.addTagMessage"),
+                  [
+                    { text: t("common.cancel"), style: "cancel" },
+                    {
+                      text: t("common.save"),
+                      onPress: (tag: string | undefined) => {
+                        const trimmed = tag?.trim().toLowerCase();
+                        if (!trimmed) return;
+                        useSessions
+                          .getState()
+                          .addSessionTag(row.session.id, trimmed);
+                      },
+                    },
+                  ],
+                  "plain-text",
+                );
               }}
             />
           )
@@ -842,427 +1052,49 @@ export default function SessionsScreen() {
         <Ionicons name="add" size={28} color={isDark ? "#0a0a0a" : "#ffffff"} />
       </TouchableOpacity>
 
-      {/* New Session Info Modal */}
-      <Modal visible={showNewSession} animationType="slide" transparent>
-        <KeyboardAvoidingView
-          style={styles.modalOverlay}
-          behavior={Platform.OS === "ios" ? "padding" : "height"}
-        >
-          <TouchableOpacity
-            style={styles.modalDismiss}
-            activeOpacity={1}
-            onPress={() => setShowNewSession(false)}
-          />
-          <View
-            style={[styles.modalContent, isDark && styles.modalContentDark]}
-          >
-            <View style={styles.modalHeader}>
-              <Text style={[styles.modalTitle, isDark && styles.textDark]}>
-                {t("sessionsList.newSessionModal.title")}
-              </Text>
-              <TouchableOpacity onPress={() => setShowNewSession(false)}>
-                <Ionicons
-                  name="close"
-                  size={24}
-                  color={isDark ? "#ffffff" : "#0a0a0a"}
-                />
-              </TouchableOpacity>
-            </View>
+      <NewSessionModal
+        visible={showNewSession}
+        onClose={() => setShowNewSession(false)}
+        isDark={isDark}
+        accent={accent}
+        t={t}
+        isCreating={isCreating}
+        customDir={customDir}
+        onCustomDirChange={(text) => {
+          if (serverHome && text.startsWith("~/")) {
+            setCustomDir(serverHome + text.slice(1));
+          } else if (serverHome && text === "~") {
+            setCustomDir(serverHome);
+          } else {
+            setCustomDir(text);
+          }
+        }}
+        templateName={templateName}
+        onTemplateNameChange={setTemplateName}
+        selectedTemplateID={selectedTemplateID}
+        onSelectTemplateID={setSelectedTemplateID}
+        templates={templates}
+        currentProject={currentProject}
+        activeConnection={activeConnection}
+        onCreate={onCreateInDirectory}
+        onSaveTemplate={handleSaveTemplate}
+        onDeleteTemplate={handleDeleteTemplate}
+        onBrowse={openBrowser}
+        serverHome={serverHome}
+        recentDirectories={recentDirectories}
+        serverProjects={serverProjects}
+      />
 
-            <ScrollView
-              style={styles.modalScrollBody}
-              keyboardShouldPersistTaps="handled"
-            >
-              {/* Current directory — tapping creates session immediately */}
-              <Text style={[styles.modalLabel, isDark && styles.metaDark]}>
-                {t("sessionsList.newSessionModal.currentProjectLabel")}
-              </Text>
-              <TouchableOpacity
-                style={[styles.modalDirBox, isDark && styles.modalDirBoxDark]}
-                onPress={() => onCreateInDirectory()}
-                disabled={isCreating}
-              >
-                <Ionicons name="folder" size={20} color={accent} />
-                <Text
-                  style={[styles.modalDirText, isDark && styles.textDark]}
-                  numberOfLines={2}
-                >
-                  {currentProject?.path?.absolute ||
-                    activeConnection?.directory ||
-                    t("sessionsList.newSessionModal.serverDefault")}
-                </Text>
-                <Ionicons
-                  name="arrow-forward-circle"
-                  size={20}
-                  color={accent}
-                />
-              </TouchableOpacity>
-
-              {/* Recent projects */}
-              {recentDirectories.length > 0 && (
-                <>
-                  <Text
-                    style={[
-                      styles.modalLabel,
-                      isDark && styles.metaDark,
-                      { marginTop: 16 },
-                    ]}
-                  >
-                    {t("sessionsList.newSessionModal.recentProjectsLabel")}
-                  </Text>
-                  {recentDirectories.map((dir) => {
-                    const short = dir.split("/").filter(Boolean).pop() || dir;
-                    const isCurrent =
-                      dir ===
-                      (currentProject?.path?.absolute ||
-                        activeConnection?.directory);
-                    return (
-                      <TouchableOpacity
-                        key={dir}
-                        style={[
-                          styles.projectRow,
-                          isDark && styles.projectRowDark,
-                          isCurrent && styles.projectRowActive,
-                        ]}
-                        onPress={() => onCreateInDirectory(dir)}
-                        disabled={isCreating}
-                      >
-                        <Ionicons
-                          name="folder-outline"
-                          size={18}
-                          color={
-                            isCurrent ? accent : isDark ? "#888888" : "#666666"
-                          }
-                        />
-                        <View style={styles.projectRowContent}>
-                          <Text
-                            style={[
-                              styles.projectRowName,
-                              isDark && styles.textDark,
-                              isCurrent && { color: accent },
-                            ]}
-                            numberOfLines={1}
-                          >
-                            {short}
-                          </Text>
-                          <Text
-                            style={[
-                              styles.projectRowPath,
-                              isDark && styles.metaDark,
-                            ]}
-                            numberOfLines={1}
-                          >
-                            {dir}
-                          </Text>
-                        </View>
-                        {isCurrent && (
-                          <Ionicons
-                            name="checkmark-circle"
-                            size={18}
-                            color={accent}
-                          />
-                        )}
-                      </TouchableOpacity>
-                    );
-                  })}
-                </>
-              )}
-
-              {/* Server-known projects (excluding current) */}
-              {serverProjects.filter(
-                (p) => p.path?.absolute !== currentProject?.path?.absolute,
-              ).length > 0 && (
-                <>
-                  <Text
-                    style={[
-                      styles.modalLabel,
-                      isDark && styles.metaDark,
-                      { marginTop: 16 },
-                    ]}
-                  >
-                    {t("sessionsList.newSessionModal.serverProjectsLabel")}
-                  </Text>
-                  {serverProjects
-                    .filter(
-                      (p) =>
-                        p.path?.absolute !== currentProject?.path?.absolute,
-                    )
-                    .map((p) => {
-                      const short =
-                        p.name ||
-                        p.path?.absolute?.split("/").filter(Boolean).pop() ||
-                        p.id;
-                      return (
-                        <TouchableOpacity
-                          key={p.id}
-                          style={[
-                            styles.projectRow,
-                            isDark && styles.projectRowDark,
-                          ]}
-                          onPress={() => onCreateInDirectory(p.path?.absolute)}
-                          disabled={isCreating}
-                        >
-                          <Ionicons
-                            name="code-slash-outline"
-                            size={18}
-                            color={isDark ? "#888888" : "#666666"}
-                          />
-                          <View style={styles.projectRowContent}>
-                            <Text
-                              style={[
-                                styles.projectRowName,
-                                isDark && styles.textDark,
-                              ]}
-                              numberOfLines={1}
-                            >
-                              {short}
-                            </Text>
-                            {p.path?.absolute && (
-                              <Text
-                                style={[
-                                  styles.projectRowPath,
-                                  isDark && styles.metaDark,
-                                ]}
-                                numberOfLines={1}
-                              >
-                                {p.path.absolute}
-                              </Text>
-                            )}
-                          </View>
-                        </TouchableOpacity>
-                      );
-                    })}
-                </>
-              )}
-
-              {/* Browse the server's filesystem instead of typing a path */}
-              <TouchableOpacity
-                style={[
-                  styles.projectRow,
-                  isDark && styles.projectRowDark,
-                  { marginTop: 16 },
-                ]}
-                onPress={() =>
-                  openBrowser(
-                    currentProject?.path?.absolute ||
-                      activeConnection?.directory ||
-                      null,
-                    "create",
-                  )
-                }
-                disabled={isCreating}
-                testID="browse-folders-button"
-              >
-                <Ionicons name="folder-open-outline" size={18} color={accent} />
-                <View style={styles.projectRowContent}>
-                  <Text
-                    style={[styles.projectRowName, isDark && styles.textDark]}
-                  >
-                    {t("sessionsList.newSessionModal.browseFoldersLabel")}
-                  </Text>
-                  <Text
-                    style={[styles.projectRowPath, isDark && styles.metaDark]}
-                  >
-                    {t("sessionsList.newSessionModal.browseFoldersHint")}
-                  </Text>
-                </View>
-                <Ionicons
-                  name="chevron-forward"
-                  size={16}
-                  color={isDark ? "#666666" : "#999999"}
-                />
-              </TouchableOpacity>
-
-              {/* Manual path input fallback */}
-              <Text
-                style={[
-                  styles.modalLabel,
-                  isDark && styles.metaDark,
-                  { marginTop: 16 },
-                ]}
-              >
-                {t("sessionsList.newSessionModal.enterPathLabel")}
-              </Text>
-              <TextInput
-                style={[styles.modalInput, isDark && styles.modalInputDark]}
-                placeholder={
-                  serverHome ? `${serverHome}/...` : "/path/to/project"
-                }
-                placeholderTextColor={isDark ? "#666666" : "#999999"}
-                value={customDir}
-                onChangeText={(text) => {
-                  // Expand ~ to server home directory
-                  if (serverHome && text.startsWith("~/")) {
-                    setCustomDir(serverHome + text.slice(1));
-                  } else if (serverHome && text === "~") {
-                    setCustomDir(serverHome);
-                  } else {
-                    setCustomDir(text);
-                  }
-                }}
-                autoCapitalize="none"
-                autoCorrect={false}
-              />
-              {/* Quick path shortcuts */}
-              {serverHome && (
-                <View style={styles.pathChips}>
-                  <TouchableOpacity
-                    style={[styles.pathChip, isDark && styles.pathChipDark]}
-                    onPress={() => setCustomDir(serverHome)}
-                  >
-                    <Text
-                      style={[
-                        styles.pathChipText,
-                        isDark && styles.pathChipTextDark,
-                      ]}
-                    >
-                      ~
-                    </Text>
-                  </TouchableOpacity>
-                  <TouchableOpacity
-                    style={[styles.pathChip, isDark && styles.pathChipDark]}
-                    onPress={() => setCustomDir(serverHome + "/")}
-                  >
-                    <Text
-                      style={[
-                        styles.pathChipText,
-                        isDark && styles.pathChipTextDark,
-                      ]}
-                    >
-                      ~/
-                    </Text>
-                  </TouchableOpacity>
-                </View>
-              )}
-            </ScrollView>
-
-            <View style={styles.modalActions}>
-              {customDir.trim() ? (
-                <TouchableOpacity
-                  style={[
-                    styles.modalButton,
-                    styles.modalButtonPrimary,
-                    isDark && styles.modalButtonPrimaryDark,
-                    styles.modalButtonFull,
-                  ]}
-                  onPress={() => onCreateInDirectory(customDir)}
-                  disabled={isCreating}
-                >
-                  {isCreating ? (
-                    <ActivityIndicator
-                      size="small"
-                      color={isDark ? "#0a0a0a" : "#ffffff"}
-                    />
-                  ) : (
-                    <Text
-                      style={[
-                        styles.modalButtonTextPrimary,
-                        isDark && styles.modalButtonTextPrimaryDark,
-                      ]}
-                    >
-                      {t("sessionsList.newSessionModal.createInButton", {
-                        dir:
-                          customDir.split("/").filter(Boolean).pop() ||
-                          customDir,
-                      })}
-                    </Text>
-                  )}
-                </TouchableOpacity>
-              ) : (
-                <TouchableOpacity
-                  style={[
-                    styles.modalButton,
-                    styles.modalButtonPrimary,
-                    isDark && styles.modalButtonPrimaryDark,
-                    styles.modalButtonFull,
-                  ]}
-                  onPress={() => onCreateInDirectory()}
-                  disabled={isCreating}
-                >
-                  {isCreating ? (
-                    <ActivityIndicator
-                      size="small"
-                      color={isDark ? "#0a0a0a" : "#ffffff"}
-                    />
-                  ) : (
-                    <Text
-                      style={[
-                        styles.modalButtonTextPrimary,
-                        isDark && styles.modalButtonTextPrimaryDark,
-                      ]}
-                    >
-                      {t("sessionsList.newSessionModal.createSessionButton")}
-                    </Text>
-                  )}
-                </TouchableOpacity>
-              )}
-            </View>
-          </View>
-        </KeyboardAvoidingView>
-      </Modal>
-
-      {/* Rename modal */}
-      <Modal visible={!!renaming} animationType="fade" transparent>
-        <KeyboardAvoidingView
-          style={[styles.modalOverlay, { justifyContent: "center" }]}
-          behavior={Platform.OS === "ios" ? "padding" : "height"}
-        >
-          <TouchableOpacity
-            style={styles.modalDismiss}
-            activeOpacity={1}
-            onPress={() => setRenaming(null)}
-          />
-          <View style={[styles.renameCard, isDark && styles.renameCardDark]}>
-            <Text style={[styles.renameTitle, isDark && styles.textDark]}>
-              {t("sessionsList.renameModal.title")}
-            </Text>
-            <TextInput
-              style={[styles.modalInput, isDark && styles.modalInputDark]}
-              value={renameText}
-              onChangeText={setRenameText}
-              onSubmitEditing={submitRename}
-              returnKeyType="done"
-              autoFocus
-              selectTextOnFocus
-              autoCapitalize="sentences"
-              autoCorrect={false}
-            />
-            <View style={styles.renameActions}>
-              <TouchableOpacity
-                style={[styles.renameBtn, styles.renameBtnCancel]}
-                onPress={() => setRenaming(null)}
-              >
-                <Text style={styles.renameBtnCancelText}>
-                  {t("common.cancel")}
-                </Text>
-              </TouchableOpacity>
-              <TouchableOpacity
-                style={[
-                  styles.renameBtn,
-                  styles.modalButtonPrimary,
-                  isDark && styles.modalButtonPrimaryDark,
-                ]}
-                onPress={submitRename}
-                disabled={!renameText.trim()}
-              >
-                <Text
-                  style={[
-                    styles.modalButtonTextPrimary,
-                    isDark && styles.modalButtonTextPrimaryDark,
-                  ]}
-                >
-                  {t("common.save")}
-                </Text>
-              </TouchableOpacity>
-            </View>
-          </View>
-          <TouchableOpacity
-            style={styles.modalDismiss}
-            activeOpacity={1}
-            onPress={() => setRenaming(null)}
-          />
-        </KeyboardAvoidingView>
-      </Modal>
+      <RenameModal
+        visible={!!renaming}
+        onClose={() => setRenaming(null)}
+        renameText={renameText}
+        onChangeText={setRenameText}
+        onSubmit={submitRename}
+        disabled={!renameText.trim()}
+        isDark={isDark}
+        t={t}
+      />
 
       {/* Directory switcher bottom sheet */}
       <DirectorySwitcher
@@ -1448,6 +1280,28 @@ const styles = StyleSheet.create({
     fontSize: 11,
     color: "#666666",
   },
+  sessionSnippet: {
+    fontSize: 12,
+    color: "#888888",
+    marginTop: 4,
+    lineHeight: 16,
+  },
+  sessionTagsRow: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    gap: 6,
+    marginTop: 6,
+  },
+  sessionTagChip: {
+    borderWidth: 1,
+    borderRadius: 10,
+    paddingHorizontal: 8,
+    paddingVertical: 2,
+  },
+  sessionTagText: {
+    fontSize: 11,
+    fontWeight: "500",
+  },
   metaDark: {
     color: "#888888",
   },
@@ -1559,210 +1413,7 @@ const styles = StyleSheet.create({
   fabDark: {
     backgroundColor: "#ffffff",
   },
-  // Modal styles
-  modalOverlay: {
-    flex: 1,
-    backgroundColor: "rgba(0, 0, 0, 0.5)",
-    justifyContent: "flex-end",
-  },
-  modalDismiss: {
-    flex: 1,
-  },
-  modalContent: {
-    backgroundColor: "#ffffff",
-    borderTopLeftRadius: 20,
-    borderTopRightRadius: 20,
-    padding: 20,
-    paddingBottom: 40,
-  },
-  modalContentDark: {
-    backgroundColor: "#1a1a1a",
-  },
-  modalHeader: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    marginBottom: 20,
-  },
-  modalTitle: {
-    fontSize: 20,
-    fontWeight: "600",
-    color: "#0a0a0a",
-  },
-  modalBody: {
-    marginBottom: 24,
-  },
-  modalScrollBody: {
-    maxHeight: 420,
-    marginBottom: 16,
-  },
-  projectRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 12,
-    paddingHorizontal: 14,
-    paddingVertical: 11,
-    borderRadius: 10,
-    backgroundColor: "#f5f5f5",
-    marginBottom: 6,
-  },
-  projectRowDark: {
-    backgroundColor: "#2a2a2a",
-  },
-  projectRowActive: {
-    backgroundColor: "#f5f3ff",
-  },
-  projectRowContent: {
-    flex: 1,
-  },
-  projectRowName: {
-    fontSize: 14,
-    fontWeight: "600",
-    color: "#0a0a0a",
-  },
-  projectRowPath: {
-    fontSize: 11,
-    color: "#999999",
-    marginTop: 1,
-  },
-  modalLabel: {
-    fontSize: 13,
-    fontWeight: "600",
-    color: "#666666",
-    marginBottom: 8,
-    textTransform: "uppercase",
-  },
-  modalDirBox: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 12,
-    backgroundColor: "#f5f5f5",
-    padding: 16,
-    borderRadius: 12,
-  },
-  modalDirBoxDark: {
-    backgroundColor: "#2a2a2a",
-  },
-  modalDirText: {
-    fontSize: 15,
-    color: "#0a0a0a",
-    flex: 1,
-  },
-  modalInput: {
-    backgroundColor: "#f5f5f5",
-    borderRadius: 12,
-    paddingHorizontal: 16,
-    paddingVertical: 14,
-    fontSize: 15,
-    color: "#0a0a0a",
-  },
-  modalInputDark: {
-    backgroundColor: "#2a2a2a",
-    color: "#ffffff",
-  },
-  pathChips: {
-    flexDirection: "row",
-    gap: 8,
-    marginTop: 8,
-  },
-  pathChip: {
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    backgroundColor: "#e8e5f0",
-    borderRadius: 16,
-  },
-  pathChipDark: {
-    backgroundColor: "#2a2040",
-  },
-  pathChipText: {
-    fontSize: 13,
-    fontWeight: "600",
-    color: "#6d28d9",
-  },
-  pathChipTextDark: {
-    color: "#c4b5fd",
-  },
-  modalHint: {
-    fontSize: 13,
-    color: "#666666",
-    marginTop: 12,
-  },
-  modalActions: {
-    flexDirection: "row",
-    gap: 12,
-  },
-  modalButton: {
-    flex: 1,
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "center",
-    gap: 8,
-    padding: 16,
-    borderRadius: 12,
-  },
-  modalButtonSecondary: {
-    backgroundColor: "#f5f5f5",
-  },
-  modalButtonSecondaryDark: {
-    backgroundColor: "#2a2a2a",
-  },
-  modalButtonPrimary: {
-    backgroundColor: "#0a0a0a",
-  },
-  modalButtonPrimaryDark: {
-    backgroundColor: "#ffffff",
-  },
-  modalButtonText: {
-    fontSize: 15,
-    fontWeight: "600",
-    color: "#0a0a0a",
-  },
-  modalButtonTextPrimary: {
-    fontSize: 15,
-    fontWeight: "600",
-    color: "#ffffff",
-  },
-  modalButtonTextPrimaryDark: {
-    color: "#0a0a0a",
-  },
-  modalButtonFull: {
-    flex: 0,
-    width: "100%",
-  },
-  // Rename modal
-  renameCard: {
-    backgroundColor: "#ffffff",
-    borderRadius: 16,
-    padding: 20,
-    marginHorizontal: 32,
-    gap: 16,
-  },
-  renameCardDark: {
-    backgroundColor: "#1a1a1a",
-  },
-  renameTitle: {
-    fontSize: 17,
-    fontWeight: "600",
-    color: "#0a0a0a",
-  },
-  renameActions: {
-    flexDirection: "row",
-    justifyContent: "flex-end",
-    gap: 12,
-  },
-  renameBtn: {
-    paddingHorizontal: 20,
-    paddingVertical: 10,
-    borderRadius: 10,
-  },
-  renameBtnCancel: {
-    backgroundColor: "transparent",
-  },
-  renameBtnCancelText: {
-    fontSize: 15,
-    fontWeight: "600",
-    color: "#888888",
-  },
+  // Modal styles removed — extracted to src/components/tabs/NewSessionModal.tsx and RenameModal.tsx
 
   searchContainer: {
     flexDirection: "row",

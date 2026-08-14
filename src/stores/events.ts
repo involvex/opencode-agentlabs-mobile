@@ -1,6 +1,6 @@
 import { create } from "zustand";
 import { useConnections } from "./connections";
-import { useSessions, abortedSessions } from "./sessions";
+import { useSessions } from "./sessions";
 import { send as notify } from "../lib/notifications";
 import { sanitizeBody } from "../lib/notify-format";
 import { statusFromPart } from "../lib/status-labels";
@@ -63,6 +63,13 @@ interface EventsState {
       tool?: { messageID: string; callID: string };
     }[]
   >;
+  erroredSessions: string[];
+  abortedSessions: string[];
+
+  markErrored: (sessionID: string) => void;
+  clearErrored: (sessionID?: string) => void;
+  markAborted: (sessionID: string) => void;
+  clearAborted: (sessionID?: string) => void;
 
   connect: () => void;
   disconnect: () => void;
@@ -77,7 +84,6 @@ let reconnectTimer: ReturnType<typeof setTimeout> | null = null;
 // has no error variant — an errored session still ends with a busy -> idle
 // transition — so without this mark an errored run would count as a success
 // toward the once-ever store review prompt.
-const erroredSessions = new Set<string>();
 
 const RECONNECT_DELAYS_MS = [1000, 2000, 4000, 8000, 15000] as const;
 const STABLE_CONNECTION_MS = 10_000;
@@ -186,6 +192,29 @@ export const useEvents = create<EventsState>((set, get) => ({
   statusText: {},
   permissions: {},
   questions: {},
+  erroredSessions: [],
+  abortedSessions: [],
+
+  markErrored: (sessionID: string) =>
+    set((state) => ({
+      erroredSessions: [...state.erroredSessions, sessionID],
+    })),
+  clearErrored: (sessionID?: string) =>
+    set((state) => ({
+      erroredSessions: sessionID
+        ? state.erroredSessions.filter((id) => id !== sessionID)
+        : [],
+    })),
+  markAborted: (sessionID: string) =>
+    set((state) => ({
+      abortedSessions: [...state.abortedSessions, sessionID],
+    })),
+  clearAborted: (sessionID?: string) =>
+    set((state) => ({
+      abortedSessions: sessionID
+        ? state.abortedSessions.filter((id) => id !== sessionID)
+        : [],
+    })),
 
   connect: () => {
     controller?.abort();
@@ -287,8 +316,8 @@ export const useEvents = create<EventsState>((set, get) => ({
 
               // A new run starts — forget any error/abort from the previous one
               if (status.type === "busy") {
-                erroredSessions.delete(sessionID);
-                abortedSessions.delete(sessionID);
+                get().clearErrored(sessionID);
+                get().clearAborted(sessionID);
               }
 
               set((state) => ({
@@ -315,7 +344,7 @@ export const useEvents = create<EventsState>((set, get) => ({
               if (completed) {
                 // A user-cancelled run still ends busy -> idle; don't count it
                 // as a received response or a review-worthy success.
-                const aborted = abortedSessions.has(sessionID);
+                const aborted = get().abortedSessions.includes(sessionID);
                 if (!aborted) track(AnalyticsEvent.ResponseReceived);
                 // Only notify "Task completed" for a genuine completion — a
                 // user-cancelled run didn't complete, and an errored run
@@ -323,7 +352,7 @@ export const useEvents = create<EventsState>((set, get) => ({
                 // doesn't touch sessionStatus, so an errored session still lands
                 // here via busy→idle). Without this guard the user gets a
                 // misleading — or duplicate, contradictory — completion push.
-                if (!aborted && !erroredSessions.has(sessionID)) {
+                if (!aborted && !get().erroredSessions.includes(sessionID)) {
                   const match = useSessions
                     .getState()
                     .sessions.find((s) => s.id === sessionID);
@@ -399,7 +428,7 @@ export const useEvents = create<EventsState>((set, get) => ({
               if (!sessionID) break;
               // Mark so the eventual busy -> idle transition is not counted
               // as a success for the store review prompt
-              erroredSessions.add(sessionID);
+              get().markErrored(sessionID);
               // Clear sending state unconditionally — SSE is truth
               useSessions.setState((state) => ({
                 sending: { ...state.sending, [sessionID]: false },
@@ -438,12 +467,8 @@ export const useEvents = create<EventsState>((set, get) => ({
                 category: "permissions",
                 title: "Agent needs approval",
                 body: sanitizeBody(
-                  req.permission
-                    ? req.patterns?.length
-                      ? `${req.permission}: ${req.patterns.join(", ")}`
-                      : req.permission
-                    : req.patterns?.join(", "),
-                  "A tool needs your approval",
+                  req.permission,
+                  "A tool is requesting file access — open app to review",
                 ),
                 sessionId: req.sessionID,
                 dedupeKey: `perm-${req.id}`,
@@ -558,8 +583,8 @@ export const useEvents = create<EventsState>((set, get) => ({
     }
     controller?.abort();
     controller = null;
-    erroredSessions.clear();
-    abortedSessions.clear();
+    get().clearErrored();
+    get().clearAborted();
     set({
       connected: false,
       authError: false,

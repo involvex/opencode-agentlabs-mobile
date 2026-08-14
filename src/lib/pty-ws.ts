@@ -1,21 +1,8 @@
-function encodeAuthToken(username: string, password: string): string {
-  const value = `${username}:${password}`;
-  if (
-    typeof globalThis !== "undefined" &&
-    typeof globalThis.btoa === "function"
-  ) {
-    return globalThis.btoa(value);
-  }
-  throw new Error("Base64 encoding is unavailable in this environment.");
-}
-
 export interface PtyWsUrlOptions {
   baseUrl: string;
   ptyId: string;
   directory: string;
   cursor?: number;
-  username?: string;
-  password?: string;
   ticket?: string;
 }
 
@@ -24,7 +11,6 @@ export function buildPtyWsUrl(opts: PtyWsUrlOptions): string {
     baseUrl: opts.baseUrl,
     ptyId: opts.ptyId,
     directory: opts.directory,
-    hasAuth: !!(opts.username && opts.password),
     hasTicket: !!opts.ticket,
   });
   if (typeof URL === "undefined") {
@@ -34,19 +20,11 @@ export function buildPtyWsUrl(opts: PtyWsUrlOptions): string {
     `/api/pty/${opts.ptyId}/connect`,
     opts.baseUrl.endsWith("/") ? opts.baseUrl : `${opts.baseUrl}/`,
   );
-  // opencode v2 serves the pty connect route at /api/pty/:id/connect and
-  // resolves the working directory from the `location[directory]` query param
-  // (the legacy v1 route used `/pty/:id/connect?directory=...`).
   httpUrl.searchParams.set("location[directory]", opts.directory);
   httpUrl.searchParams.set("cursor", String(opts.cursor ?? 0));
 
   if (opts.ticket) {
     httpUrl.searchParams.set("ticket", opts.ticket);
-  } else if (opts.username && opts.password) {
-    httpUrl.searchParams.set(
-      "auth_token",
-      encodeAuthToken(opts.username, opts.password),
-    );
   }
 
   httpUrl.protocol = httpUrl.protocol === "https:" ? "wss:" : "ws:";
@@ -68,6 +46,7 @@ export class PtyWebSocket {
     onOutput: PtyOutputHandler,
     onClose: PtyCloseHandler,
     onOpen?: PtyOpenHandler,
+    headers?: Record<string, string>,
   ): void {
     console.log("[PtyWS] connect", {
       url,
@@ -83,7 +62,14 @@ export class PtyWebSocket {
       return;
     }
 
-    this.ws = new WebSocket(url);
+    const WS = WebSocket as unknown as {
+      new (
+        url: string,
+        protocols?: string | string[],
+        options?: { headers?: Record<string, string> },
+      ): WebSocket;
+    };
+    this.ws = new WS(url, undefined, { headers });
     this.ws.binaryType = "arraybuffer";
 
     // Log readyState changes

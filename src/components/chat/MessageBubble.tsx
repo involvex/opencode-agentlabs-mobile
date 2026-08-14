@@ -37,12 +37,19 @@ interface Props {
   // revert action sheet. Identified by messageID (not a closure over parts)
   // so it stays correct even if the memo below bails on a stale render.
   onLongPress?: (messageID: string) => void;
+  onReply?: (messageID: string, role: string, text: string) => void;
 }
 
 // TODO: Replace with streamdown-rn once React 19 types PR lands - it has
 // built-in block-level memoization that eliminates re-renders for stable blocks
 export const MessageBubble = memo(
-  function MessageBubble({ message, parts, isDark, onLongPress }: Props) {
+  function MessageBubble({
+    message,
+    parts,
+    isDark,
+    onLongPress,
+    onReply,
+  }: Props) {
     const { t } = useTranslation();
     const density = useDensity();
     const chatFontSize = useSettings((s) => s.chatFontSize);
@@ -86,11 +93,16 @@ export const MessageBubble = memo(
         text: emoji,
         onPress: () => handleReactionPress(emoji),
       }));
-      Alert.alert(t("chat.message.addReaction"), undefined, [
+      const actions = [
         ...buttons,
-        { text: t("common.cancel"), style: "cancel" },
-      ]);
-    }, [t, handleReactionPress]);
+        {
+          text: t("chat.message.reply"),
+          onPress: () => onReply?.(message.id, message.role, text),
+        },
+        { text: t("common.cancel"), style: "cancel" as const },
+      ];
+      Alert.alert(t("chat.message.addReaction"), undefined, actions);
+    }, [t, handleReactionPress, onReply, message.id, message.role, text]);
 
     const messageReactions = useReactions((s) => s.reactions[message.id]);
 

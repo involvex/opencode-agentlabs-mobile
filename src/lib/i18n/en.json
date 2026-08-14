@@ -110,6 +110,14 @@
       "dumpAlert": {
         "title": "State Copied",
         "message": "App state has been copied to clipboard."
+      },
+      "clearCache": {
+        "label": "Clear Local Cache",
+        "description": "Clear cached sessions and messages stored for offline reading"
+      },
+      "clearCacheAlert": {
+        "title": "Cache Cleared",
+        "message": "Local session cache has been cleared."
       }
     },
     "footer": {
@@ -128,11 +136,17 @@
     "toolbar": {
       "auto": "Auto"
     },
+    "reply": {
+      "inReplyToUser": "In reply to you",
+      "inReplyToAssistant": "In reply to assistant",
+      "emptyMessage": "[empty message]"
+    },
     "banners": {
       "reconnecting": "Reconnecting… (attempt {{attempt}})",
       "connected": "Connected ✓",
-      "reverted": "Message reverted — resend to confirm",
-      "undo": "Undo"
+      "reverting": "Message reverted — resend to confirm",
+      "undo": "Undo",
+      "offlineCache": "Showing cached messages (offline)"
     },
     "empty": {
       "title": "Start a conversation",
@@ -146,7 +160,12 @@
     },
     "actions": {
       "editMessage": "Edit message",
-      "replace": "Replace"
+      "replace": "Replace",
+      "replyMessage": "Reply"
+    },
+    "message": {
+      "reply": "Reply",
+      "addReaction": "Add reaction"
     },
     "alerts": {
       "messageActionsTitle": "Message actions",
@@ -307,8 +326,13 @@
     "actions": {
       "rename": "Rename",
       "pin": "Pin",
-      "unpin": "Unpin"
+      "unpin": "Unpin",
+      "addTag": "Add tag"
     },
+    "addTagTitle": "Add tag",
+    "addTagMessage": "Enter a tag for this session",
+    "removeTagTitle": "Remove tag",
+    "removeTagMessage": "Remove \"{{tag}}\"?",
     "alerts": {
       "renameFailedTitle": "Rename failed",
       "renameFailedMessage": "Could not rename the session. Please try again.",
@@ -339,7 +363,19 @@
       "browseFoldersHint": "Explore the server's filesystem",
       "enterPathLabel": "Enter Path Manually",
       "createInButton": "Create in {{dir}}",
-      "createSessionButton": "Create Session"
+      "createSessionButton": "Create Session",
+      "templatesLabel": "Templates",
+      "templateNamePlaceholder": "Template name",
+      "templatePromptPlaceholder": "Enter prompt template...",
+      "saveTemplateButton": "Save Template",
+      "useTemplateButton": "Use Template",
+      "templateModelLabel": "Model",
+      "templateAgentLabel": "Agent",
+      "templateDirectoryLabel": "Directory",
+      "editTemplateTitle": "Edit Template",
+      "templateUpdated": "Template updated",
+      "templateSaved": "Template saved",
+      "templateDeleted": "Template deleted"
     },
     "renameModal": {
       "title": "Rename Session"
@@ -517,5 +553,14 @@
     "connectButton": "Connect your own server",
     "setupGuideLink": "How to set up a server",
     "hostedCtaLink": "No server? Join the OpenCode Connect waitlist — hosted, no setup"
+  },
+  "prompts": {
+    "title": "Prompt Library",
+    "searchPlaceholder": "Search prompts...",
+    "savePlaceholder": "Save current input as a prompt...",
+    "emptyBody": "(No description)",
+    "emptyState": "No saved prompts yet.",
+    "deleteAlertTitle": "Delete Prompt",
+    "deleteAlertMessage": "Delete this prompt?"
   }
 }

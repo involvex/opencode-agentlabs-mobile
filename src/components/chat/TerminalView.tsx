@@ -68,6 +68,7 @@ interface TerminalSocketProps {
   onClose: () => void;
   sessionDirectory: string | undefined;
   onWsError: () => void;
+  authorization?: string;
 }
 
 function TerminalSocket({
@@ -77,6 +78,7 @@ function TerminalSocket({
   onClose,
   sessionDirectory,
   onWsError,
+  authorization,
 }: TerminalSocketProps) {
   const [output, setOutput] = useState<string[]>([]);
   const [input, setInput] = useState("");
@@ -122,13 +124,14 @@ function TerminalSocket({
       () => {
         setWsState("connected");
       },
+      authorization ? { Authorization: authorization } : undefined,
     );
 
     return () => {
       ws.close();
       wsRef.current = null;
     };
-  }, [wsUrl, onWsError]);
+  }, [wsUrl, onWsError, authorization]);
 
   const handleSend = useCallback(() => {
     const trimmed = input.trim();
@@ -416,17 +419,24 @@ export default function TerminalView({
     ticket,
   } = usePtySession(sessionClient, sessionDirectory);
 
+  const authorization = useMemo(() => {
+    if (!username && !password) return null;
+    const user = username || "opencode";
+    const pass = password || "";
+    const value = `${user}:${pass}`;
+    if (typeof btoa === "function") return btoa(value);
+    return null;
+  }, [username, password]);
+
   const wsUrl = useMemo(() => {
     if (!ptyId || !sessionDirectory || !baseUrl) return null;
     return buildPtyWsUrl({
       baseUrl,
       ptyId,
       directory: sessionDirectory,
-      username: username || "opencode",
-      password: password || "",
       ticket: ticket ?? undefined,
     });
-  }, [ptyId, sessionDirectory, baseUrl, username, password, ticket]);
+  }, [ptyId, sessionDirectory, baseUrl, ticket]);
 
   const showServerLoading =
     mode === "server" &&
@@ -543,6 +553,7 @@ export default function TerminalView({
       onClose={onClose}
       sessionDirectory={sessionDirectory}
       onWsError={handleWsError}
+      authorization={authorization ?? undefined}
     />
   );
 }

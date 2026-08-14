@@ -232,7 +232,7 @@ export function formatReportForSupport(report: DiagnosticReport): string {
 
 // Copy the report to the clipboard and open the native share sheet.
 export async function shareReport(report: DiagnosticReport): Promise<void> {
-  const text = formatReport(report);
+  const text = formatReportForSupport(report);
   try {
     await Clipboard.setStringAsync(text);
   } catch {

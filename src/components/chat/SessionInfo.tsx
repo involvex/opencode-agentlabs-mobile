@@ -5,11 +5,13 @@ import {
   StyleSheet,
   TouchableOpacity,
   ActivityIndicator,
+  Alert,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { useTranslation } from "react-i18next";
 import type { Message, Session } from "../../lib/sdk";
 import type { Provider } from "../../stores/catalog";
+import { useSessions } from "../../stores/sessions";
 
 interface Props {
   session: Session | null;
@@ -261,6 +263,45 @@ export function SessionInfo({
         )}
       </View>
 
+      {/* Tags */}
+      {session &&
+        (() => {
+          const tags = useSessions.getState().sessionTags[session.id] || [];
+          if (tags.length === 0) return null;
+          return (
+            <View style={s.tagsRow}>
+              {tags.map((tag) => (
+                <TouchableOpacity
+                  key={tag}
+                  style={s.tagChip}
+                  onPress={() => {
+                    Alert.alert(
+                      t("sessionsList.removeTagTitle", "Remove tag"),
+                      t("sessionsList.removeTagMessage", 'Remove "{{tag}}"?', {
+                        tag,
+                      }),
+                      [
+                        { text: t("common.cancel"), style: "cancel" },
+                        {
+                          text: t("common.delete"),
+                          style: "destructive",
+                          onPress: () =>
+                            useSessions
+                              .getState()
+                              .removeSessionTag(session.id, tag),
+                        },
+                      ],
+                    );
+                  }}
+                >
+                  <Text style={s.tagText}>{tag}</Text>
+                  <Ionicons name="close-circle" size={14} color="#888888" />
+                </TouchableOpacity>
+              ))}
+            </View>
+          );
+        })()}
+
       {/* Navigation actions */}
       <View style={s.actions}>
         {hasMore && (
@@ -478,6 +519,25 @@ const s = StyleSheet.create({
   },
   metaValueDark: {
     color: "#aaaaaa",
+  },
+  tagsRow: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    gap: 6,
+    marginTop: 8,
+  },
+  tagChip: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 4,
+    backgroundColor: "#f5f5f5",
+    borderRadius: 10,
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+  },
+  tagText: {
+    fontSize: 12,
+    color: "#666666",
   },
   actions: {
     flexDirection: "row",

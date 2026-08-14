@@ -397,28 +397,34 @@ Data stays on device; no server-side reporting.
 
 ## Priority Matrix
 
-| Feature                         | Effort      | Personal Value | Recommended Order |
-| ------------------------------- | ----------- | -------------- | ----------------- |
-| Session bookmarks & pinning     | Low         | High           | 1                 |
-| Local full-text search          | Medium      | High           | 2                 |
-| Session export (Markdown)       | Low         | High           | 3                 |
-| SSE event inspector             | Low         | Medium         | 4                 |
-| Prompt library                  | Medium      | High           | 5                 |
-| Compact / density mode          | Low-Medium  | Medium         | 6                 |
-| Session templates               | Low-Medium  | High           | 7                 |
-| Message reactions               | Low-Medium  | Medium         | 8                 |
-| Session cache (offline reading) | Medium-High | High           | 9                 |
-| Reply / thread                  | Medium      | Medium         | 10                |
-| Developer quick actions         | Low         | Medium         | 11                |
-| Connection health history       | Medium      | Low-Medium     | 12                |
-| Android widget / shortcuts      | Low-Medium  | Low-Medium     | 13                |
-| QR code connection              | Medium      | Low            | 14                |
-| Custom theme colors             | Low         | Low-Medium     | 15                |
-| Voice-only mode                 | Medium      | Medium         | 16                |
-| Code execution card             | High        | Medium         | 17                |
-| Local LLM mode                  | High        | High           | 18                |
-| Session branching               | Medium-High | Medium         | 19                |
-| Split screen / tablet           | Medium-High | Medium         | 20                |
+| Feature                         | Effort      | Personal Value | Recommended Order | Status |
+| ------------------------------- | ----------- | -------------- | ----------------- | ------ |
+| Session bookmarks & pinning     | Low         | High           | 1                 | DONE   |
+| Local full-text search          | Medium      | High           | 2                 | DONE   |
+| Session export (Markdown)       | Low         | High           | 3                 | DONE   |
+| SSE event inspector             | Low         | Medium         | 4                 | DONE   |
+| Prompt library                  | Medium      | High           | 5                 | DONE   |
+| Compact / density mode          | Low-Medium  | Medium         | 6                 | DONE   |
+| Session templates               | Low-Medium  | High           | 7                 | DONE   |
+| Message reactions               | Low-Medium  | Medium         | 8                 | DONE   |
+| Session cache (offline reading) | Medium-High | High           | 9                 | DONE   |
+| Reply / thread                  | Medium      | Medium         | 10                | TODO   |
+| Developer quick actions         | Low         | Medium         | 11                | DONE   |
+| Connection health history       | Medium      | Low-Medium     | 12                | TODO   |
+| Android widget / shortcuts      | Low-Medium  | Low-Medium     | 13                | TODO   |
+| QR code connection              | Medium      | Low            | 14                | TODO   |
+| Custom theme colors             | Low         | Low-Medium     | 15                | DONE   |
+| Voice-only mode                 | Medium      | Medium         | 16                | TODO   |
+| Code execution card             | High        | Medium         | 17                | TODO   |
+| Local LLM mode                  | High        | High           | 18                | TODO   |
+| Session branching               | Medium-High | Medium         | 19                | TODO   |
+| Split screen / tablet           | Medium-High | Medium         | 20                | TODO   |
 
 > **Quick wins** (low effort, high personal value): bookmarks, export, search,
-> SSE inspector, developer shortcuts, templates, density mode.
+> SSE inspector, developer shortcuts, templates, density mode. All are implemented.
+
+> **Implemented in batch 1** (DONE): session pinning, local search (session list),
+> Markdown export + Share, SSE inspector (`/debug/sse`), density modes, message
+> reactions (tap toggle + long-press picker), dark/light/auto theme, accent color,
+> font size controls, developer settings (force reconnect, state dump), connection
+> profiles with auth headers.

@@ -17,6 +17,15 @@ import {
   type PromptFromParts,
 } from "../lib/prompt-from-parts";
 import { mergeIncomingMessage } from "../lib/message-merge";
+import { searchCachedSessions, type SearchResult } from "../lib/session-search";
+import type { CachedSession } from "../lib/session-cache";
+import {
+  cacheSessionMessages,
+  cacheSessionList,
+  getCachedSession,
+  getCachedSessionList,
+  removeCachedSession,
+} from "../lib/session-cache";
 import {
   isColdSessionLoad,
   isLiveEventForSession,
@@ -48,6 +57,7 @@ interface SessionsState {
   messages: Message[];
   parts: Record<string, Part[]>;
   isLoading: boolean;
+  cacheMiss: boolean;
   // Per-session optimistic sending flag — bridging gap between user tap and SSE busy
   sending: Record<string, boolean>;
   loadingMore: boolean;
@@ -74,6 +84,7 @@ interface SessionsState {
     }[],
     variant?: string,
   ) => Promise<void>;
+  autoNameSession: (sessionID: string, text: string) => Promise<void>;
   abortSession: () => Promise<void>;
   refreshMessages: () => Promise<void>;
 
@@ -90,6 +101,20 @@ interface SessionsState {
 
   // Unread tracking
   markSessionRead: (sessionID: string) => void;
+
+  // Search across cached session content (offline-capable)
+  searchCachedSessions: (query: string) => Promise<SearchResult>;
+
+  // Aborted/errored session tracking
+  abortedSessions: string[];
+  markAborted: (sessionID: string) => void;
+  clearAborted: (sessionID?: string) => void;
+
+  // Tags
+  sessionTags: Record<string, string[]>;
+  setSessionTags: (sessionID: string, tags: string[]) => void;
+  addSessionTag: (sessionID: string, tag: string) => void;
+  removeSessionTag: (sessionID: string, tag: string) => void;
 }
 
 export type RevertResult =
@@ -102,7 +127,6 @@ export type RevertResult =
 // user-cancelled run would count as response_received in analytics and as a
 // success toward the store review prompt. events.ts (which already imports
 // this module) clears entries on busy and checks them on busy -> idle.
-export const abortedSessions = new Set<string>();
 
 // Monotonic token guarding selectSession against out-of-order resolution: a
 // slow fetch for a session the user has already navigated away from must not
@@ -125,12 +149,51 @@ export const useSessions = create<SessionsState>((set, get) => ({
   messages: [],
   parts: {},
   isLoading: false,
+  cacheMiss: false,
   sending: {},
   loadingMore: false,
   hasMore: false,
   error: null,
   pinnedSessions: [],
   unreadCounts: {},
+  abortedSessions: [],
+  sessionTags: {},
+
+  markAborted: (sessionID: string) =>
+    set((state) => ({
+      abortedSessions: [...state.abortedSessions, sessionID],
+    })),
+  clearAborted: (sessionID?: string) =>
+    set((state) => ({
+      abortedSessions: sessionID
+        ? state.abortedSessions.filter((id) => id !== sessionID)
+        : [],
+    })),
+
+  setSessionTags: (sessionID, tags) => {
+    const next = { ...get().sessionTags, [sessionID]: tags };
+    set({ sessionTags: next });
+    persistSessionTags(next);
+  },
+  addSessionTag: (sessionID, tag) => {
+    const current = get().sessionTags[sessionID] || [];
+    if (current.includes(tag)) return;
+    const next = { ...get().sessionTags, [sessionID]: [...current, tag] };
+    set({ sessionTags: next });
+    persistSessionTags(next);
+  },
+  removeSessionTag: (sessionID, tag) => {
+    const current = get().sessionTags[sessionID] || [];
+    const nextArr = current.filter((t) => t !== tag);
+    const next = { ...get().sessionTags };
+    if (nextArr.length === 0) {
+      delete next[sessionID];
+    } else {
+      next[sessionID] = nextArr;
+    }
+    set({ sessionTags: next });
+    persistSessionTags(next);
+  },
 
   loadSessions: async () => {
     const connState = useConnections.getState();
@@ -147,9 +210,16 @@ export const useSessions = create<SessionsState>((set, get) => ({
       // A directory-less list includes sessions across projects. Each row carries
       // its own directory into the session route so subsequent operations stay scoped.
       const sessions = await client.session.list({ roots: true, limit: 50 });
+      cacheSessionList(sessions).catch(() => {});
       set({ sessions, isLoading: false });
     } catch {
-      set({ error: "Failed to load sessions", isLoading: false });
+      // Try to show cached sessions as a fallback when offline
+      const cachedSessions = await getCachedSessionList();
+      if (cachedSessions) {
+        set({ sessions: cachedSessions, isLoading: false, error: null });
+      } else {
+        set({ error: "Failed to load sessions", isLoading: false });
+      }
     }
   },
 
@@ -176,6 +246,20 @@ export const useSessions = create<SessionsState>((set, get) => ({
     // until the user backs out and re-enters (issue #150). Only a
     // genuinely new/different session needs the blocking spinner.
     const isColdLoad = isColdSessionLoad(get().currentSession?.id, sessionID);
+    // If this is a cold load, try to show cached content immediately so the
+    // user doesn't stare at a spinner during a slow/reconnecting network. The
+    // full fetch below will replace it once the server responds.
+    if (isColdLoad) {
+      const cached = await getCachedSession(sessionID);
+      if (cached && cached.session) {
+        set({
+          currentSession: cached.session,
+          messages: cached.messages,
+          parts: cached.parts,
+          cacheMiss: true,
+        });
+      }
+    }
     try {
       // Reset optimistic sending — SSE sessionStatus is the source of truth
       set((state) => ({
@@ -197,12 +281,13 @@ export const useSessions = create<SessionsState>((set, get) => ({
 
       // Parse the API response format: array of { info, parts }
       const { messages, parts } = parseMessages(messagesResponse);
-
+      cacheSessionMessages(sessionID, session, messages, parts).catch(() => {});
       set({
         currentSession: session,
         messages,
         parts,
         isLoading: false,
+        cacheMiss: false,
         // If we got exactly PAGE_SIZE messages, there are probably more
         hasMore: messagesResponse.length >= pageSize(),
       });
@@ -212,7 +297,21 @@ export const useSessions = create<SessionsState>((set, get) => ({
     } catch (err) {
       if (seq !== selectSeq) return;
       console.error("Failed to load session:", err);
-      set({ error: "Failed to load session", isLoading: false });
+      // Attempt to hydrate from cache so the user can still read old messages
+      // when the server is unreachable (offline reading).
+      const cached = await getCachedSession(sessionID);
+      if (cached) {
+        console.log("[Sessions] Hydrated from cache (network unavailable)");
+        set({
+          currentSession: cached.session,
+          messages: cached.messages,
+          parts: cached.parts,
+          isLoading: false,
+          cacheMiss: true,
+        });
+      } else {
+        set({ error: "Failed to load session", isLoading: false });
+      }
     }
   },
 
@@ -287,6 +386,7 @@ export const useSessions = create<SessionsState>((set, get) => ({
 
     try {
       await client.session.delete(sessionID);
+      removeCachedSession(sessionID).catch(() => {});
       set((state) => ({
         sessions: state.sessions.filter((s) => s.id !== sessionID),
         currentSession:
@@ -393,6 +493,32 @@ export const useSessions = create<SessionsState>((set, get) => ({
     }
   },
 
+  autoNameSession: async (sessionID, text) => {
+    const session = get().sessions.find((s) => s.id === sessionID);
+    if (!session || session.title) return;
+    const client = clientFor(session.directory);
+    if (!client) return;
+
+    const raw = text.replace(/[#*_`]/g, "").trim();
+    const candidate = raw.length > 40 ? raw.slice(0, 37) + "..." : raw;
+    if (!candidate) return;
+
+    try {
+      const updated = await client.session.update(sessionID, {
+        title: candidate,
+      });
+      set((state) => ({
+        sessions: state.sessions.map((s) => (s.id === sessionID ? updated : s)),
+        currentSession:
+          state.currentSession?.id === sessionID
+            ? updated
+            : state.currentSession,
+      }));
+    } catch {
+      // Silently ignore — naming is best-effort
+    }
+  },
+
   abortSession: async () => {
     const client = clientFor(get().currentSession?.directory);
     const session = get().currentSession;
@@ -400,9 +526,7 @@ export const useSessions = create<SessionsState>((set, get) => ({
 
     try {
       await client.session.abort(session.id);
-      // Mark only after the abort request succeeded — if it failed, the run
-      // continues and any eventual completion is a genuine response.
-      abortedSessions.add(session.id);
+      get().markAborted(session.id);
       set((state) => ({ sending: { ...state.sending, [session.id]: false } }));
     } catch {
       set({ error: "Failed to abort session" });
@@ -528,6 +652,14 @@ export const useSessions = create<SessionsState>((set, get) => ({
           // (issue #150). Only ever clears, never sets it back to true.
           isLoading: false,
         }));
+        if (currentSession && message.sessionID === currentSession.id) {
+          cacheSessionMessages(
+            currentSession.id,
+            currentSession,
+            mergeIncomingMessage(get().messages, message),
+            get().parts,
+          ).catch(() => {});
+        }
         break;
       }
 
@@ -610,12 +742,29 @@ export const useSessions = create<SessionsState>((set, get) => ({
     set({ unreadCounts: next });
     persistUnread(next);
   },
+
+  searchCachedSessions: async (query: string): Promise<SearchResult> => {
+    const sessionIDs = get().sessions.map((s) => s.id);
+    const cachedSessions: CachedSession[] = [];
+    for (const id of sessionIDs) {
+      const cached = await getCachedSession(id);
+      if (cached) cachedSessions.push(cached);
+    }
+    return searchCachedSessions(cachedSessions, query);
+  },
 }));
 
 const UNREAD_KEY = "opencode_unread_counts";
+const SESSION_TAGS_KEY = "opencode_session_tags_v1";
 
 function persistUnread(counts: Record<string, number>) {
   SecureStore.setItemAsync(UNREAD_KEY, JSON.stringify(counts)).catch(() => {});
+}
+
+function persistSessionTags(tags: Record<string, string[]>) {
+  SecureStore.setItemAsync(SESSION_TAGS_KEY, JSON.stringify(tags)).catch(
+    () => {},
+  );
 }
 
 // Load pinned sessions and unread counts from SecureStore at module load
@@ -633,6 +782,15 @@ SecureStore.getItemAsync(UNREAD_KEY)
     if (raw) {
       const parsed = JSON.parse(raw) as Record<string, number>;
       useSessions.setState({ unreadCounts: parsed });
+    }
+  })
+  .catch(() => {});
+
+SecureStore.getItemAsync(SESSION_TAGS_KEY)
+  .then((raw) => {
+    if (raw) {
+      const parsed = JSON.parse(raw) as Record<string, string[]>;
+      useSessions.setState({ sessionTags: parsed });
     }
   })
   .catch(() => {});

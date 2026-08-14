@@ -13,7 +13,8 @@
       "security": "安全",
       "notifications": "通知",
       "privacy": "隐私",
-      "about": "关于"
+      "about": "关于",
+      "developer": "开发者"
     },
     "security": {
       "biometricOpen": {
@@ -67,6 +68,58 @@
       "en": "English",
       "zhHans": "简体中文"
     },
+    "appearance": {
+      "density": {
+        "label": "密度",
+        "description": "选择 UI 密度（{{value}}）"
+      },
+      "theme": {
+        "label": "主题",
+        "description": "选择应用主题（{{value}}）"
+      },
+      "accentColor": {
+        "label": "强调色",
+        "description": "选择您的应用强调色"
+      },
+      "chatFontSize": {
+        "label": "聊天字体大小",
+        "description": "消息正文字体大小（{{size}}px）"
+      }
+    },
+    "developer": {
+      "debugMode": {
+        "label": "调试模式",
+        "description": "显示高级调试工具"
+      },
+      "sseInspector": {
+        "label": "SSE 事件检查器",
+        "description": "实时查看原始 SSE 事件"
+      },
+      "forceReconnect": {
+        "label": "强制重新连接",
+        "description": "立即重新连接事件流"
+      },
+      "reconnectAlert": {
+        "title": "重新连接中",
+        "message": "SSE 事件流正在重新连接。"
+      },
+      "dumpState": {
+        "label": "导出状态到剪贴板",
+        "description": "将应用状态（会话、连接、事件）复制到剪贴板"
+      },
+      "dumpAlert": {
+        "title": "状态已复制",
+        "message": "应用状态已复制到剪贴板。"
+      },
+      "clearCache": {
+        "label": "清除本地缓存",
+        "description": "清除用于离线阅读的缓存会话和消息"
+      },
+      "clearCacheAlert": {
+        "title": "缓存已清除",
+        "message": "本地会话缓存已清除。"
+      }
+    },
     "footer": {
       "appName": "OpenCode Mobile",
       "tagline": "随时随地连接您的 AI 编程助手"
@@ -86,8 +139,9 @@
     "banners": {
       "reconnecting": "正在重新连接…（第 {{attempt}} 次尝试）",
       "connected": "已连接 ✓",
-      "reverted": "消息已撤回 — 重新发送以确认",
-      "undo": "撤销"
+      "reverting": "消息已撤回 — 重新发送以确认",
+      "undo": "撤销",
+      "offlineCache": "显示缓存消息（离线）"
     },
     "empty": {
       "title": "开始一段对话",
@@ -146,6 +200,10 @@
       "authentication": "身份验证",
       "username": "用户名",
       "password": "密码",
+      "customHeaders": "自定义请求头",
+      "addHeader": "添加请求头",
+      "headerKey": "请求头名称",
+      "headerValue": "请求头值",
       "alerts": {
         "enterName": "请输入连接名称",
         "enterUrl": "请输入服务器地址",
@@ -254,8 +312,11 @@
       "daysAgo": "{{count}} 天前"
     },
     "filesCount": "{{count}} 个文件",
+    "searchPlaceholder": "搜索会话...",
     "actions": {
-      "rename": "重命名"
+      "rename": "重命名",
+      "pin": "置顶",
+      "unpin": "取消置顶"
     },
     "alerts": {
       "renameFailedTitle": "重命名失败",
@@ -287,7 +348,19 @@
       "browseFoldersHint": "浏览服务器的文件系统",
       "enterPathLabel": "手动输入路径",
       "createInButton": "在 {{dir}} 中创建",
-      "createSessionButton": "创建会话"
+      "createSessionButton": "创建会话",
+      "templatesLabel": "模板",
+      "templateNamePlaceholder": "模板名称",
+      "templatePromptPlaceholder": "输入提示词模板...",
+      "saveTemplateButton": "保存模板",
+      "useTemplateButton": "使用模板",
+      "templateModelLabel": "模型",
+      "templateAgentLabel": "代理",
+      "templateDirectoryLabel": "目录",
+      "editTemplateTitle": "编辑模板",
+      "templateUpdated": "模板已更新",
+      "templateSaved": "模板已保存",
+      "templateDeleted": "模板已删除"
     },
     "renameModal": {
       "title": "重命名会话"
@@ -356,6 +429,15 @@
       "always": "始终允许",
       "allow": "允许"
     },
+    "message": {
+      "timestamp": "消息时间戳",
+      "copyTimestamp": "复制绝对时间",
+      "addReaction": "添加反应",
+      "reactions": {
+        "title": "添加反应",
+        "toggle": "移除反应"
+      }
+    },
     "questionPrompt": {
       "headerFallback": "问题",
       "answerPlaceholder": "输入您的答案...",
@@ -415,6 +497,7 @@
       "loading": "加载中...",
       "loadAllMessages": "加载全部消息",
       "jumpToBeginning": "跳转到开头",
+      "exportSession": "导出为 Markdown",
       "pills": {
         "in": "输入",
         "out": "输出",
@@ -455,5 +538,14 @@
     "connectButton": "连接您自己的服务器",
     "setupGuideLink": "如何设置服务器",
     "hostedCtaLink": "没有服务器？加入 OpenCode Connect 候补名单 — 托管，无需搭建"
+  },
+  "prompts": {
+    "title": "提示词库",
+    "searchPlaceholder": "搜索提示词...",
+    "savePlaceholder": "保存当前输入为提示词...",
+    "emptyBody": "(无描述)",
+    "emptyState": "暂无保存的提示词。",
+    "deleteAlertTitle": "删除提示词",
+    "deleteAlertMessage": "删除此提示词？"
   }
 }

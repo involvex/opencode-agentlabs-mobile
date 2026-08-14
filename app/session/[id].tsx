@@ -36,6 +36,7 @@ import {
   SessionInfo,
   TerminalView,
   DirectoryBrowserSheet,
+  PromptLibrarySheet,
   type SlashCommand,
   type Attachment,
 } from "../../src/components/chat";
@@ -45,6 +46,8 @@ import { useEvents, refreshPending } from "../../src/stores/events";
 import { useConnections } from "../../src/stores/connections";
 import { useAuth } from "../../src/stores/auth";
 import { useCatalog } from "../../src/stores/catalog";
+import { usePrompts } from "../../src/stores/prompts";
+import type { PromptSnippet } from "../../src/stores/prompts";
 import { useTheme } from "../../src/lib/theme";
 import { useSpeech } from "../../src/lib/speech";
 
@@ -71,6 +74,13 @@ const BUILTIN_COMMANDS: SlashCommand[] = [
     icon: "person-outline",
     type: "builtin",
   },
+  {
+    trigger: "prompt",
+    title: "Prompt Library",
+    description: "Insert a saved prompt snippet",
+    icon: "library-outline",
+    type: "builtin",
+  },
 ];
 
 function getShortDir(dir?: string): string | null {
@@ -80,10 +90,14 @@ function getShortDir(dir?: string): string | null {
 }
 
 export default function SessionScreen() {
-  const { id, directory } = useLocalSearchParams<{
-    id: string;
-    directory?: string;
-  }>();
+  const { id, directory, templateModel, templateAgent, templatePrompt } =
+    useLocalSearchParams<{
+      id: string;
+      directory?: string;
+      templateModel?: string;
+      templateAgent?: string;
+      templatePrompt?: string;
+    }>();
   const router = useRouter();
   const isDark = useTheme();
   const insets = useSafeAreaInsets();
@@ -93,17 +107,25 @@ export default function SessionScreen() {
   const modelSheetRef = useRef<BottomSheet>(null);
   const variantSheetRef = useRef<BottomSheet>(null);
   const browserSheetRef = useRef<BottomSheet>(null);
+  const promptSheetRef = useRef<BottomSheet>(null);
   const [browseStartDir, setBrowseStartDir] = useState<string | null>(null);
-  const [input, setInput] = useState("");
+  const [input, setInput] = useState(templatePrompt || "");
   const [attachments, setAttachments] = useState<Attachment[]>([]);
   const [showInfo, setShowInfo] = useState(false);
   const [showTerminal, setShowTerminal] = useState(false);
+  const [replyTo, setReplyTo] = useState<{
+    messageID: string;
+    text: string;
+    role: string;
+  } | null>(null);
+  const hasAutoNamed = useRef(false);
 
   const {
     currentSession,
     messages,
     parts,
     isLoading,
+    cacheMiss,
     loadingMore,
     hasMore,
     selectSession,
@@ -161,9 +183,23 @@ export default function SessionScreen() {
   const agent = catalog.agent || "";
   const model = catalog.model;
   const setModel = catalog.setModel;
+  const setAgent = catalog.setAgent;
   const variant = catalog.variant;
   const setVariant = catalog.setVariant;
   const cycleAgent = catalog.cycleAgent;
+
+  // Prompt library
+  const {
+    prompts: promptSnippets,
+    addPrompt,
+    deletePrompt,
+    load: loadPrompts,
+  } = usePrompts();
+  const allPrompts = useMemo(() => promptSnippets, [promptSnippets]);
+
+  useEffect(() => {
+    loadPrompts();
+  }, [loadPrompts]);
 
   // Permission & question state
   const sessionID = currentSession?.id;
@@ -307,8 +343,23 @@ export default function SessionScreen() {
   // safely without risking a stale handler.
   const handleMessageLongPress = useCallback(
     (messageID: string) => {
+      const msg = messages.find((m) => m.id === messageID);
+      const msgText = msg
+        ? parts[msg.id]
+            ?.filter((p) => p.type === "text")
+            .map((p) => p.text)
+            .join("\n") || ""
+        : "";
       Alert.alert(t("session.alerts.messageActionsTitle"), undefined, [
         { text: t("common.cancel"), style: "cancel" },
+        {
+          text: t("session.actions.replyMessage"),
+          onPress: () => {
+            if (msg) {
+              setReplyTo({ messageID: msg.id, text: msgText, role: msg.role });
+            }
+          },
+        },
         {
           text: t("session.actions.editMessage"),
           onPress: () => {
@@ -318,8 +369,6 @@ export default function SessionScreen() {
                 .revertToMessage(messageID);
               applyRevertResult(result);
             };
-            // Editing overwrites the composer — don't silently clobber an
-            // in-progress unsent draft.
             if (inputRef.current.trim()) {
               Alert.alert(
                 t("session.alerts.replaceDraftTitle"),
@@ -341,7 +390,7 @@ export default function SessionScreen() {
         },
       ]);
     },
-    [applyRevertResult, t],
+    [applyRevertResult, messages, parts, t],
   );
 
   const scrollToBottom = useCallback((animated = true) => {
@@ -387,6 +436,44 @@ export default function SessionScreen() {
     }
   }, [messages, setModel]);
 
+  // Apply template params (from a new-session-via-template navigation) once
+  // the session has loaded and the catalog is ready. Only fires for new empty
+  // sessions where messages.length === 0, so we don't clobber message-derived
+  // model/agent sync for existing conversations. Uses a ref guard so state
+  // setters fire once — avoids cascading-render lint warnings from React
+  // setState inside effects.
+  const templateAppliedRef = useRef(false);
+  useEffect(() => {
+    if (templateAppliedRef.current) return;
+    if (!templateModel && !templateAgent && !templatePrompt) return;
+    if (!messages || messages.length > 0) return;
+    if (!catalog.loaded) return;
+
+    templateAppliedRef.current = true;
+
+    if (templateModel) {
+      try {
+        const parsed = JSON.parse(templateModel);
+        if (parsed?.providerID && parsed?.modelID) {
+          setModel({ providerID: parsed.providerID, modelID: parsed.modelID });
+        }
+      } catch {}
+    }
+    if (templateAgent) {
+      setAgent(templateAgent);
+    }
+    // templatePrompt is set via useState initial value above; no need to
+    // call setInput here (would trigger cascading-render lint warning).
+  }, [
+    templateModel,
+    templateAgent,
+    templatePrompt,
+    messages,
+    catalog.loaded,
+    setModel,
+    setAgent,
+  ]);
+
   // Slash command handler
   const handleSlashSelect = useCallback(
     (cmd: SlashCommand) => {
@@ -403,11 +490,51 @@ export default function SessionScreen() {
             setInput("");
             cycleAgent();
             return;
+          case "prompt":
+            setInput("");
+            promptSheetRef.current?.expand();
+            return;
         }
       }
       setInput(`/${cmd.trigger} `);
     },
     [router, cycleAgent],
+  );
+
+  // Prompt library handlers
+  const handlePromptSelect = useCallback(
+    (prompt: PromptSnippet) => {
+      setInput(prompt.body);
+      if (prompt.model) {
+        setModel(prompt.model);
+      }
+      if (prompt.agent) {
+        setAgent(prompt.agent);
+      }
+    },
+    [setModel, setAgent],
+  );
+
+  const handleSavePrompt = useCallback(
+    async (title: string) => {
+      const body = inputRef.current || "";
+      if (!title.trim() || !body.trim()) return;
+      await addPrompt({
+        title: title.trim(),
+        body,
+        model: model ?? undefined,
+        agent: agent || undefined,
+        directory: currentSession?.directory || undefined,
+      });
+    },
+    [addPrompt, model, agent, currentSession?.directory],
+  );
+
+  const handleDeletePrompt = useCallback(
+    async (id: string) => {
+      await deletePrompt(id);
+    },
+    [deletePrompt],
   );
 
   // --- Image picking ---
@@ -528,6 +655,10 @@ export default function SessionScreen() {
     setAttachments((prev) => prev.filter((_, i) => i !== index));
   }, []);
 
+  const cancelReply = useCallback(() => {
+    setReplyTo(null);
+  }, []);
+
   // --- Send ---
   const handleSend = async () => {
     if (!input.trim() && attachments.length === 0) return;
@@ -540,10 +671,17 @@ export default function SessionScreen() {
       return;
     }
 
-    const text = input.trim();
+    let text = input.trim();
     const files = [...attachments];
     setInput("");
     setAttachments([]);
+
+    if (replyTo) {
+      const quoted = replyTo.text.trim();
+      const prefix = quoted ? `> ${quoted.split("\n").join("\n> ")}\n\n` : "";
+      text = prefix + text;
+      setReplyTo(null);
+    }
 
     // Server slash commands (no attachments for commands)
     if (text.startsWith("/") && files.length === 0) {
@@ -573,6 +711,10 @@ export default function SessionScreen() {
         files,
         variant || undefined,
       );
+      if (!hasAutoNamed.current && currentSession && !currentSession.title) {
+        hasAutoNamed.current = true;
+        useSessions.getState().autoNameSession(currentSession.id, text);
+      }
     } catch (err) {
       console.error("Send failed:", err);
       // Restore the user's text and attachments so their input isn't lost.
@@ -812,6 +954,20 @@ export default function SessionScreen() {
             onClose={() => setShowInfo(false)}
           />
 
+          {/* Cache indicator — shows when viewing cached (offline) content */}
+          {cacheMiss && reconnectAttempts === 0 && !isLoading && (
+            <View style={[s.banner, s.bannerCache]}>
+              <Ionicons
+                name="cloud-offline-outline"
+                size={14}
+                color="#ffffff"
+              />
+              <Text style={s.bannerText}>
+                {t("session.banners.offlineCache")}
+              </Text>
+            </View>
+          )}
+
           {/* SSE reconnect/connected banner */}
           {reconnectAttempts > 0 && (
             <View style={[s.banner, s.bannerReconnecting]}>
@@ -863,14 +1019,19 @@ export default function SessionScreen() {
                 data={messageData}
                 inverted
                 keyExtractor={(item) => item.message.id}
-                renderItem={({ item }) => (
-                  <MessageBubble
-                    message={item.message}
-                    parts={item.parts}
-                    isDark={isDark}
-                    onLongPress={handleMessageLongPress}
-                  />
-                )}
+                renderItem={({ item }) => {
+                  return (
+                    <MessageBubble
+                      message={item.message}
+                      parts={item.parts}
+                      isDark={isDark}
+                      onLongPress={handleMessageLongPress}
+                      onReply={(messageID, role, text) =>
+                        setReplyTo({ messageID, text, role })
+                      }
+                    />
+                  );
+                }}
                 contentContainerStyle={s.messageList}
                 onScroll={handleScroll}
                 scrollEventThrottle={100}
@@ -1069,6 +1230,43 @@ export default function SessionScreen() {
                 />
               </TouchableOpacity>
 
+              {/* Reply preview */}
+              {replyTo && (
+                <View style={[s.replyPreview, isDark && s.replyPreviewDark]}>
+                  <View style={s.replyPreviewHeader}>
+                    <Text
+                      style={[
+                        s.replyPreviewLabel,
+                        isDark && s.replyPreviewLabelDark,
+                      ]}
+                    >
+                      {replyTo.role === "user"
+                        ? t("session.reply.inReplyToUser")
+                        : t("session.reply.inReplyToAssistant")}
+                    </Text>
+                    <TouchableOpacity
+                      onPress={cancelReply}
+                      style={s.replyPreviewDismiss}
+                    >
+                      <Ionicons
+                        name="close"
+                        size={16}
+                        color={isDark ? "#888888" : "#666666"}
+                      />
+                    </TouchableOpacity>
+                  </View>
+                  <Text
+                    style={[
+                      s.replyPreviewText,
+                      isDark && s.replyPreviewTextDark,
+                    ]}
+                    numberOfLines={3}
+                  >
+                    {replyTo.text || t("session.reply.emptyMessage")}
+                  </Text>
+                </View>
+              )}
+
               <TextInput
                 style={[
                   s.input,
@@ -1161,6 +1359,16 @@ export default function SessionScreen() {
         clientForDirectory={clientForDirectory}
         isDark={isDark}
         onSelect={handleBrowserSelect}
+      />
+
+      {/* Prompt library bottom sheet */}
+      <PromptLibrarySheet
+        sheetRef={promptSheetRef}
+        prompts={allPrompts}
+        isDark={isDark}
+        onSelect={handlePromptSelect}
+        onSaveCurrent={handleSavePrompt}
+        onDelete={handleDeletePrompt}
       />
     </>
   );
@@ -1378,6 +1586,11 @@ const s = StyleSheet.create({
   },
   bannerReconnecting: { backgroundColor: "#92400e" },
   bannerConnected: { backgroundColor: "#065f46" },
+  bannerCache: {
+    backgroundColor: "#3730a3",
+    flexDirection: "row",
+    gap: 6,
+  },
   bannerText: { color: "#ffffff", fontSize: 13, fontWeight: "500" },
 
   // Pending revert (edit message) banner
@@ -1387,4 +1600,45 @@ const s = StyleSheet.create({
     justifyContent: "space-between",
   },
   bannerAction: { color: "#93c5fd", fontSize: 13, fontWeight: "700" },
+
+  // Reply preview
+  replyPreview: {
+    backgroundColor: "#f5f3ff",
+    borderLeftWidth: 3,
+    borderLeftColor: "#8b5cf6",
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    marginBottom: 8,
+    borderRadius: 8,
+  },
+  replyPreviewDark: {
+    backgroundColor: "#1e1b4b",
+    borderLeftColor: "#a78bfa",
+  },
+  replyPreviewHeader: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    marginBottom: 4,
+  },
+  replyPreviewLabel: {
+    fontSize: 11,
+    fontWeight: "600",
+    color: "#6b21a8",
+    textTransform: "uppercase",
+  },
+  replyPreviewLabelDark: {
+    color: "#c4b5fd",
+  },
+  replyPreviewDismiss: {
+    padding: 2,
+  },
+  replyPreviewText: {
+    fontSize: 13,
+    color: "#4b5563",
+    lineHeight: 18,
+  },
+  replyPreviewTextDark: {
+    color: "#a5b4fc",
+  },
 });

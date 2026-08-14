@@ -13,3 +13,4 @@ export { DirectorySwitcher } from "./DirectorySwitcher";
 export { DirectoryBrowserSheet } from "./DirectoryBrowserSheet";
 export { SessionInfo } from "./SessionInfo";
 export { default as TerminalView } from "./TerminalView";
+export { PromptLibrarySheet } from "./PromptLibrarySheet";

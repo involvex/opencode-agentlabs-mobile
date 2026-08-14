@@ -18,6 +18,7 @@ import { useTheme, PRESET_ACCENT_COLORS } from "../../src/lib/theme";
 import { useEvents } from "../../src/stores/events";
 import { useSessions } from "../../src/stores/sessions";
 import { useConnections } from "../../src/stores/connections";
+import { clearAllSessionCache } from "../../src/lib/session-cache";
 import * as Clipboard from "expo-clipboard";
 import {
   categories,
@@ -639,6 +640,20 @@ export default function SettingsScreen() {
                 Alert.alert(
                   t("settings.developer.dumpAlert.title"),
                   t("settings.developer.dumpAlert.message"),
+                );
+              }}
+            />
+            <SettingRow
+              icon="trash-outline"
+              label={t("settings.developer.clearCache.label")}
+              description={t("settings.developer.clearCache.description")}
+              isDark={isDark}
+              onPress={async () => {
+                await clearAllSessionCache();
+                useSessions.setState({ cacheMiss: false });
+                Alert.alert(
+                  t("settings.developer.clearCacheAlert.title"),
+                  t("settings.developer.clearCacheAlert.message"),
                 );
               }}
             />
