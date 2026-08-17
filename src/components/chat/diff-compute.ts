@@ -6,6 +6,7 @@
 // apart.
 
 export interface DiffLine {
+  id: string;
   type: "add" | "remove" | "context";
   text: string;
 }
@@ -26,6 +27,7 @@ const TRUNCATED_SIDE_LINES = 400;
 
 function truncationMarker(totalLines: number): DiffLine {
   return {
+    id: crypto.randomUUID(),
     type: "context",
     text: `… diff too large to display in full (${totalLines} lines) — view on your computer`,
   };
@@ -44,12 +46,14 @@ export function computeDiff(before: string, after: string): DiffLine[] {
     b.length > MAX_DIFF_LINES ||
     a.length * b.length > MAX_DIFF_CELLS
   ) {
-    const removed = a
-      .slice(0, TRUNCATED_SIDE_LINES)
-      .map((text) => ({ type: "remove" as const, text }));
+    const removed = a.slice(0, TRUNCATED_SIDE_LINES).map((text) => ({
+      id: crypto.randomUUID(),
+      type: "remove" as const,
+      text,
+    }));
     const added = b
       .slice(0, TRUNCATED_SIDE_LINES)
-      .map((text) => ({ type: "add" as const, text }));
+      .map((text) => ({ id: crypto.randomUUID(), type: "add" as const, text }));
     return [...removed, ...added, truncationMarker(a.length + b.length)];
   }
 
@@ -75,14 +79,14 @@ export function computeDiff(before: string, after: string): DiffLine[] {
   let j = n;
   while (i > 0 || j > 0) {
     if (i > 0 && j > 0 && a[i - 1] === b[j - 1]) {
-      result.push({ type: "context", text: a[i - 1] });
+      result.push({ id: crypto.randomUUID(), type: "context", text: a[i - 1] });
       i--;
       j--;
     } else if (j > 0 && (i === 0 || dp[i][j - 1] >= dp[i - 1][j])) {
-      result.push({ type: "add", text: b[j - 1] });
+      result.push({ id: crypto.randomUUID(), type: "add", text: b[j - 1] });
       j--;
     } else {
-      result.push({ type: "remove", text: a[i - 1] });
+      result.push({ id: crypto.randomUUID(), type: "remove", text: a[i - 1] });
       i--;
     }
   }
@@ -98,7 +102,11 @@ export function computeDiff(before: string, after: string): DiffLine[] {
       if (contextRun <= 3) {
         collapsed.push(line);
       } else if (contextRun === 4) {
-        collapsed.push({ type: "context", text: "..." });
+        collapsed.push({
+          id: crypto.randomUUID(),
+          type: "context",
+          text: "...",
+        });
       }
     } else {
       contextRun = 0;

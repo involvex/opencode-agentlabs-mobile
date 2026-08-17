@@ -408,7 +408,7 @@ Data stays on device; no server-side reporting.
 | Session templates               | Low-Medium  | High           | 7                 | DONE   |
 | Message reactions               | Low-Medium  | Medium         | 8                 | DONE   |
 | Session cache (offline reading) | Medium-High | High           | 9                 | DONE   |
-| Reply / thread                  | Medium      | Medium         | 10                | TODO   |
+| Reply / thread                  | Medium      | Medium         | 10                | DONE   |
 | Developer quick actions         | Low         | Medium         | 11                | DONE   |
 | Connection health history       | Medium      | Low-Medium     | 12                | TODO   |
 | Android widget / shortcuts      | Low-Medium  | Low-Medium     | 13                | TODO   |
@@ -419,6 +419,10 @@ Data stays on device; no server-side reporting.
 | Local LLM mode                  | High        | High           | 18                | TODO   |
 | Session branching               | Medium-High | Medium         | 19                | TODO   |
 | Split screen / tablet           | Medium-High | Medium         | 20                | TODO   |
+| Smart session summary           | Low         | Medium         | 21                | DONE   |
+| Connection config export/import | Low         | Low-Medium     | 22                | DONE   |
+| Image context actions           | Low-Medium  | Low-Medium     | 23                | DONE   |
+| Voice TTS auto-play             | Low         | Medium         | 24                | DONE   |
 
 > **Quick wins** (low effort, high personal value): bookmarks, export, search,
 > SSE inspector, developer shortcuts, templates, density mode. All are implemented.
@@ -427,4 +431,6 @@ Data stays on device; no server-side reporting.
 > Markdown export + Share, SSE inspector (`/debug/sse`), density modes, message
 > reactions (tap toggle + long-press picker), dark/light/auto theme, accent color,
 > font size controls, developer settings (force reconnect, state dump), connection
-> profiles with auth headers.
+> profiles with auth headers, reply/thread quote-and-reply, session auto-naming,
+> session tags, smart session summary, connection config export/import, image
+> context actions, voice TTS auto-play.

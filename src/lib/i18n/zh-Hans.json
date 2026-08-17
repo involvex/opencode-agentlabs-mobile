@@ -84,6 +84,10 @@
       "chatFontSize": {
         "label": "聊天字体大小",
         "description": "消息正文字体大小（{{size}}px）"
+      },
+      "autoPlaySpeech": {
+        "label": "自动播放语音",
+        "description": "朗读助手回复"
       }
     },
     "developer": {
@@ -136,6 +140,11 @@
     "toolbar": {
       "auto": "自动"
     },
+    "reply": {
+      "inReplyToUser": "回复您",
+      "inReplyToAssistant": "回复助手",
+      "emptyMessage": "[空消息]"
+    },
     "banners": {
       "reconnecting": "正在重新连接…（第 {{attempt}} 次尝试）",
       "connected": "已连接 ✓",
@@ -155,7 +164,12 @@
     },
     "actions": {
       "editMessage": "编辑消息",
-      "replace": "替换"
+      "replace": "替换",
+      "replyMessage": "回复"
+    },
+    "message": {
+      "addReaction": "添加反应",
+      "reply": "回复"
     },
     "alerts": {
       "messageActionsTitle": "消息操作",
@@ -316,8 +330,13 @@
     "actions": {
       "rename": "重命名",
       "pin": "置顶",
-      "unpin": "取消置顶"
+      "unpin": "取消置顶",
+      "addTag": "添加标签"
     },
+    "addTagTitle": "添加标签",
+    "addTagMessage": "为此会话输入标签",
+    "removeTagTitle": "移除标签",
+    "removeTagMessage": "移除 \"{{tag}}\"？",
     "alerts": {
       "renameFailedTitle": "重命名失败",
       "renameFailedMessage": "无法重命名该会话。请重试。",
@@ -436,6 +455,12 @@
       "reactions": {
         "title": "添加反应",
         "toggle": "移除反应"
+      },
+      "imageActions": {
+        "title": "图片操作",
+        "describe": "描述图片",
+        "ocr": "提取文字 (OCR)",
+        "save": "保存到相册"
       }
     },
     "questionPrompt": {
@@ -498,6 +523,7 @@
       "loadAllMessages": "加载全部消息",
       "jumpToBeginning": "跳转到开头",
       "exportSession": "导出为 Markdown",
+      "summarizeSession": "总结",
       "pills": {
         "in": "输入",
         "out": "输出",

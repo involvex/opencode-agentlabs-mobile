@@ -24,6 +24,7 @@ interface Props {
   onLoadAll: () => void;
   onScrollToTop: () => void;
   onExport: () => void;
+  onSummarize?: () => void;
   onClose: () => void;
 }
 
@@ -69,6 +70,7 @@ export function SessionInfo({
   onLoadAll,
   onScrollToTop,
   onExport,
+  onSummarize,
   onClose,
 }: Props) {
   const { t } = useTranslation();
@@ -341,6 +343,21 @@ export function SessionInfo({
             />
             <Text style={[s.actionText, isDark && s.dimDark]}>
               {t("chat.sessionInfo.exportSession")}
+            </Text>
+          </TouchableOpacity>
+        )}
+        {messages.length > 0 && onSummarize && (
+          <TouchableOpacity
+            style={[s.action, isDark && s.actionDark]}
+            onPress={onSummarize}
+          >
+            <Ionicons
+              name="reader-outline"
+              size={14}
+              color={isDark ? "#888888" : "#666666"}
+            />
+            <Text style={[s.actionText, isDark && s.dimDark]}>
+              {t("chat.sessionInfo.summarizeSession")}
             </Text>
           </TouchableOpacity>
         )}

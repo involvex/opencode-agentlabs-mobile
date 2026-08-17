@@ -20,6 +20,7 @@ interface Settings {
   density: Density;
   theme: Theme;
   accentColor: string;
+  autoPlaySpeech: boolean;
 }
 
 const DEFAULTS: Settings = {
@@ -32,6 +33,7 @@ const DEFAULTS: Settings = {
   density: "default",
   theme: "auto",
   accentColor: "#8b5cf6",
+  autoPlaySpeech: false,
 };
 
 interface SettingsState extends Settings {
@@ -46,6 +48,7 @@ interface SettingsState extends Settings {
   setDensity: (density: Density) => Promise<void>;
   setTheme: (theme: Theme) => Promise<void>;
   setAccentColor: (color: string) => Promise<void>;
+  setAutoPlaySpeech: (enabled: boolean) => Promise<void>;
 }
 
 function clampTerminalFontSize(size: number): number {
@@ -67,6 +70,7 @@ function snapshot(get: () => SettingsState): Settings {
     density: get().density,
     theme: get().theme,
     accentColor: get().accentColor,
+    autoPlaySpeech: get().autoPlaySpeech,
   };
 }
 
@@ -139,5 +143,10 @@ export const useSettings = create<SettingsState>((set, get) => ({
   setAccentColor: async (color) => {
     set({ accentColor: color });
     await persist({ ...snapshot(get), accentColor: color });
+  },
+
+  setAutoPlaySpeech: async (enabled) => {
+    set({ autoPlaySpeech: enabled });
+    await persist({ ...snapshot(get), autoPlaySpeech: enabled });
   },
 }));

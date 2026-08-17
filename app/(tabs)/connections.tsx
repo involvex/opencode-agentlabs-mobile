@@ -6,6 +6,8 @@ import {
   StyleSheet,
   Alert,
 } from "react-native";
+import * as Clipboard from "expo-clipboard";
+import { useCallback } from "react";
 import { router } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
 import { useTranslation } from "react-i18next";
@@ -159,6 +161,70 @@ export default function ConnectionsScreen() {
     );
   };
 
+  const handleExportConnections = useCallback(() => {
+    const exportData = connections.map((c) => ({
+      name: c.name,
+      url: c.url,
+      directory: c.directory,
+      username: c.username,
+      type: c.type,
+    }));
+    const json = JSON.stringify(exportData, null, 2);
+    Clipboard.setStringAsync(json);
+    Alert.alert(t("common.ok"), "Connection config copied to clipboard.");
+  }, [connections, t]);
+
+  const handleImportConnections = useCallback(() => {
+    Alert.prompt(
+      "Import connections",
+      "Paste JSON exported from OpenCode Mobile",
+      [
+        { text: t("common.cancel"), style: "cancel" },
+        {
+          text: "Import",
+          onPress: async (raw?: string) => {
+            if (!raw) return;
+            try {
+              const parsed = JSON.parse(raw);
+              if (!Array.isArray(parsed)) {
+                Alert.alert("Invalid format", "Expected a JSON array.");
+                return;
+              }
+              const existing = new Set(
+                connections.map((c) => c.url + (c.directory || "")),
+              );
+              let added = 0;
+              for (const item of parsed) {
+                if (!item?.url) continue;
+                const key = item.url + (item.directory || "");
+                if (existing.has(key)) continue;
+                await useConnections.getState().addConnection(
+                  {
+                    name: item.name || item.url,
+                    url: item.url,
+                    directory: item.directory,
+                    username: item.username,
+                    type: item.type || "local",
+                  },
+                  undefined,
+                );
+                existing.add(key);
+                added++;
+              }
+              Alert.alert(
+                "Imported",
+                `Added ${added} connection${added === 1 ? "" : "s"}.`,
+              );
+            } catch {
+              Alert.alert("Invalid JSON", "Could not parse the pasted text.");
+            }
+          },
+        },
+      ],
+      "plain-text",
+    );
+  }, [connections, t]);
+
   return (
     <View style={[styles.container, isDark && styles.containerDark]}>
       <FlatList
@@ -195,6 +261,38 @@ export default function ConnectionsScreen() {
             <Text style={[styles.headerText, isDark && styles.metaDark]}>
               {t("connectionsList.header")}
             </Text>
+            <View style={styles.headerActions}>
+              <TouchableOpacity
+                style={styles.headerActionBtn}
+                onPress={handleExportConnections}
+              >
+                <Ionicons
+                  name="share-outline"
+                  size={16}
+                  color={isDark ? "#888888" : "#666666"}
+                />
+                <Text
+                  style={[styles.headerActionText, isDark && styles.metaDark]}
+                >
+                  Export
+                </Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={styles.headerActionBtn}
+                onPress={handleImportConnections}
+              >
+                <Ionicons
+                  name="download-outline"
+                  size={16}
+                  color={isDark ? "#888888" : "#666666"}
+                />
+                <Text
+                  style={[styles.headerActionText, isDark && styles.metaDark]}
+                >
+                  Import
+                </Text>
+              </TouchableOpacity>
+            </View>
           </View>
         }
         ListFooterComponent={
@@ -283,6 +381,24 @@ const styles = StyleSheet.create({
     borderBottomColor: "#1a1a1a",
   },
   headerText: {
+    fontSize: 13,
+    color: "#666666",
+  },
+  headerActions: {
+    flexDirection: "row",
+    gap: 12,
+    marginTop: 8,
+  },
+  headerActionBtn: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 4,
+    paddingVertical: 4,
+    paddingHorizontal: 8,
+    borderRadius: 6,
+    backgroundColor: "#f5f5f5",
+  },
+  headerActionText: {
     fontSize: 13,
     color: "#666666",
   },

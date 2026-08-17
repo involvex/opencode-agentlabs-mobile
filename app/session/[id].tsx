@@ -23,6 +23,7 @@ import { useTranslation } from "react-i18next";
 import * as ImagePicker from "expo-image-picker";
 import * as ImageManipulator from "expo-image-manipulator";
 import * as Clipboard from "expo-clipboard";
+import * as expoMediaLibrary from "expo-media-library";
 import type BottomSheet from "@gorhom/bottom-sheet";
 import {
   MessageBubble,
@@ -40,6 +41,7 @@ import {
   type SlashCommand,
   type Attachment,
 } from "../../src/components/chat";
+import type { Part } from "../../src/lib/sdk";
 import { useSessions, type RevertResult } from "../../src/stores/sessions";
 import { shareSession } from "../../src/lib/export";
 import { useEvents, refreshPending } from "../../src/stores/events";
@@ -49,7 +51,10 @@ import { useCatalog } from "../../src/stores/catalog";
 import { usePrompts } from "../../src/stores/prompts";
 import type { PromptSnippet } from "../../src/stores/prompts";
 import { useTheme } from "../../src/lib/theme";
+import { useSettings } from "../../src/stores/settings";
 import { useSpeech } from "../../src/lib/speech";
+import { useSpeechOutput, speakText } from "../../src/lib/speech-output";
+import { useKeyboardShortcuts } from "../../src/lib/keyboard-shortcuts";
 
 // --- Builtin slash commands ---
 const BUILTIN_COMMANDS: SlashCommand[] = [
@@ -83,10 +88,36 @@ const BUILTIN_COMMANDS: SlashCommand[] = [
   },
 ];
 
-function getShortDir(dir?: string): string | null {
-  if (!dir) return null;
-  const parts = dir.split("/").filter(Boolean);
-  return parts[parts.length - 1] || null;
+const MAX_DIMENSION = 1568;
+
+async function toJpeg(
+  uri: string,
+  width: number,
+  height: number,
+): Promise<Attachment> {
+  const actions: ImageManipulator.Action[] = [];
+  if (width > MAX_DIMENSION || height > MAX_DIMENSION) {
+    const scale = MAX_DIMENSION / Math.max(width, height);
+    actions.push({
+      resize: {
+        width: Math.round(width * scale),
+        height: Math.round(height * scale),
+      },
+    });
+  }
+  const result = await ImageManipulator.manipulateAsync(uri, actions, {
+    format: ImageManipulator.SaveFormat.JPEG,
+    compress: 0.8,
+    base64: true,
+  });
+  return {
+    uri: result.uri,
+    mime: "image/jpeg",
+    filename: "image.jpg",
+    width: result.width,
+    height: result.height,
+    base64: result.base64 || undefined,
+  };
 }
 
 export default function SessionScreen() {
@@ -108,7 +139,8 @@ export default function SessionScreen() {
   const variantSheetRef = useRef<BottomSheet>(null);
   const browserSheetRef = useRef<BottomSheet>(null);
   const promptSheetRef = useRef<BottomSheet>(null);
-  const [browseStartDir, setBrowseStartDir] = useState<string | null>(null);
+  const composerRef = useRef<TextInput>(null);
+  const [browseStartDir] = useState<string | null>(null);
   const [input, setInput] = useState(templatePrompt || "");
   const [attachments, setAttachments] = useState<Attachment[]>([]);
   const [showInfo, setShowInfo] = useState(false);
@@ -145,8 +177,6 @@ export default function SessionScreen() {
     client,
     clientForDirectory,
     clientBase,
-    activeConnection,
-    serverHome,
     switchDirectory,
     addRecentDirectory,
   } = useConnections();
@@ -208,7 +238,6 @@ export default function SessionScreen() {
   const questions =
     useEvents((s) => (sessionID ? s.questions[sessionID] : undefined)) || [];
 
-  const shortDir = getShortDir(currentSession?.directory);
   const [showScrollButton, setShowScrollButton] = useState(false);
 
   // SSE reconnect banner
@@ -223,11 +252,40 @@ export default function SessionScreen() {
     }, []),
   );
 
-  // Directory browser (file picker) for switching project directory from session screen
-  const openBrowser = useCallback(() => {
-    setBrowseStartDir(activeConnection?.directory || serverHome || null);
-    browserSheetRef.current?.expand();
-  }, [activeConnection?.directory, serverHome]);
+  useSpeechOutput();
+  const sessionStatus = useEvents((s) =>
+    sessionID ? s.sessionStatus[sessionID] : undefined,
+  );
+  const autoPlaySpeech = useSettings((s) => s.autoPlaySpeech);
+  const spokenRef = useRef<Set<string>>(new Set());
+
+  // Auto-play assistant responses via TTS when enabled and the session
+  // transitions from busy -> idle. Only speaks each final assistant
+  // message once per session visit.
+  useEffect(() => {
+    if (!autoPlaySpeech || !currentSession || sessionStatus?.type !== "idle")
+      return;
+    const latest = [...messages]
+      .reverse()
+      .find(
+        (m) => m.role === "assistant" && m.id && !spokenRef.current.has(m.id),
+      );
+    if (!latest) return;
+    const text = parts[latest.id]
+      ?.filter((p) => p.type === "text")
+      .map((p) => p.text)
+      .join("\n");
+    if (!text) return;
+    spokenRef.current.add(latest.id);
+    speakText(text);
+  }, [autoPlaySpeech, currentSession, sessionStatus, messages, parts]);
+
+  // Clear spoken cache when leaving the session so re-entry can replay
+  useFocusEffect(
+    useCallback(() => {
+      spokenRef.current.clear();
+    }, []),
+  );
 
   const handleBrowserSelect = useCallback(
     async (directory: string) => {
@@ -301,6 +359,42 @@ export default function SessionScreen() {
   useEffect(() => {
     inputRef.current = input;
   });
+
+  const { textInputProps: shortcutProps } = useKeyboardShortcuts([
+    {
+      key: "Escape",
+      action: () => {
+        modelSheetRef.current?.close();
+        variantSheetRef.current?.close();
+        browserSheetRef.current?.close();
+        promptSheetRef.current?.close();
+      },
+    },
+    {
+      key: "/",
+      ctrl: true,
+      action: () => {
+        composerRef.current?.focus();
+      },
+    },
+    {
+      key: "k",
+      ctrl: true,
+      action: () => {
+        modelSheetRef.current?.expand();
+      },
+    },
+    {
+      key: "n",
+      ctrl: true,
+      action: async () => {
+        const session = await useSessions.getState().createSession();
+        if (session?.id) {
+          router.push(`/session/${session.id}`);
+        }
+      },
+    },
+  ]);
 
   const applyRevertResult = useCallback(
     (result: RevertResult) => {
@@ -539,38 +633,6 @@ export default function SessionScreen() {
 
   // --- Image picking ---
 
-  // Convert any image (including HEIC/HEIF from iOS) to guaranteed JPEG bytes
-  const MAX_DIMENSION = 1568; // Anthropic recommended max
-  async function toJpeg(
-    uri: string,
-    width: number,
-    height: number,
-  ): Promise<Attachment> {
-    const actions: ImageManipulator.Action[] = [];
-    if (width > MAX_DIMENSION || height > MAX_DIMENSION) {
-      const scale = MAX_DIMENSION / Math.max(width, height);
-      actions.push({
-        resize: {
-          width: Math.round(width * scale),
-          height: Math.round(height * scale),
-        },
-      });
-    }
-    const result = await ImageManipulator.manipulateAsync(uri, actions, {
-      format: ImageManipulator.SaveFormat.JPEG,
-      compress: 0.8,
-      base64: true,
-    });
-    return {
-      uri: result.uri,
-      mime: "image/jpeg",
-      filename: "image.jpg",
-      width: result.width,
-      height: result.height,
-      base64: result.base64 || undefined,
-    };
-  }
-
   const pickFromLibrary = useCallback(async () => {
     const result = await ImagePicker.launchImageLibraryAsync({
       mediaTypes: ["images"],
@@ -658,6 +720,45 @@ export default function SessionScreen() {
   const cancelReply = useCallback(() => {
     setReplyTo(null);
   }, []);
+
+  const handleImageAction = useCallback(
+    async (action: "describe" | "ocr" | "save", filePart: Part) => {
+      if (action === "save") {
+        try {
+          const { status } = await expoMediaLibrary.requestPermissionsAsync();
+          if (status !== "granted") {
+            Alert.alert(
+              t("session.alerts.cameraPermissionTitle"),
+              t("session.alerts.cameraPermissionMessage"),
+            );
+            return;
+          }
+          const uri = filePart.url || filePart.mime;
+          if (!uri) return;
+          await expoMediaLibrary.createAssetAsync(uri);
+          Alert.alert(
+            t("common.ok"),
+            `Saved to gallery: ${filePart.filename || "image"}`,
+          );
+        } catch (err) {
+          console.error("Save to gallery failed:", err);
+          Alert.alert(
+            t("session.alerts.imageFailedTitle"),
+            t("session.alerts.imageFailedMessage"),
+          );
+        }
+        return;
+      }
+
+      const promptText =
+        action === "describe"
+          ? "Describe this image in detail:"
+          : "Extract all text from this image (OCR):";
+      setInput((prev) => `${promptText}\n\n${prev}`);
+      browserSheetRef.current?.collapse();
+    },
+    [t],
+  );
 
   // --- Send ---
   const handleSend = async () => {
@@ -951,6 +1052,13 @@ export default function SessionScreen() {
               const { currentSession, parts } = useSessions.getState();
               shareSession(currentSession, messages || [], parts);
             }}
+            onSummarize={() => {
+              if (!currentSession) return;
+              const text =
+                "Summarize this conversation in 3 concise bullet points.";
+              setInput(text);
+              handleSend();
+            }}
             onClose={() => setShowInfo(false)}
           />
 
@@ -1029,6 +1137,7 @@ export default function SessionScreen() {
                       onReply={(messageID, role, text) =>
                         setReplyTo({ messageID, text, role })
                       }
+                      onImageAction={handleImageAction}
                     />
                   );
                 }}
@@ -1268,6 +1377,8 @@ export default function SessionScreen() {
               )}
 
               <TextInput
+                ref={composerRef}
+                {...shortcutProps}
                 style={[
                   s.input,
                   isDark && s.inputDark,

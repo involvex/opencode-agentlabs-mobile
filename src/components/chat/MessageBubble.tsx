@@ -38,6 +38,7 @@ interface Props {
   // so it stays correct even if the memo below bails on a stale render.
   onLongPress?: (messageID: string) => void;
   onReply?: (messageID: string, role: string, text: string) => void;
+  onImageAction?: (action: "describe" | "ocr" | "save", filePart: Part) => void;
 }
 
 // TODO: Replace with streamdown-rn once React 19 types PR lands - it has
@@ -49,6 +50,7 @@ export const MessageBubble = memo(
     isDark,
     onLongPress,
     onReply,
+    onImageAction,
   }: Props) {
     const { t } = useTranslation();
     const density = useDensity();
@@ -182,23 +184,61 @@ export const MessageBubble = memo(
             contentContainerStyle={s.imageRow}
             style={s.imageScroll}
           >
-            {fileParts.map((fp) => (
-              <View key={fp.id} style={s.imageWrap}>
-                <Image
-                  source={{ uri: fp.url }}
-                  style={s.attachedImage}
-                  resizeMode="cover"
-                />
-                {fp.filename && (
-                  <Text
-                    style={[s.imageLabel, isDark && s.imageLabelDark]}
-                    numberOfLines={1}
+            {fileParts.map((fp) => {
+              const handleImageLongPress = () => {
+                if (!onImageAction) return;
+                Alert.alert(
+                  t("chat.message.imageActions.title", "Image actions"),
+                  undefined,
+                  [
+                    {
+                      text: t(
+                        "chat.message.imageActions.describe",
+                        "Describe image",
+                      ),
+                      onPress: () => onImageAction("describe", fp),
+                    },
+                    {
+                      text: t(
+                        "chat.message.imageActions.ocr",
+                        "Extract text (OCR)",
+                      ),
+                      onPress: () => onImageAction("ocr", fp),
+                    },
+                    {
+                      text: t(
+                        "chat.message.imageActions.save",
+                        "Save to gallery",
+                      ),
+                      onPress: () => onImageAction("save", fp),
+                    },
+                    { text: t("common.cancel"), style: "cancel" },
+                  ],
+                );
+              };
+              return (
+                <View key={fp.id} style={s.imageWrap}>
+                  <TouchableOpacity
+                    onLongPress={handleImageLongPress}
+                    delayLongPress={400}
                   >
-                    {fp.filename}
-                  </Text>
-                )}
-              </View>
-            ))}
+                    <Image
+                      source={{ uri: fp.url }}
+                      style={s.attachedImage}
+                      resizeMode="cover"
+                    />
+                  </TouchableOpacity>
+                  {fp.filename && (
+                    <Text
+                      style={[s.imageLabel, isDark && s.imageLabelDark]}
+                      numberOfLines={1}
+                    >
+                      {fp.filename}
+                    </Text>
+                  )}
+                </View>
+              );
+            })}
           </ScrollView>
         )}
 
@@ -276,6 +316,7 @@ export const MessageBubble = memo(
     if (prev.message !== next.message) return false;
     if (prev.isDark !== next.isDark) return false;
     if (prev.onLongPress !== next.onLongPress) return false;
+    if (prev.onImageAction !== next.onImageAction) return false;
     if (prev.parts.length !== next.parts.length) return false;
     for (let i = 0; i < prev.parts.length; i++) {
       if (prev.parts[i] !== next.parts[i]) return false;

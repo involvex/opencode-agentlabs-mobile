@@ -124,6 +124,8 @@ export default function SettingsScreen() {
     setTheme,
     accentColor,
     setAccentColor,
+    autoPlaySpeech,
+    setAutoPlaySpeech,
   } = useSettings();
   const reconnect = useEvents((s) => s.connect);
   const [osGranted, setOsGranted] = useState<boolean | null>(null);
@@ -513,6 +515,19 @@ export default function SettingsScreen() {
                 />
               ))}
             </View>
+          }
+        />
+        <SettingRow
+          icon="volume-high-outline"
+          label={t("settings.appearance.autoPlaySpeech.label")}
+          description={t("settings.appearance.autoPlaySpeech.description")}
+          isDark={isDark}
+          right={
+            <Switch
+              value={autoPlaySpeech}
+              onValueChange={setAutoPlaySpeech}
+              trackColor={{ false: "#767577", true: "#22c55e" }}
+            />
           }
         />
       </SettingSection>

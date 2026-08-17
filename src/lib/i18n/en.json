@@ -84,6 +84,10 @@
       "chatFontSize": {
         "label": "Chat Font Size",
         "description": "Body text size in messages ({{size}}px)"
+      },
+      "autoPlaySpeech": {
+        "label": "Auto-play voice",
+        "description": "Speak assistant responses aloud"
       }
     },
     "developer": {
@@ -451,6 +455,12 @@
       "reactions": {
         "title": "Add reaction",
         "toggle": "Remove reaction"
+      },
+      "imageActions": {
+        "title": "Image actions",
+        "describe": "Describe image",
+        "ocr": "Extract text (OCR)",
+        "save": "Save to gallery"
       }
     },
     "questionPrompt": {
@@ -512,6 +522,7 @@
       "loading": "Loading...",
       "loadAllMessages": "Load all messages",
       "exportSession": "Export to Markdown",
+      "summarizeSession": "Summarize",
       "jumpToBeginning": "Jump to beginning",
       "pills": {
         "in": "In",

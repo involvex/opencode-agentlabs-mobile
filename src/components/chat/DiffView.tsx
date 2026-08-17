@@ -19,9 +19,9 @@ export function DiffView({ before, after, isDark }: Props) {
     <View style={[s.container, isDark && s.containerDark]}>
       <ScrollView {...WIDE_CONTENT_SCROLL_CONFIG} testID="diff-view-scroll">
         <View>
-          {lines.map((line, idx) => (
+          {lines.map((line) => (
             <View
-              key={idx}
+              key={line.id}
               style={[
                 s.line,
                 line.type === "add" && (isDark ? s.addDark : s.add),

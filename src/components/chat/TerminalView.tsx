@@ -183,9 +183,9 @@ function TerminalSocket({
         style={[styles.output, isDark && styles.outputDark]}
         contentContainerStyle={styles.outputContent}
       >
-        {output.map((line, idx) => (
+        {output.map((line) => (
           <AnsiLine
-            key={`${idx}:${line.slice(0, 32)}`}
+            key={line.slice(0, 32)}
             text={line}
             isDark={isDark}
             fontSize={terminalFontSize}
@@ -336,9 +336,9 @@ function LocalTerminalView({
         style={[styles.output, isDark && styles.outputDark]}
         contentContainerStyle={styles.outputContent}
       >
-        {output.map((line, idx) => (
+        {output.map((line) => (
           <AnsiLine
-            key={`local-${idx}-${line.slice(0, 32)}`}
+            key={line.slice(0, 32)}
             text={line}
             isDark={isDark}
             fontSize={terminalFontSize}
