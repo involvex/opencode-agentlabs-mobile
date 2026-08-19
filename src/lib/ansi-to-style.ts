@@ -1,13 +1,14 @@
-import { type TextStyle } from "react-native";
-
 export interface AnsiSegment {
   text: string;
-  style: TextStyle;
+  style: {
+    color?: string;
+    backgroundColor?: string;
+    fontWeight?: "400" | "700";
+    fontStyle?: "normal" | "italic";
+    textDecorationLine?: "none" | "underline";
+    fontFamily?: string;
+  };
 }
-
-const ESC = String.fromCharCode(27);
-
-const ANSI_ESCAPE = new RegExp(`${ESC}\\[[0-9;]*m`, "g");
 
 const ANSI_COLORS: Record<number, string> = {
   30: "#000000",
@@ -41,7 +42,7 @@ function buildStyle(
   italic: boolean,
   underline: boolean,
   isDark: boolean,
-): TextStyle {
+): AnsiSegment["style"] {
   return {
     color: dim ? (isDark ? "#666666" : "#999999") : fg,
     backgroundColor: bg,
@@ -52,34 +53,58 @@ function buildStyle(
   };
 }
 
+const NON_SGR_ANSI =
+  /\x1b\][^\x07\x1b]*(?:\x07|\x1b\\)|\x1b\[\?[0-9;]*[A-Za-ln-z]?|\x1b\[[0-9;?]*[A-Za-ln-z]|\x1b\[[0-9;]*$/g;
+
+const ALL_CSI = /\x1b\[[0-9;]*m/g;
+
 export function ansiToSegments(raw: string, isDark: boolean): AnsiSegment[] {
-  const fg = isDark ? DEFAULT_FG_DARK : DEFAULT_FG_LIGHT;
-  const bg = isDark ? DEFAULT_BG_DARK : DEFAULT_BG_LIGHT;
+  const cleaned = raw.replace(NON_SGR_ANSI, "");
+  const defaultFg = isDark ? DEFAULT_FG_DARK : DEFAULT_FG_LIGHT;
+  const defaultBg = isDark ? DEFAULT_BG_DARK : DEFAULT_BG_LIGHT;
 
   const segments: AnsiSegment[] = [];
   let currentText = "";
-  let currentFg = fg;
-  let currentBg = bg;
+  let currentFg = defaultFg;
+  let currentBg = defaultBg;
   let bold = false;
   let dim = false;
   let italic = false;
   let underline = false;
+  let lastIndex = 0;
+  let match: RegExpExecArray | null;
 
-  const parts = raw.split(ANSI_ESCAPE);
+  while ((match = ALL_CSI.exec(cleaned)) !== null) {
+    const textBefore = cleaned.slice(lastIndex, match.index);
+    if (textBefore) currentText += textBefore;
 
-  for (const part of parts) {
-    if (part.length === 0) continue;
-
-    const trimmed = part.trim();
-    const isSgrCodes = /^[0-9;]+$/.test(trimmed) && trimmed.length <= 20;
-
-    if (isSgrCodes) {
-      const codes = trimmed.split(";").map(Number);
+    const csi = match[0];
+    if (csi.endsWith("m")) {
+      if (currentText) {
+        segments.push({
+          text: currentText,
+          style: buildStyle(
+            currentFg,
+            currentBg,
+            bold,
+            dim,
+            italic,
+            underline,
+            isDark,
+          ),
+        });
+        currentText = "";
+      }
+      const paramStr = csi.slice(csi.indexOf("[") + 1, -1);
+      const codes = paramStr
+        .split(";")
+        .filter((s) => s.length > 0)
+        .map(Number);
       for (const code of codes) {
         switch (code) {
           case 0:
-            currentFg = fg;
-            currentBg = bg;
+            currentFg = defaultFg;
+            currentBg = defaultBg;
             bold = false;
             dim = false;
             italic = false;
@@ -117,26 +142,12 @@ export function ansiToSegments(raw: string, isDark: boolean): AnsiSegment[] {
             break;
         }
       }
-      if (currentText) {
-        segments.push({
-          text: currentText,
-          style: buildStyle(
-            currentFg,
-            currentBg,
-            bold,
-            dim,
-            italic,
-            underline,
-            isDark,
-          ),
-        });
-        currentText = "";
-      }
-    } else {
-      currentText += part;
     }
+    lastIndex = match.index + match[0].length;
   }
 
+  const remaining = cleaned.slice(lastIndex);
+  if (remaining) currentText += remaining;
   if (currentText) {
     segments.push({
       text: currentText,
@@ -152,5 +163,7 @@ export function ansiToSegments(raw: string, isDark: boolean): AnsiSegment[] {
     });
   }
 
-  return segments.length > 0 ? segments : [{ text: raw, style: { color: fg } }];
+  return segments.length > 0
+    ? segments
+    : [{ text: cleaned, style: { color: defaultFg } }];
 }
