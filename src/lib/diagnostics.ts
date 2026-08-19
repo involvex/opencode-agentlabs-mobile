@@ -13,6 +13,7 @@ import {
   classify,
 } from "./diagnostics-classify";
 import { redactHostAndUrls } from "./scrub";
+import { buildRequestHeaders } from "./headers";
 
 export type { Classification, ProbeAttempt } from "./diagnostics-classify";
 
@@ -97,10 +98,12 @@ export async function probeConnection(
   if (parsed.host) seenHosts.add(parsed.host);
   log.info("diag", "probe start", url, "parsed", JSON.stringify(parsed));
 
-  const headers: Record<string, string> = {};
-  if (auth)
-    headers["Authorization"] =
-      `Basic ${btoa(`${auth.username}:${auth.password}`)}`;
+  const headers = buildRequestHeaders({
+    directory: undefined,
+    auth: auth
+      ? { username: auth.username, password: auth.password }
+      : undefined,
+  });
 
   let health: ProbeAttempt;
   let root: ProbeAttempt;

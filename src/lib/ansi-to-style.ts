@@ -6,6 +6,7 @@ export interface AnsiSegment {
 }
 
 const ESC = String.fromCharCode(27);
+
 const ANSI_ESCAPE = new RegExp(`${ESC}\\[[0-9;]*m`, "g");
 
 const ANSI_COLORS: Record<number, string> = {

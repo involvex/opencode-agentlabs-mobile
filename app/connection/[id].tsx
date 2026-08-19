@@ -182,6 +182,19 @@ export default function EditConnectionScreen() {
 
     setIsSaving(true);
     try {
+      const invalidHeader = headerEdits.find((h) => /[\r\n]/.test(h.key));
+      if (invalidHeader) {
+        setIsSaving(false);
+        Alert.alert(
+          t("common.error"),
+          t(
+            "connection.edit.alerts.invalidHeaderKey",
+            "Header names cannot contain newlines.",
+          ),
+        );
+        return;
+      }
+
       await updateConnection(
         connection.id,
         {

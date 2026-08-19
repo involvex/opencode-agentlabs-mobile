@@ -18,6 +18,7 @@ import {
   executeLocalCommand,
   isLocalTerminalAvailable,
 } from "../../lib/local-terminal";
+import { normalizeTerminalChunk } from "../../lib/terminal-lines";
 import type { Client } from "../../lib/sdk";
 
 interface Props {
@@ -96,7 +97,7 @@ function TerminalSocket({
         setWsState("connected");
         setOutput((prev) => {
           const next = [...prev];
-          const lines = chunk.split("\n");
+          const lines = normalizeTerminalChunk(chunk);
           if (lines.length === 1) {
             if (next.length > 0) {
               next[next.length - 1] += lines[0];
@@ -112,6 +113,10 @@ function TerminalSocket({
             for (let i = 1; i < lines.length; i++) {
               next.push(lines[i]);
             }
+          }
+          const MAX_LINES = 2000;
+          if (next.length > MAX_LINES) {
+            return next.slice(next.length - MAX_LINES);
           }
           return next;
         });
@@ -183,9 +188,9 @@ function TerminalSocket({
         style={[styles.output, isDark && styles.outputDark]}
         contentContainerStyle={styles.outputContent}
       >
-        {output.map((line) => (
+        {output.map((line, idx) => (
           <AnsiLine
-            key={line.slice(0, 32)}
+            key={line.length === 0 ? `empty-${idx}` : line}
             text={line}
             isDark={isDark}
             fontSize={terminalFontSize}
@@ -286,7 +291,15 @@ function LocalTerminalView({
       const result = await executeLocalCommand(trimmed, cwdRef.current);
       const lines = [result.stdout, result.stderr].filter(Boolean).join("\n");
       if (lines) {
-        setOutput((prev) => [...prev, ...lines.split("\n")]);
+        const normalized = lines.split("\n").map((l) => l.replace(/\r$/, ""));
+        setOutput((prev) => {
+          const next = [...prev, ...normalized];
+          const MAX_LINES = 2000;
+          if (next.length > MAX_LINES) {
+            return next.slice(next.length - MAX_LINES);
+          }
+          return next;
+        });
       }
       if (result.exitCode !== 0) {
         setOutput((prev) => [...prev, `[Exit code: ${result.exitCode}]`]);
@@ -336,9 +349,9 @@ function LocalTerminalView({
         style={[styles.output, isDark && styles.outputDark]}
         contentContainerStyle={styles.outputContent}
       >
-        {output.map((line) => (
+        {output.map((line, idx) => (
           <AnsiLine
-            key={line.slice(0, 32)}
+            key={line.length === 0 ? `empty-${idx}` : line}
             text={line}
             isDark={isDark}
             fontSize={terminalFontSize}

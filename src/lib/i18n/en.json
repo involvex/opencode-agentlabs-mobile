@@ -268,7 +268,8 @@
         "urlHintUse": ". Use ",
         "urlHintSuffix": " only when TLS is configured.",
         "directoryHint": "Leave empty to use the server's current directory, or specify a path to work in a different folder.",
-        "saveButton": "Save Connection"
+        "saveButton": "Save Connection",
+        "httpsWarning": "HTTP connections are unencrypted. Use HTTPS when possible."
       },
       "alerts": {
         "enterIp": "Please enter your computer's IP address",
@@ -288,7 +289,8 @@
         "connectionFailedMessage": "{{summary}}\n\n({{detail}})",
         "noDetail": "no detail",
         "deleteTitle": "Delete Connection",
-        "deleteMessage": "Are you sure you want to delete \"{{name}}\"?"
+        "deleteMessage": "Are you sure you want to delete \"{{name}}\"?",
+        "invalidHeaderKey": "Header names cannot contain newlines."
       }
     }
   },

@@ -60,6 +60,9 @@ export default function AddConnectionScreen() {
     return `${scheme}://${host}:${finalPort}`;
   };
 
+  const normalizedUrl = (mode === "advanced" ? url : buildUrl()).trim();
+  const isHttp = normalizedUrl.startsWith("http://");
+
   const handleQuickConnect = async () => {
     const serverUrl = buildUrl();
     if (!serverUrl) {
@@ -299,6 +302,29 @@ export default function AddConnectionScreen() {
           </Text>
           {t("connection.add.quick.usernameHintSuffix")}
         </Text>
+
+        {isHttp && (
+          <View
+            style={[styles.httpsWarning, isDark && styles.httpsWarningDark]}
+          >
+            <Ionicons
+              name="warning"
+              size={16}
+              color={isDark ? "#f59e0b" : "#d97706"}
+            />
+            <Text
+              style={[
+                styles.httpsWarningText,
+                isDark && styles.httpsWarningTextDark,
+              ]}
+            >
+              {t(
+                "connection.add.httpsWarning",
+                "HTTP connections are unencrypted. Use HTTPS when possible.",
+              )}
+            </Text>
+          </View>
+        )}
 
         {/* Connect button */}
         <TouchableOpacity
@@ -567,6 +593,27 @@ export default function AddConnectionScreen() {
         secureTextEntry
       />
 
+      {isHttp && (
+        <View style={[styles.httpsWarning, isDark && styles.httpsWarningDark]}>
+          <Ionicons
+            name="warning"
+            size={16}
+            color={isDark ? "#f59e0b" : "#d97706"}
+          />
+          <Text
+            style={[
+              styles.httpsWarningText,
+              isDark && styles.httpsWarningTextDark,
+            ]}
+          >
+            {t(
+              "connection.add.httpsWarning",
+              "HTTP connections are unencrypted. Use HTTPS when possible.",
+            )}
+          </Text>
+        </View>
+      )}
+
       {/* Save */}
       <TouchableOpacity
         style={[
@@ -796,5 +843,26 @@ const styles = StyleSheet.create({
     color: "#0a0a0a",
     marginTop: 32,
     marginBottom: 8,
+  },
+  httpsWarning: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+    backgroundColor: "#fef3c7",
+    borderRadius: 8,
+    padding: 12,
+    marginTop: 12,
+  },
+  httpsWarningDark: {
+    backgroundColor: "#451a03",
+  },
+  httpsWarningText: {
+    flex: 1,
+    fontSize: 13,
+    color: "#92400e",
+    lineHeight: 18,
+  },
+  httpsWarningTextDark: {
+    color: "#fcd34d",
   },
 });
