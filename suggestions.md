@@ -395,34 +395,125 @@ Data stays on device; no server-side reporting.
 
 ---
 
+## 9. Implemented but Unlisted Features
+
+These features exist in the codebase but were not originally captured in the
+suggestions list above. They are shipped and functional.
+
+### 9.1 Speech-to-Text Input (Voice Dictation)
+
+**Effort**: low  
+Mic button in the composer uses `expo-speech-recognition` for voice dictation.
+Supports hold-to-talk and continuous recognition. No server-side requirement.
+
+### 9.2 Unread Message Indicators
+
+**Effort**: low-medium  
+Badge counts on sessions with unread messages. Persisted in the `sessions` store
+as `unreadCounts`. Cleared on session open.
+
+### 9.3 Diff View for Edit/Revert Tools
+
+**Effort**: low-medium  
+When a tool call produces an edit, render an inline diff (`DiffView.tsx`) showing
+old → new with syntax highlighting. Uses `diff-compute.ts` for unified diff
+generation.
+
+### 9.4 Local Terminal
+
+**Effort**: medium  
+`TerminalView.tsx` + `local-terminal.ts` provide an in-app shell for running
+commands on the device. Supports history, output streaming, and working directory
+persistence per session.
+
+### 9.5 Crash Reporting / Diagnostics
+
+**Effort**: low-medium  
+`ErrorBoundary.tsx`, `diagnostics.ts`, and `diagnostics-classify.ts` capture
+unhandled errors, classify them (connection, auth, crash), and offer a "Share
+report" action. Connection probing runs on failure to auto-diagnose network
+issues.
+
+### 9.6 Analytics / Telemetry
+
+**Effort**: low  
+PostHog analytics (`analytics.ts`) + custom telemetry (`telemetry.ts`) with a
+consent modal (`TelemetryConsentModal.tsx`). Opt-in only; events stay anonymous.
+
+### 9.7 Notifications System
+
+**Effort**: medium  
+Per-category push notifications (`notifications.ts`): permissions, questions,
+completed, errors. Configurable per-category toggle in Settings. Uses Expo
+Notifications API.
+
+### 9.8 Biometric App Lock
+
+**Effort**: low-medium  
+App-level biometric auth (`auth.ts` + `AuthGate.tsx`) requiring fingerprint or
+face ID to open the app or send sensitive commands. Stores auth state in
+SecureStore.
+
+### 9.9 Slash Commands
+
+**Effort**: low  
+Full slash command framework with typed registry, builtin actions, and custom
+server commands. Builtins (`/new`, `/model`, `/agent`, `/prompt`, `/clear`,
+`/export`, `/theme`, `/density`, `/summarize`, `/search`, `/help`) execute
+immediately on selection. Custom server commands insert `/name ` into the
+composer for the user to edit and send. Popover supports categories, keyboard
+navigation (arrow keys + enter + escape), descriptions, and favorites/recent
+tracking. Recent and favorite preferences persist across app restarts via
+SecureStore (`expo-secure-store`) in the `useSlashCommands` Zustand store.
+Implemented in `src/lib/slash-commands.ts` (registry + types),
+`src/stores/slash-commands.ts` (persistence store), `SlashPopover.tsx`
+(filtered popover UI), `SlashHelpSheet.tsx` (help reference bottom sheet),
+`src/lib/keyboard-slash.ts` (arrow-key navigation hook), and wired into
+`app/session/[id].tsx` via `useEffect` load on mount.
+
+### 9.10 Auto-Reconnect on Network Restoration
+
+**Effort**: low-medium  
+SSE reconnect logic (`events.ts`) already implements exponential backoff with
+jitter. Additional `NetInfo` listener triggers immediate reconnect on
+offline → online transitions.
+
+---
+
 ## Priority Matrix
 
-| Feature                         | Effort      | Personal Value | Recommended Order | Status |
-| ------------------------------- | ----------- | -------------- | ----------------- | ------ |
-| Session bookmarks & pinning     | Low         | High           | 1                 | DONE   |
-| Local full-text search          | Medium      | High           | 2                 | DONE   |
-| Session export (Markdown)       | Low         | High           | 3                 | DONE   |
-| SSE event inspector             | Low         | Medium         | 4                 | DONE   |
-| Prompt library                  | Medium      | High           | 5                 | DONE   |
-| Compact / density mode          | Low-Medium  | Medium         | 6                 | DONE   |
-| Session templates               | Low-Medium  | High           | 7                 | DONE   |
-| Message reactions               | Low-Medium  | Medium         | 8                 | DONE   |
-| Session cache (offline reading) | Medium-High | High           | 9                 | DONE   |
-| Reply / thread                  | Medium      | Medium         | 10                | DONE   |
-| Developer quick actions         | Low         | Medium         | 11                | DONE   |
-| Connection health history       | Medium      | Low-Medium     | 12                | TODO   |
-| Android widget / shortcuts      | Low-Medium  | Low-Medium     | 13                | TODO   |
-| QR code connection              | Medium      | Low            | 14                | TODO   |
-| Custom theme colors             | Low         | Low-Medium     | 15                | DONE   |
-| Voice-only mode                 | Medium      | Medium         | 16                | TODO   |
-| Code execution card             | High        | Medium         | 17                | TODO   |
-| Local LLM mode                  | High        | High           | 18                | TODO   |
-| Session branching               | Medium-High | Medium         | 19                | TODO   |
-| Split screen / tablet           | Medium-High | Medium         | 20                | TODO   |
-| Smart session summary           | Low         | Medium         | 21                | DONE   |
-| Connection config export/import | Low         | Low-Medium     | 22                | DONE   |
-| Image context actions           | Low-Medium  | Low-Medium     | 23                | DONE   |
-| Voice TTS auto-play             | Low         | Medium         | 24                | DONE   |
+| Feature                            | Effort      | Personal Value | Recommended Order | Status |
+| ---------------------------------- | ----------- | -------------- | ----------------- | ------ |
+| Session bookmarks & pinning        | Low         | High           | 1                 | DONE   |
+| Local full-text search             | Medium      | High           | 2                 | DONE   |
+| Session export (Markdown)          | Low         | High           | 3                 | DONE   |
+| SSE event inspector                | Low         | Medium         | 4                 | DONE   |
+| Prompt library                     | Medium      | High           | 5                 | DONE   |
+| Compact / density mode             | Low-Medium  | Medium         | 6                 | DONE   |
+| Session templates                  | Low-Medium  | High           | 7                 | DONE   |
+| Message reactions                  | Low-Medium  | Medium         | 8                 | DONE   |
+| Session cache (offline reading)    | Medium-High | High           | 9                 | DONE   |
+| Session auto-naming                | Low-Medium  | High           | 10                | DONE   |
+| Session tags / labels              | Medium      | High           | 11                | DONE   |
+| Reply / thread                     | Medium      | Medium         | 12                | DONE   |
+| Dark / light / auto theme          | Low         | High           | 13                | DONE   |
+| Font size controls                 | Low         | Medium         | 14                | DONE   |
+| Message timestamps & relative time | Low         | Medium         | 15                | DONE   |
+| Keyboard shortcuts                 | Medium      | Medium         | 16                | DONE   |
+| Developer quick actions            | Low         | Medium         | 17                | DONE   |
+| Connection health history          | Medium      | Low-Medium     | 18                | TODO   |
+| Android widget / shortcuts         | Low-Medium  | Low-Medium     | 19                | TODO   |
+| QR code connection                 | Medium      | Low            | 20                | TODO   |
+| Custom theme colors                | Low         | Low-Medium     | 21                | DONE   |
+| Voice-only mode                    | Medium      | Medium         | 22                | TODO   |
+| Code execution card                | High        | Medium         | 23                | TODO   |
+| Local LLM mode                     | High        | High           | 24                | TODO   |
+| Session branching                  | Medium-High | Medium         | 25                | TODO   |
+| Split screen / tablet              | Medium-High | Medium         | 26                | TODO   |
+| Smart session summary              | Low         | Medium         | 27                | DONE   |
+| Connection config export/import    | Low         | Low-Medium     | 28                | DONE   |
+| Image context actions              | Low-Medium  | Low-Medium     | 29                | DONE   |
+| Voice TTS auto-play                | Low         | Medium         | 30                | DONE   |
 
 > **Quick wins** (low effort, high personal value): bookmarks, export, search,
 > SSE inspector, developer shortcuts, templates, density mode. All are implemented.
@@ -433,4 +524,7 @@ Data stays on device; no server-side reporting.
 > font size controls, developer settings (force reconnect, state dump), connection
 > profiles with auth headers, reply/thread quote-and-reply, session auto-naming,
 > session tags, smart session summary, connection config export/import, image
-> context actions, voice TTS auto-play.
+> context actions, voice TTS auto-play, keyboard shortcuts, message timestamps,
+> speech-to-text input, unread indicators, diff view, local terminal, crash
+> reporting, analytics/telemetry, notifications, biometric app lock, slash commands,
+> auto-reconnect on network change.

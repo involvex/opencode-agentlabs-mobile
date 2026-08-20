@@ -30,7 +30,6 @@ import {
   PermissionPrompt,
   QuestionPrompt,
   StatusIndicator,
-  SlashPopover,
   ModelPicker,
   VariantPicker,
   ImageAttachments,
@@ -38,9 +37,17 @@ import {
   TerminalView,
   DirectoryBrowserSheet,
   PromptLibrarySheet,
-  type SlashCommand,
+  SlashHelpSheet,
   type Attachment,
 } from "../../src/components/chat";
+import { SlashPopover } from "../../src/components/chat/SlashPopover";
+import type { SlashCommand } from "../../src/lib/slash-commands";
+import {
+  SlashCommandRegistry,
+  DEFAULT_BUILTINS,
+} from "../../src/lib/slash-commands";
+import { useSlashCommands } from "../../src/stores/slash-commands";
+import { useSlashKeyboard } from "../../src/lib/keyboard-slash";
 import type { Part } from "../../src/lib/sdk";
 import { useSessions, type RevertResult } from "../../src/stores/sessions";
 import { shareSession } from "../../src/lib/export";
@@ -56,37 +63,7 @@ import { useSpeech } from "../../src/lib/speech";
 import { useSpeechOutput, speakText } from "../../src/lib/speech-output";
 import { useKeyboardShortcuts } from "../../src/lib/keyboard-shortcuts";
 
-// --- Builtin slash commands ---
-const BUILTIN_COMMANDS: SlashCommand[] = [
-  {
-    trigger: "new",
-    title: "New Session",
-    description: "Start a new session",
-    icon: "add-circle-outline",
-    type: "builtin",
-  },
-  {
-    trigger: "model",
-    title: "Switch Model",
-    description: "Choose a different model",
-    icon: "hardware-chip-outline",
-    type: "builtin",
-  },
-  {
-    trigger: "agent",
-    title: "Switch Agent",
-    description: "Cycle to next agent",
-    icon: "person-outline",
-    type: "builtin",
-  },
-  {
-    trigger: "prompt",
-    title: "Prompt Library",
-    description: "Insert a saved prompt snippet",
-    icon: "library-outline",
-    type: "builtin",
-  },
-];
+// --- Slash command registry ---
 
 const MAX_DIMENSION = 1568;
 
@@ -139,6 +116,7 @@ export default function SessionScreen() {
   const variantSheetRef = useRef<BottomSheet>(null);
   const browserSheetRef = useRef<BottomSheet>(null);
   const promptSheetRef = useRef<BottomSheet>(null);
+  const helpSheetRef = useRef<BottomSheet>(null);
   const composerRef = useRef<TextInput>(null);
   const [browseStartDir] = useState<string | null>(null);
   const [input, setInput] = useState(templatePrompt || "");
@@ -313,16 +291,193 @@ export default function SessionScreen() {
   const slashActive = input.startsWith("/") && !input.includes(" ");
   const slashQuery = slashActive ? input.slice(1) : "";
 
-  const allCommands = useMemo<SlashCommand[]>(() => {
-    const custom: SlashCommand[] = serverCommands.map((cmd) => ({
-      trigger: cmd.name,
-      title: cmd.name,
-      description: cmd.description,
-      icon: "code-slash-outline",
-      type: "custom",
-    }));
-    return [...custom, ...BUILTIN_COMMANDS];
+  useEffect(() => {
+    useSlashCommands.getState().load();
+  }, [currentSession]);
+
+  const registryInstance = useMemo(() => {
+    const r = new SlashCommandRegistry();
+    r.registerBuiltin(DEFAULT_BUILTINS.new, () => {});
+    r.registerBuiltin(DEFAULT_BUILTINS.model, () => {});
+    r.registerBuiltin(DEFAULT_BUILTINS.agent, () => {});
+    r.registerBuiltin(DEFAULT_BUILTINS.prompt, () => {});
+    r.registerBuiltin(DEFAULT_BUILTINS.clear, () => {});
+    r.registerBuiltin(DEFAULT_BUILTINS.export, () => {});
+    r.registerBuiltin(DEFAULT_BUILTINS.theme, () => {});
+    r.registerBuiltin(DEFAULT_BUILTINS.density, () => {});
+    r.registerBuiltin(DEFAULT_BUILTINS.summarize, () => {});
+    r.registerBuiltin(DEFAULT_BUILTINS.search, () => {});
+    r.registerBuiltin(DEFAULT_BUILTINS.help, () => {});
+    r.registerCustomCommands(serverCommands);
+    return r;
   }, [serverCommands]);
+
+  const filteredCommands = useMemo(
+    () => registryInstance.getAll(slashQuery),
+    [registryInstance, slashQuery],
+  );
+
+  const handleSend = useCallback(async () => {
+    if (!input.trim() && attachments.length === 0) return;
+    const authenticated = await authenticateForMessage();
+    if (!authenticated) {
+      Alert.alert(
+        t("session.alerts.authRequiredTitle"),
+        t("session.alerts.authRequiredMessage"),
+      );
+      return;
+    }
+
+    let text = input.trim();
+    const files = [...attachments];
+    setInput("");
+    setAttachments([]);
+
+    if (replyTo) {
+      const quoted = replyTo.text.trim();
+      const prefix = quoted ? `> ${quoted.split("\n").join("\n> ")}\n\n` : "";
+      text = prefix + text;
+      setReplyTo(null);
+    }
+
+    if (text.startsWith("/") && files.length === 0) {
+      const [cmdName, ...args] = text.split(" ");
+      const name = cmdName.slice(1);
+      const match = serverCommands.find((c) => c.name === name);
+      if (match && sessionClient && currentSession) {
+        sessionClient.session
+          .command(currentSession.id, {
+            command: name,
+            arguments: args.join(" "),
+            agent,
+            model: model ? `${model.providerID}/${model.modelID}` : undefined,
+          })
+          .catch((err) => console.error("Command failed:", err));
+        return;
+      }
+    }
+
+    try {
+      await sendMessage(
+        text,
+        model || undefined,
+        agent || undefined,
+        files,
+        variant || undefined,
+      );
+      if (!hasAutoNamed.current && currentSession && !currentSession.title) {
+        hasAutoNamed.current = true;
+        useSessions.getState().autoNameSession(currentSession.id, text);
+      }
+    } catch (err) {
+      console.error("Send failed:", err);
+      setInput((prev) => (prev ? prev : text));
+      setAttachments((prev) => (prev.length ? prev : files));
+      Alert.alert(
+        t("session.alerts.sendFailedTitle"),
+        t("session.alerts.sendFailedMessage"),
+      );
+    }
+  }, [
+    input,
+    attachments,
+    replyTo,
+    authenticateForMessage,
+    t,
+    serverCommands,
+    sessionClient,
+    currentSession,
+    agent,
+    model,
+    variant,
+    sendMessage,
+  ]);
+
+  // Slash command handler
+  const handleSlashSelect = useCallback(
+    (cmd: SlashCommand) => {
+      if (cmd.type === "builtin") {
+        useSlashCommands.getState().addRecent(cmd.trigger);
+      }
+      if (cmd.type === "builtin") {
+        switch (cmd.trigger) {
+          case "new":
+            router.back();
+            return;
+          case "model":
+            setInput("");
+            modelSheetRef.current?.expand();
+            return;
+          case "agent":
+            setInput("");
+            cycleAgent();
+            return;
+          case "prompt":
+            setInput("");
+            promptSheetRef.current?.expand();
+            return;
+          case "clear":
+            setInput("");
+            return;
+          case "export": {
+            const { currentSession: s, parts: p } = useSessions.getState();
+            shareSession(s, messages || [], p);
+            return;
+          }
+          case "theme": {
+            const current = useSettings.getState().theme;
+            const next =
+              current === "light"
+                ? "dark"
+                : current === "dark"
+                  ? "auto"
+                  : "light";
+            useSettings.getState().setTheme(next);
+            return;
+          }
+          case "density": {
+            const current = useSettings.getState().density;
+            const next =
+              current === "compact"
+                ? "default"
+                : current === "default"
+                  ? "comfortable"
+                  : "compact";
+            useSettings.getState().setDensity(next);
+            return;
+          }
+          case "summarize": {
+            const s = useSessions.getState().currentSession;
+            if (!s) return;
+            const text =
+              "Summarize this conversation in 3 concise bullet points.";
+            setInput(text);
+            handleSend();
+            return;
+          }
+          case "search":
+            if (router.canGoBack()) {
+              router.back();
+            }
+            return;
+          case "help":
+            setInput("");
+            helpSheetRef.current?.expand();
+            return;
+        }
+      }
+      setInput(`/${cmd.trigger} `);
+    },
+    [router, cycleAgent, handleSend, messages],
+  );
+
+  const { handleKey: slashKeyHandler } = useSlashKeyboard(
+    filteredCommands,
+    handleSlashSelect,
+    () => {
+      setInput("");
+    },
+  );
 
   // While a revert is pending, the reverted message and everything after it
   // still exist server-side (cleanup only runs on the next prompt/unrevert)
@@ -368,6 +523,7 @@ export default function SessionScreen() {
         variantSheetRef.current?.close();
         browserSheetRef.current?.close();
         promptSheetRef.current?.close();
+        helpSheetRef.current?.close();
       },
     },
     {
@@ -569,32 +725,6 @@ export default function SessionScreen() {
   ]);
 
   // Slash command handler
-  const handleSlashSelect = useCallback(
-    (cmd: SlashCommand) => {
-      if (cmd.type === "builtin") {
-        switch (cmd.trigger) {
-          case "new":
-            router.back();
-            return;
-          case "model":
-            setInput("");
-            modelSheetRef.current?.expand();
-            return;
-          case "agent":
-            setInput("");
-            cycleAgent();
-            return;
-          case "prompt":
-            setInput("");
-            promptSheetRef.current?.expand();
-            return;
-        }
-      }
-      setInput(`/${cmd.trigger} `);
-    },
-    [router, cycleAgent],
-  );
-
   // Prompt library handlers
   const handlePromptSelect = useCallback(
     (prompt: PromptSnippet) => {
@@ -759,74 +889,6 @@ export default function SessionScreen() {
     },
     [t],
   );
-
-  // --- Send ---
-  const handleSend = async () => {
-    if (!input.trim() && attachments.length === 0) return;
-    const authenticated = await authenticateForMessage();
-    if (!authenticated) {
-      Alert.alert(
-        t("session.alerts.authRequiredTitle"),
-        t("session.alerts.authRequiredMessage"),
-      );
-      return;
-    }
-
-    let text = input.trim();
-    const files = [...attachments];
-    setInput("");
-    setAttachments([]);
-
-    if (replyTo) {
-      const quoted = replyTo.text.trim();
-      const prefix = quoted ? `> ${quoted.split("\n").join("\n> ")}\n\n` : "";
-      text = prefix + text;
-      setReplyTo(null);
-    }
-
-    // Server slash commands (no attachments for commands)
-    if (text.startsWith("/") && files.length === 0) {
-      const [cmdName, ...args] = text.split(" ");
-      const name = cmdName.slice(1);
-      const match = serverCommands.find((c) => c.name === name);
-      if (match && sessionClient && currentSession) {
-        sessionClient.session
-          .command(currentSession.id, {
-            command: name,
-            arguments: args.join(" "),
-            agent,
-            model: model ? `${model.providerID}/${model.modelID}` : undefined,
-          })
-          .catch((err) => console.error("Command failed:", err));
-        return;
-      }
-    }
-
-    // Messages are queued server-side when the session is busy.
-    // No need to abort - just send and it will be processed after current response.
-    try {
-      await sendMessage(
-        text,
-        model || undefined,
-        agent || undefined,
-        files,
-        variant || undefined,
-      );
-      if (!hasAutoNamed.current && currentSession && !currentSession.title) {
-        hasAutoNamed.current = true;
-        useSessions.getState().autoNameSession(currentSession.id, text);
-      }
-    } catch (err) {
-      console.error("Send failed:", err);
-      // Restore the user's text and attachments so their input isn't lost.
-      setInput((prev) => (prev ? prev : text));
-      setAttachments((prev) => (prev.length ? prev : files));
-      Alert.alert(
-        t("session.alerts.sendFailedTitle"),
-        t("session.alerts.sendFailedMessage"),
-      );
-    }
-  };
 
   // In inverted mode, offset 0 = bottom. Show scroll button when scrolled away from bottom.
   const handleScroll = useCallback((event: any) => {
@@ -1224,11 +1286,19 @@ export default function SessionScreen() {
           {slashActive && (
             <SlashPopover
               query={slashQuery}
-              commands={allCommands}
+              commands={filteredCommands}
               isDark={isDark}
               onSelect={handleSlashSelect}
+              onDismiss={() => setInput("")}
             />
           )}
+
+          {/* Slash help sheet */}
+          <SlashHelpSheet
+            isDark={isDark}
+            sheetRef={helpSheetRef}
+            customCommands={filteredCommands.filter((c) => c.type === "custom")}
+          />
 
           {/* Agent/model toolbar */}
           <View style={[s.toolbar, isDark && s.toolbarDark]}>
@@ -1379,6 +1449,7 @@ export default function SessionScreen() {
               <TextInput
                 ref={composerRef}
                 {...shortcutProps}
+                {...(slashActive ? { onKeyPress: slashKeyHandler } : {})}
                 style={[
                   s.input,
                   isDark && s.inputDark,

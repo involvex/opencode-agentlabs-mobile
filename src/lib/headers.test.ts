@@ -77,7 +77,9 @@ test("non-ASCII username does not throw and round-trips back to the credentials"
   assert.doesNotThrow(() => buildRequestHeaders({ auth }));
   const h = buildRequestHeaders({ auth });
   const b64 = h["Authorization"].replace("Basic ", "");
-  const decoded = decodeURIComponent(escape(atob(b64)));
+  const decoded = new TextDecoder().decode(
+    new Uint8Array([...atob(b64)].map((c) => c.charCodeAt(0))),
+  );
   assert.equal(decoded, `${auth.username}:${auth.password}`);
 });
 
@@ -86,6 +88,8 @@ test("non-ASCII password does not throw and round-trips back to the credentials"
   assert.doesNotThrow(() => buildRequestHeaders({ auth }));
   const h = buildRequestHeaders({ auth });
   const b64 = h["Authorization"].replace("Basic ", "");
-  const decoded = decodeURIComponent(escape(atob(b64)));
+  const decoded = new TextDecoder().decode(
+    new Uint8Array([...atob(b64)].map((c) => c.charCodeAt(0))),
+  );
   assert.equal(decoded, `${auth.username}:${auth.password}`);
 });

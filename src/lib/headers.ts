@@ -14,10 +14,10 @@ export interface HeaderConfig {
 // first so arbitrary Unicode credentials survive - this is the standard
 // browser idiom for UTF-8-safe base64, and matches RFC 7617 (Basic auth
 // credentials are UTF-8 before being base64-encoded). ASCII input is
-// byte-identical to plain `btoa` since encodeURIComponent/unescape
-// round-trip it unchanged.
+// byte-identical to plain `btoa` since TextEncoder
+// round-trips it unchanged.
 function toBase64Utf8(str: string): string {
-  return btoa(unescape(encodeURIComponent(str)));
+  return btoa(String.fromCharCode(...new TextEncoder().encode(str)));
 }
 
 export function buildRequestHeaders(
