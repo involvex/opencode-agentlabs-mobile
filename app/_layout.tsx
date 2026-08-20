@@ -1,11 +1,12 @@
 import { useEffect, useRef } from "react";
 import { Stack, router } from "expo-router";
 import { StatusBar } from "expo-status-bar";
-import { View, ActivityIndicator, AppState } from "react-native";
+import { AppState } from "react-native";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 import { BottomSheetModalProvider } from "@gorhom/bottom-sheet";
 import { I18nextProvider, useTranslation } from "react-i18next";
+import * as SplashScreen from "expo-splash-screen";
 import i18n from "../src/lib/i18n/config";
 import { useAuth } from "../src/stores/auth";
 import { useConnections } from "../src/stores/connections";
@@ -15,9 +16,12 @@ import { useSettings } from "../src/stores/settings";
 import { useTheme } from "../src/lib/theme";
 import { AuthGate } from "../src/components/AuthGate";
 import { ErrorBoundary } from "../src/components/ErrorBoundary";
+import { SplashScreen as BrandSplash } from "../src/components/SplashScreen";
 import * as notifications from "../src/lib/notifications";
 
 const queryClient = new QueryClient();
+
+SplashScreen.preventAutoHideAsync();
 
 function RootLayout() {
   const isDark = useTheme();
@@ -31,8 +35,11 @@ function RootLayout() {
   } = useConnections();
   const sseStarted = useRef(false);
   const notifPermissionRequested = useRef(false);
+  const initialized = useRef(false);
 
   useEffect(() => {
+    if (initialized.current) return;
+    initialized.current = true;
     initAuth();
     loadConnections();
     useSettings.getState().load();
@@ -82,22 +89,14 @@ function RootLayout() {
 
   const isLoading = authLoading || connectionsLoading;
 
+  useEffect(() => {
+    if (!isLoading) {
+      SplashScreen.hideAsync();
+    }
+  }, [isLoading]);
+
   if (isLoading) {
-    return (
-      <View
-        style={{
-          flex: 1,
-          justifyContent: "center",
-          alignItems: "center",
-          backgroundColor: isDark ? "#0a0a0a" : "#ffffff",
-        }}
-      >
-        <ActivityIndicator
-          size="large"
-          color={isDark ? "#ffffff" : "#0a0a0a"}
-        />
-      </View>
-    );
+    return <BrandSplash />;
   }
 
   return (
