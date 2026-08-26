@@ -13,6 +13,7 @@ import { useConnections } from "../src/stores/connections";
 import { useEvents } from "../src/stores/events";
 import { useCatalog } from "../src/stores/catalog";
 import { useSettings } from "../src/stores/settings";
+import { useBudget } from "../src/stores/budget";
 import { useTheme } from "../src/lib/theme";
 import { AuthGate } from "../src/components/AuthGate";
 import { ErrorBoundary } from "../src/components/ErrorBoundary";
@@ -43,6 +44,7 @@ function RootLayout() {
     initAuth();
     loadConnections();
     useSettings.getState().load();
+    useBudget.getState().load();
 
     notifications.configure(() => useSettings.getState().notifications);
 

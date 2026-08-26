@@ -50,6 +50,8 @@ import { useSlashCommands } from "../../src/stores/slash-commands";
 import { useSlashKeyboard } from "../../src/lib/keyboard-slash";
 import type { Part } from "../../src/lib/sdk";
 import { useSessions, type RevertResult } from "../../src/stores/sessions";
+import { useBudget } from "../../src/stores/budget";
+import { budgetState, sumMessageUsage } from "../../src/lib/budget";
 import { shareSession } from "../../src/lib/export";
 import { useEvents, refreshPending } from "../../src/stores/events";
 import { useConnections } from "../../src/stores/connections";
@@ -244,6 +246,22 @@ export default function SessionScreen() {
   );
   const autoPlaySpeech = useSettings((s) => s.autoPlaySpeech);
   const spokenRef = useRef<Set<string>>(new Set());
+
+  // Usage budget alerts (§3.9): compare this session's cumulative usage and
+  // today's locally-accumulated daily totals against the configured limits.
+  // Zero limits are disabled.
+  const budgetSessionCost = useSettings((s) => s.budgetSessionCost);
+  const budgetSessionTokens = useSettings((s) => s.budgetSessionTokens);
+  const budgetDailyCost = useSettings((s) => s.budgetDailyCost);
+  const budgetDailyTokens = useSettings((s) => s.budgetDailyTokens);
+  const dailyUsage = useBudget((s) => s.daily);
+  const sessionUsage = useMemo(() => sumMessageUsage(messages), [messages]);
+  const budgetTripped =
+    budgetState(sessionUsage.cost, budgetSessionCost) === "exceeded" ||
+    budgetState(sessionUsage.outputTokens, budgetSessionTokens) ===
+      "exceeded" ||
+    budgetState(dailyUsage.cost, budgetDailyCost) === "exceeded" ||
+    budgetState(dailyUsage.tokens, budgetDailyTokens) === "exceeded";
 
   // Auto-play assistant responses via TTS when enabled and the session
   // transitions from busy -> idle. Only speaks each final assistant
@@ -1196,6 +1214,14 @@ export default function SessionScreen() {
             </View>
           )}
 
+          {/* Usage budget alert (§3.9) */}
+          {budgetTripped && (
+            <View style={[s.banner, s.bannerBudget]}>
+              <Ionicons name="warning-outline" size={14} color="#ffffff" />
+              <Text style={s.bannerText}>{t("session.banners.budget")}</Text>
+            </View>
+          )}
+
           {/* Pending revert (from "Edit message") — offer a way back before it's
             cleaned up by the next prompt. */}
           {revertMessageID && (
@@ -1829,6 +1855,11 @@ const s = StyleSheet.create({
   bannerConnected: { backgroundColor: "#065f46" },
   bannerCache: {
     backgroundColor: "#3730a3",
+    flexDirection: "row",
+    gap: 6,
+  },
+  bannerBudget: {
+    backgroundColor: "#a16207",
     flexDirection: "row",
     gap: 6,
   },

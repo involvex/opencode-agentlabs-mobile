@@ -21,7 +21,19 @@ interface Settings {
   theme: Theme;
   accentColor: string;
   autoPlaySpeech: boolean;
+  // Usage budget limits (§3.9). 0 disables a limit.
+  // Costs are in USD; tokens count assistant output tokens.
+  budgetSessionCost: number;
+  budgetSessionTokens: number;
+  budgetDailyCost: number;
+  budgetDailyTokens: number;
 }
+
+export type BudgetLimitKey =
+  | "budgetSessionCost"
+  | "budgetSessionTokens"
+  | "budgetDailyCost"
+  | "budgetDailyTokens";
 
 const DEFAULTS: Settings = {
   pageSize: 25,
@@ -34,6 +46,10 @@ const DEFAULTS: Settings = {
   theme: "auto",
   accentColor: "#8b5cf6",
   autoPlaySpeech: false,
+  budgetSessionCost: 0,
+  budgetSessionTokens: 0,
+  budgetDailyCost: 0,
+  budgetDailyTokens: 0,
 };
 
 interface SettingsState extends Settings {
@@ -49,6 +65,7 @@ interface SettingsState extends Settings {
   setTheme: (theme: Theme) => Promise<void>;
   setAccentColor: (color: string) => Promise<void>;
   setAutoPlaySpeech: (enabled: boolean) => Promise<void>;
+  setBudgetLimit: (key: BudgetLimitKey, value: number) => Promise<void>;
 }
 
 function clampTerminalFontSize(size: number): number {
@@ -71,6 +88,10 @@ function snapshot(get: () => SettingsState): Settings {
     theme: get().theme,
     accentColor: get().accentColor,
     autoPlaySpeech: get().autoPlaySpeech,
+    budgetSessionCost: get().budgetSessionCost,
+    budgetSessionTokens: get().budgetSessionTokens,
+    budgetDailyCost: get().budgetDailyCost,
+    budgetDailyTokens: get().budgetDailyTokens,
   };
 }
 
@@ -148,5 +169,11 @@ export const useSettings = create<SettingsState>((set, get) => ({
   setAutoPlaySpeech: async (enabled) => {
     set({ autoPlaySpeech: enabled });
     await persist({ ...snapshot(get), autoPlaySpeech: enabled });
+  },
+
+  setBudgetLimit: async (key, value) => {
+    const clamped = Math.max(0, Math.round(value) || 0);
+    set({ [key]: clamped } as Partial<Settings>);
+    await persist(snapshot(get));
   },
 }));

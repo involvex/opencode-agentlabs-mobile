@@ -8,6 +8,7 @@ import {
   StyleSheet,
   Linking,
   Alert,
+  TextInput,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { useTranslation } from "react-i18next";
@@ -126,6 +127,11 @@ export default function SettingsScreen() {
     setAccentColor,
     autoPlaySpeech,
     setAutoPlaySpeech,
+    budgetSessionCost,
+    budgetSessionTokens,
+    budgetDailyCost,
+    budgetDailyTokens,
+    setBudgetLimit,
   } = useSettings();
   const reconnect = useEvents((s) => s.connect);
   const [osGranted, setOsGranted] = useState<boolean | null>(null);
@@ -532,6 +538,114 @@ export default function SettingsScreen() {
         />
       </SettingSection>
 
+      <SettingSection title={t("settings.sections.budget")} isDark={isDark}>
+        <SettingRow
+          icon="cash-outline"
+          label={t("settings.budget.sessionCost.label")}
+          description={t("settings.budget.sessionCost.description")}
+          isDark={isDark}
+          right={
+            <TextInput
+              key={String(budgetSessionCost)}
+              defaultValue={
+                budgetSessionCost > 0 ? String(budgetSessionCost) : ""
+              }
+              placeholder="0"
+              keyboardType="numeric"
+              returnKeyType="done"
+              style={[styles.budgetInput, isDark && styles.budgetInputDark]}
+              placeholderTextColor={isDark ? "#666666" : "#999999"}
+              onEndEditing={(e) => {
+                const n = Math.max(
+                  0,
+                  Math.round(Number(e.nativeEvent.text) || 0),
+                );
+                void setBudgetLimit("budgetSessionCost", n);
+              }}
+            />
+          }
+        />
+        <SettingRow
+          icon="create-outline"
+          label={t("settings.budget.sessionTokens.label")}
+          description={t("settings.budget.sessionTokens.description")}
+          isDark={isDark}
+          right={
+            <TextInput
+              key={String(budgetSessionTokens)}
+              defaultValue={
+                budgetSessionTokens > 0 ? String(budgetSessionTokens) : ""
+              }
+              placeholder="0"
+              keyboardType="numeric"
+              returnKeyType="done"
+              style={[styles.budgetInput, isDark && styles.budgetInputDark]}
+              placeholderTextColor={isDark ? "#666666" : "#999999"}
+              onEndEditing={(e) => {
+                const n = Math.max(
+                  0,
+                  Math.round(Number(e.nativeEvent.text) || 0),
+                );
+                void setBudgetLimit("budgetSessionTokens", n);
+              }}
+            />
+          }
+        />
+        <SettingRow
+          icon="calendar-outline"
+          label={t("settings.budget.dailyCost.label")}
+          description={t("settings.budget.dailyCost.description")}
+          isDark={isDark}
+          right={
+            <TextInput
+              key={String(budgetDailyCost)}
+              defaultValue={budgetDailyCost > 0 ? String(budgetDailyCost) : ""}
+              placeholder="0"
+              keyboardType="numeric"
+              returnKeyType="done"
+              style={[styles.budgetInput, isDark && styles.budgetInputDark]}
+              placeholderTextColor={isDark ? "#666666" : "#999999"}
+              onEndEditing={(e) => {
+                const n = Math.max(
+                  0,
+                  Math.round(Number(e.nativeEvent.text) || 0),
+                );
+                void setBudgetLimit("budgetDailyCost", n);
+              }}
+            />
+          }
+        />
+        <SettingRow
+          icon="hourglass-outline"
+          label={t("settings.budget.dailyTokens.label")}
+          description={t("settings.budget.dailyTokens.description")}
+          isDark={isDark}
+          right={
+            <TextInput
+              key={String(budgetDailyTokens)}
+              defaultValue={
+                budgetDailyTokens > 0 ? String(budgetDailyTokens) : ""
+              }
+              placeholder="0"
+              keyboardType="numeric"
+              returnKeyType="done"
+              style={[styles.budgetInput, isDark && styles.budgetInputDark]}
+              placeholderTextColor={isDark ? "#666666" : "#999999"}
+              onEndEditing={(e) => {
+                const n = Math.max(
+                  0,
+                  Math.round(Number(e.nativeEvent.text) || 0),
+                );
+                void setBudgetLimit("budgetDailyTokens", n);
+              }}
+            />
+          }
+        />
+        <Text style={[styles.budgetHint, isDark && styles.budgetHintDark]}>
+          {t("settings.budget.hint")}
+        </Text>
+      </SettingSection>
+
       <SettingSection title={t("settings.sections.about")} isDark={isDark}>
         <SettingRow
           icon="information-circle"
@@ -843,5 +957,31 @@ const styles = StyleSheet.create({
   accentSwatchSelected: {
     borderWidth: 2,
     borderColor: "#0a0a0a",
+  },
+  budgetInput: {
+    width: 64,
+    height: 32,
+    borderWidth: 1,
+    borderColor: "#d1d5db",
+    borderRadius: 8,
+    paddingHorizontal: 8,
+    fontSize: 14,
+    color: "#0a0a0a",
+    backgroundColor: "#ffffff",
+    textAlign: "center",
+  },
+  budgetInputDark: {
+    borderColor: "#3a3a3a",
+    backgroundColor: "#2a2a2a",
+    color: "#ffffff",
+  },
+  budgetHint: {
+    fontSize: 12,
+    color: "#888888",
+    paddingHorizontal: 16,
+    paddingTop: 8,
+  },
+  budgetHintDark: {
+    color: "#666666",
   },
 });

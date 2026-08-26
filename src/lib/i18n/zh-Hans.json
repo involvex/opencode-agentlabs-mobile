@@ -14,6 +14,7 @@
       "security": "安全",
       "notifications": "通知",
       "privacy": "隐私",
+      "budget": "用量预算",
       "about": "关于",
       "developer": "开发者"
     },
@@ -91,6 +92,25 @@
         "description": "朗读助手回复"
       }
     },
+    "budget": {
+      "sessionCost": {
+        "label": "会话费用上限",
+        "description": "每会话最大费用 $（0 表示不限制）"
+      },
+      "sessionTokens": {
+        "label": "会话输出 Token 上限",
+        "description": "每会话最大输出 Token 数（0 表示不限制）"
+      },
+      "dailyCost": {
+        "label": "每日费用上限",
+        "description": "每日最大费用 $，按本地时间（0 表示不限制）"
+      },
+      "dailyTokens": {
+        "label": "每日输出 Token 上限",
+        "description": "每日最大输出 Token 数（0 表示不限制）"
+      },
+      "hint": "限制仅在本地生效，根据实时用量检查。0 表示不限制。"
+    },
     "developer": {
       "debugMode": {
         "label": "调试模式",
@@ -153,7 +173,8 @@
       "reverting": "消息已撤回 — 重新发送以确认",
       "undo": "撤销",
       "offlineCache": "显示缓存消息（离线）",
-      "sendError": "消息发送失败：{{message}}"
+      "sendError": "消息发送失败：{{message}}",
+      "budget": "已达到用量预算上限"
     },
     "empty": {
       "title": "开始一段对话",

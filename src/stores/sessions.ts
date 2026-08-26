@@ -17,6 +17,7 @@ import {
   type PromptFromParts,
 } from "../lib/prompt-from-parts";
 import { mergeIncomingMessage } from "../lib/message-merge";
+import { useBudget } from "./budget";
 import { searchCachedSessions, type SearchResult } from "../lib/session-search";
 import type { CachedSession } from "../lib/session-cache";
 import {
@@ -649,6 +650,22 @@ export const useSessions = create<SessionsState>((set, get) => ({
           !isLiveEventForSession(message.sessionID, currentSession.id)
         )
           return;
+
+        // Daily budget accounting (§3.9): accumulate cost/output-token deltas
+        // for live assistant messages of the viewed session. Deltas vs the
+        // previously seen version keep streaming updates from double-counting.
+        // Sessions loaded later (history fetch) are not retro-counted — daily
+        // totals reflect in-app activity.
+        if (message.role === "assistant") {
+          const prior = get().messages.find((m) => m.id === message.id);
+          const dCost = Math.max(0, (message.cost ?? 0) - (prior?.cost ?? 0));
+          const dTokens = Math.max(
+            0,
+            (message.tokens?.output ?? 0) - (prior?.tokens?.output ?? 0),
+          );
+          if (dCost > 0 || dTokens > 0)
+            useBudget.getState().record(dCost, dTokens);
+        }
 
         set((state) => ({
           messages: mergeIncomingMessage(state.messages, message),

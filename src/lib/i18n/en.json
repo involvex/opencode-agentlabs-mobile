@@ -14,6 +14,7 @@
       "security": "Security",
       "notifications": "Notifications",
       "privacy": "Privacy",
+      "budget": "Usage Budget",
       "about": "About",
       "developer": "Developer"
     },
@@ -91,6 +92,25 @@
         "description": "Speak assistant responses aloud"
       }
     },
+    "budget": {
+      "sessionCost": {
+        "label": "Session cost limit",
+        "description": "Max $ per session (0 to disable)"
+      },
+      "sessionTokens": {
+        "label": "Session output-token limit",
+        "description": "Max output tokens per session (0 to disable)"
+      },
+      "dailyCost": {
+        "label": "Daily cost limit",
+        "description": "Max $ per day, local time (0 to disable)"
+      },
+      "dailyTokens": {
+        "label": "Daily output-token limit",
+        "description": "Max output tokens per day (0 to disable)"
+      },
+      "hint": "Limits are local-only and checked against live usage. 0 disables a limit."
+    },
     "developer": {
       "debugMode": {
         "label": "Debug Mode",
@@ -153,7 +173,8 @@
       "reverting": "Message reverted — resend to confirm",
       "undo": "Undo",
       "offlineCache": "Showing cached messages (offline)",
-      "sendError": "Message failed: {{message}}"
+      "sendError": "Message failed: {{message}}",
+      "budget": "Usage budget reached"
     },
     "empty": {
       "title": "Start a conversation",

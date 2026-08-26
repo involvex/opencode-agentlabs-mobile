@@ -278,6 +278,11 @@ evaluated against the token stats already tracked in the sessions store. When
 exceeded, show a warning banner in the chat and optionally a notification.
 Purely local accounting — no server round-trips.
 
+Status: **shipped** — `src/lib/budget.ts` (sum/budget helpers), `src/stores/budget.ts`
+(daily accumulator), session banner in `app/session/[id].tsx`, 4 limit fields
+in `src/stores/settings.ts` + Settings UI. Daily totals accumulate from live
+assistant-message deltas only — historical sessions loaded later don't retro-count.
+
 ---
 
 ## 4. UI / Display Improvements
@@ -593,7 +598,8 @@ Ordered; build top to bottom:
    existing pinning implementation.
 3. **Deep Link Scheme** (§2.8) — SHIPPED. expo-router linking + conn param;
    makes the Batch A shortcuts fully functional.
-4. **Token/Cost Budget Alerts** (§3.9) — thresholds over existing token stats.
+4. **Token/Cost Budget Alerts** (§3.9) — SHIPPED. Thresholds over existing
+   token stats; session + daily accounting, banner in chat.
 
 ### Batch B — High value, medium effort
 
@@ -652,7 +658,7 @@ scheduled prompts (§8.6).
 | Voice TTS auto-play                | Low         | Medium         | 30                | DONE     |
 | Session archive                    | Low         | Medium         | 31                | DONE     |
 | Deep link scheme                   | Low         | Medium         | 32                | DONE     |
-| Token/cost budget alerts           | Low         | Medium         | 33                | NEXT     |
+| Token/cost budget alerts           | Low         | Medium         | 33                | DONE     |
 | Static app shortcuts               | Low         | Medium         | 34                | NEXT     |
 | Notification quick actions         | Low-Medium  | High           | 35                | QUEUED   |
 | Share target                       | Low-Medium  | Medium-High    | 36                | QUEUED   |
