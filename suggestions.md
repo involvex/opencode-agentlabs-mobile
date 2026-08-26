@@ -49,12 +49,46 @@ Export a session (or selected messages) to:
 Share sheet integration (`expo-sharing`) for sending to Notes, email, or file
 manager.
 
+Status: **Markdown export shipped** via `src/lib/export.ts` + Share sheet.
+**JSON export still pending** (full fidelity incl. parts, tokens, timestamps).
+
 ### 1.6 Auto-Session Naming
 
 **Effort**: low-medium  
 Generate a session title from the first user message or from the agent's first
 summary. Saves the manual rename step. Could be as simple as:
 `truncate(firstUserMessage, 40)` or an LLM summarization call.
+
+### 1.7 Session Archive
+
+**Effort**: low  
+Archive finished or abandoned sessions out of the main list without deleting
+them. Local-only boolean flag in the sessions store (mirrors the existing
+pinning flag); an "Archived" filter chip reveals hidden sessions. Keeps the
+daily list focused on active work.
+
+### 1.8 Message Edit & Resend
+
+**Effort**: medium  
+Long-press your own user message to edit it and re-run the conversation from
+that point (truncate everything after, resend with changes). High daily-driver
+value when a prompt was ambiguous or incomplete. Requires server support for
+message truncation/revert; fall back to quote-and-reply if unavailable.
+
+### 1.9 Share Target (Share-to-App)
+
+**Effort**: low-medium  
+Register an Android `ACTION_SEND` intent filter so text, URLs, and files
+shared from any other app land directly in a new-session composer. Uses
+`expo-linking` (already a dependency) plus manifest entries — no new native
+modules. Great for sending a snippet or article straight to the agent.
+
+### 1.10 Cross-Connection Session Aggregation
+
+**Effort**: medium-high  
+Optional unified "All sessions" view merging sessions across every configured
+connection, with a per-row connection badge and connection filter chips.
+Useful when juggling several servers; default remains per-connection lists.
 
 ---
 
@@ -75,6 +109,10 @@ Capture all HTTP requests and responses (excluding auth headers) into an
 in-memory ring buffer. Show in a "Network Log" screen with status codes,
 latency, payload sizes. Redact secrets automatically. invaluable for diagnosing
 why a request failed.
+
+Status: **partial** — `logbuffer.ts` ring buffer exists (used by diagnostics,
+analytics, ErrorBoundary); the dedicated Network Log UI screen is missing
+(tracked as Batch B item in section 10).
 
 ### 2.3 Session Cache / Offline Reading
 
@@ -126,6 +164,29 @@ Compare two versions of a message (before/after revert) visually. Or fork a
 session: create a new session that starts from a chosen message, discarding
 everything after it. Useful for exploring alternative agent paths without
 losing the original conversation.
+
+### 2.8 Deep Link Scheme
+
+**Effort**: low  
+Handle `opencode://session/<id>?conn=<id>` links via `expo-linking` (already a
+dependency): opens the app straight into a specific session on a specific
+connection. Foundation for app shortcuts with payload, notification routing,
+and the share target. Handler goes in `app/_layout.tsx`.
+
+### 2.9 MCP Tool Browser
+
+**Effort**: medium  
+Browse tools exposed by the server's MCP integrations and invoke them manually
+with a generated JSON input form. Shows tool schemas, last invocation result,
+and errors. Handy for debugging agent tool availability without opening a
+terminal on the server machine.
+
+### 2.10 Git Status Card
+
+**Effort**: medium  
+Collapsible card in the session info panel showing branch, dirty-file summary,
+and ahead/behind counts for the project directory, refreshed on demand via the
+server shell tool. Tapping a file opens its diff (reuses `DiffView.tsx`).
 
 ---
 
@@ -191,6 +252,22 @@ At any point in a session, tap a "Summarize" button that sends a background
 prompt to the agent: "Summarize this conversation in 3 bullet points." Display
 the summary as a sticky header or in the session info panel. Useful for
 resuming long sessions after a break.
+
+### 3.8 Notification Quick Actions
+
+**Effort**: low-medium  
+Action buttons on Android notifications: approve/deny permission questions,
+answer agent questions, and direct-reply text input from the notification
+shade. Actions route through the existing notifications store dispatch; taps
+deep-link (§2.8) into the target session.
+
+### 3.9 Token/Cost Budget Alerts
+
+**Effort**: low  
+Per-session and per-day token/cost thresholds configured in Settings,
+evaluated against the token stats already tracked in the sessions store. When
+exceeded, show a warning banner in the chat and optionally a notification.
+Purely local accounting — no server round-trips.
 
 ---
 
@@ -278,6 +355,10 @@ Define static shortcuts in `AndroidManifest.xml`:
 - New Session
 - Recent Session 1, 2, 3
 - Scan QR to connect
+
+Status: **static shortcuts are manifest-only** — a genuine quick win with no
+JS changes. Dynamic "Recent Session" shortcuts depend on the deep link scheme
+(§2.8); "Scan QR" depends on §6.1.
 
 ### 5.4 Picture-in-Picture for Long Tasks
 
@@ -393,6 +474,14 @@ Generate a personal usage digest: sessions created, messages sent, tokens used,
 models used, time spent. Display as a simple chart or text summary in Settings.
 Data stays on device; no server-side reporting.
 
+### 8.6 Scheduled Prompts (Server-Side Cron)
+
+**Effort**: high  
+Register recurring prompts (e.g., "summarize open PRs daily") that the
+opencode server executes on a schedule; the phone just receives a completion
+notification. Experimental — depends on server-side scheduling support. Keeps
+heavy work off-device, which suits a mobile client.
+
 ---
 
 ## 9. Implemented but Unlisted Features
@@ -480,43 +569,100 @@ offline → online transitions.
 
 ---
 
+## 10. High-Prio & Quick-Wins Roadmap
+
+Sequenced plan for what to build next. Section references point at the
+suggestions above; statuses referenced below appear in the Priority Matrix.
+
+### Batch A — Quick wins (each ≤ ~1 day)
+
+Ordered; build top to bottom:
+
+1. **Static app shortcuts** (§5.3) — pure `AndroidManifest.xml` entries, no JS
+   changes, depends on nothing.
+2. **Session Archive** (§1.7) — local flag + filter chip, mirrors the existing
+   pinning implementation.
+3. **Deep Link Scheme** (§2.8) — `expo-linking` handler in `_layout.tsx`;
+   unlocks shortcuts-with-payload, notification routing, and the share target.
+4. **Token/Cost Budget Alerts** (§3.9) — thresholds over existing token stats.
+
+### Batch B — High value, medium effort
+
+Starts once Batch A lands:
+
+1. **Notification Quick Actions** (§3.8) — approve/deny + direct reply; uses
+   Batch A deep links for routing.
+2. **Share Target** (§1.9) — `ACTION_SEND` filter + composer prefill.
+3. **Message Edit & Resend** (§1.8) — truncate-and-rerun from a chosen message.
+4. **Connection Health History** (§2.4) — uptime/reconnect/latency log
+   (existing backlog item #18).
+5. **Network Log Screen** (§2.2) — UI over the existing `logbuffer.ts`
+   ring buffer.
+
+### Deferred (explicitly not scheduled)
+
+Code execution card (§3.6), local LLM mode (§8.1), session branching (§8.2),
+QR connections (§6.1), Picture-in-Picture (§5.4), tablet layout (§4.4),
+scheduled prompts (§8.6).
+
+---
+
 ## Priority Matrix
 
-| Feature                            | Effort      | Personal Value | Recommended Order | Status |
-| ---------------------------------- | ----------- | -------------- | ----------------- | ------ |
-| Session bookmarks & pinning        | Low         | High           | 1                 | DONE   |
-| Local full-text search             | Medium      | High           | 2                 | DONE   |
-| Session export (Markdown)          | Low         | High           | 3                 | DONE   |
-| SSE event inspector                | Low         | Medium         | 4                 | DONE   |
-| Prompt library                     | Medium      | High           | 5                 | DONE   |
-| Compact / density mode             | Low-Medium  | Medium         | 6                 | DONE   |
-| Session templates                  | Low-Medium  | High           | 7                 | DONE   |
-| Message reactions                  | Low-Medium  | Medium         | 8                 | DONE   |
-| Session cache (offline reading)    | Medium-High | High           | 9                 | DONE   |
-| Session auto-naming                | Low-Medium  | High           | 10                | DONE   |
-| Session tags / labels              | Medium      | High           | 11                | DONE   |
-| Reply / thread                     | Medium      | Medium         | 12                | DONE   |
-| Dark / light / auto theme          | Low         | High           | 13                | DONE   |
-| Font size controls                 | Low         | Medium         | 14                | DONE   |
-| Message timestamps & relative time | Low         | Medium         | 15                | DONE   |
-| Keyboard shortcuts                 | Medium      | Medium         | 16                | DONE   |
-| Developer quick actions            | Low         | Medium         | 17                | DONE   |
-| Connection health history          | Medium      | Low-Medium     | 18                | TODO   |
-| Android widget / shortcuts         | Low-Medium  | Low-Medium     | 19                | TODO   |
-| QR code connection                 | Medium      | Low            | 20                | TODO   |
-| Custom theme colors                | Low         | Low-Medium     | 21                | DONE   |
-| Voice-only mode                    | Medium      | Medium         | 22                | TODO   |
-| Code execution card                | High        | Medium         | 23                | TODO   |
-| Local LLM mode                     | High        | High           | 24                | TODO   |
-| Session branching                  | Medium-High | Medium         | 25                | TODO   |
-| Split screen / tablet              | Medium-High | Medium         | 26                | TODO   |
-| Smart session summary              | Low         | Medium         | 27                | DONE   |
-| Connection config export/import    | Low         | Low-Medium     | 28                | DONE   |
-| Image context actions              | Low-Medium  | Low-Medium     | 29                | DONE   |
-| Voice TTS auto-play                | Low         | Medium         | 30                | DONE   |
+| Feature                            | Effort      | Personal Value | Recommended Order | Status   |
+| ---------------------------------- | ----------- | -------------- | ----------------- | -------- |
+| Session bookmarks & pinning        | Low         | High           | 1                 | DONE     |
+| Local full-text search             | Medium      | High           | 2                 | DONE     |
+| Session export (Markdown)          | Low         | High           | 3                 | DONE     |
+| SSE event inspector                | Low         | Medium         | 4                 | DONE     |
+| Prompt library                     | Medium      | High           | 5                 | DONE     |
+| Compact / density mode             | Low-Medium  | Medium         | 6                 | DONE     |
+| Session templates                  | Low-Medium  | High           | 7                 | DONE     |
+| Message reactions                  | Low-Medium  | Medium         | 8                 | DONE     |
+| Session cache (offline reading)    | Medium-High | High           | 9                 | DONE     |
+| Session auto-naming                | Low-Medium  | High           | 10                | DONE     |
+| Session tags / labels              | Medium      | High           | 11                | DONE     |
+| Reply / thread                     | Medium      | Medium         | 12                | DONE     |
+| Dark / light / auto theme          | Low         | High           | 13                | DONE     |
+| Font size controls                 | Low         | Medium         | 14                | DONE     |
+| Message timestamps & relative time | Low         | Medium         | 15                | DONE     |
+| Keyboard shortcuts                 | Medium      | Medium         | 16                | DONE     |
+| Developer quick actions            | Low         | Medium         | 17                | DONE     |
+| Connection health history          | Medium      | Low-Medium     | 18                | QUEUED   |
+| Android widget / dynamic shortcuts | Low-Medium  | Low-Medium     | 19                | TODO     |
+| QR code connection                 | Medium      | Low            | 20                | DEFERRED |
+| Custom theme colors                | Low         | Low-Medium     | 21                | DONE     |
+| Voice-only mode                    | Medium      | Medium         | 22                | TODO     |
+| Code execution card                | High        | Medium         | 23                | DEFERRED |
+| Local LLM mode                     | High        | High           | 24                | DEFERRED |
+| Session branching                  | Medium-High | Medium         | 25                | DEFERRED |
+| Split screen / tablet              | Medium-High | Medium         | 26                | DEFERRED |
+| Smart session summary              | Low         | Medium         | 27                | DONE     |
+| Connection config export/import    | Low         | Low-Medium     | 28                | DONE     |
+| Image context actions              | Low-Medium  | Low-Medium     | 29                | DONE     |
+| Voice TTS auto-play                | Low         | Medium         | 30                | DONE     |
+| Session archive                    | Low         | Medium         | 31                | NEXT     |
+| Deep link scheme                   | Low         | Medium         | 32                | NEXT     |
+| Token/cost budget alerts           | Low         | Medium         | 33                | NEXT     |
+| Static app shortcuts               | Low         | Medium         | 34                | NEXT     |
+| Notification quick actions         | Low-Medium  | High           | 35                | QUEUED   |
+| Share target                       | Low-Medium  | Medium-High    | 36                | QUEUED   |
+| Message edit & resend              | Medium      | High           | 37                | QUEUED   |
+| Network Log screen                 | Low-Medium  | Medium         | 38                | QUEUED   |
+| MCP tool browser                   | Medium      | Low-Medium     | 39                | BACKLOG  |
+| Git status card                    | Medium      | Low-Medium     | 40                | BACKLOG  |
+| Cross-connection aggregation       | Medium-High | Medium         | 41                | BACKLOG  |
+| Scheduled prompts                  | High        | Low-Medium     | 42                | BACKLOG  |
+
+Statuses: `DONE` shipped · `NEXT` Batch A (section 10) · `QUEUED` Batch B
+(section 10) · `BACKLOG` accepted, unscheduled · `DEFERRED` explicitly
+postponed · `TODO` legacy backlog, not yet triaged.
 
 > **Quick wins** (low effort, high personal value): bookmarks, export, search,
-> SSE inspector, developer shortcuts, templates, density mode. All are implemented.
+> SSE inspector, developer shortcuts, templates, density mode. All implemented.
+> Full-text search covers cached message content offline (`session-search.ts`),
+> so it works without a server connection. The next quick wins are tracked in
+> the roadmap (section 10, Batch A).
 
 > **Implemented in batch 1** (DONE): session pinning, local search (session list),
 > Markdown export + Share, SSE inspector (`/debug/sse`), density modes, message
