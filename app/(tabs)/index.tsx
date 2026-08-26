@@ -27,6 +27,7 @@ import {
   DirectoryBrowserSheet,
 } from "../../src/components/chat";
 import { groupByDirectory } from "../../src/lib/session-grouping";
+import { partitionArchived } from "../../src/lib/session-archive";
 import { nameOf } from "../../src/lib/path-utils";
 import { SETUP_GUIDE_URL } from "../../src/lib/links";
 import { NewSessionModal } from "../../src/components/tabs/NewSessionModal";
@@ -62,10 +63,12 @@ function SessionItem({
   isDark,
   accent,
   pinned,
+  archived,
   unreadCount,
   onRename,
   onDelete,
   onPin,
+  onArchive,
   searchSnippet,
   tags,
   onAddTag,
@@ -74,10 +77,12 @@ function SessionItem({
   isDark: boolean;
   accent: string;
   pinned: boolean;
+  archived: boolean;
   unreadCount?: number;
   onRename: () => void;
   onDelete: () => void;
   onPin: () => void;
+  onArchive: () => void;
   searchSnippet?: string | null;
   tags?: string[];
   onAddTag?: () => void;
@@ -102,6 +107,12 @@ function SessionItem({
           ? t("sessionsList.actions.unpin")
           : t("sessionsList.actions.pin"),
         onPress: onPin,
+      },
+      {
+        text: archived
+          ? t("sessionsList.actions.unarchive")
+          : t("sessionsList.actions.archive"),
+        onPress: onArchive,
       },
       { text: t("sessionsList.actions.rename"), onPress: onRename },
       ...(onAddTag
@@ -179,6 +190,7 @@ function SessionItem({
         )}
       </View>
       {pinned && <Ionicons name="push-pin" size={16} color={accent} />}
+      {archived && <Ionicons name="archive" size={16} color={accent} />}
       {unreadCount && unreadCount > 0 && (
         <View
           style={[
@@ -303,6 +315,9 @@ export default function SessionsScreen() {
     pinSession,
     unpinSession,
     pinnedSessions,
+    archiveSession,
+    unarchiveSession,
+    archivedSessions,
     unreadCounts,
     searchCachedSessions,
   } = useSessions();
@@ -340,6 +355,9 @@ export default function SessionsScreen() {
   // all groups start expanded (#67).
   const [collapsedDirs, setCollapsedDirs] = useState<Set<string>>(new Set());
   const [searchQuery, setSearchQuery] = useState("");
+  // Archive view toggle. The main list hides archived sessions; flipping this
+  // shows only archived ones (§1.7).
+  const [showArchived, setShowArchived] = useState(false);
   const [cachedSearchResults, setCachedSearchResults] = useState<{
     hits: Record<string, string>;
   }>({ hits: {} });
@@ -353,16 +371,24 @@ export default function SessionsScreen() {
     });
   }, []);
 
+  // Archive split first: the visible pool is either active or archived
+  // sessions. Search filtering and pin sorting operate within that pool.
+  const { active: activeSessions, archived: archivedList } = useMemo(
+    () => partitionArchived(sessions, archivedSessions),
+    [sessions, archivedSessions],
+  );
+
   // Flatten sessions into header+item rows. Skip headers entirely when
   // everything lives in one directory — a lone header adds noise, not clarity.
   const rows = useMemo<ListRow[]>(() => {
+    const pool = showArchived ? archivedList : activeSessions;
     const q = searchQuery;
     // Title match: filter sessions by title
     const titleMatched = q
-      ? sessions.filter(
+      ? pool.filter(
           (s) => s.title?.toLowerCase().includes(q.toLowerCase()) || false,
         )
-      : sessions;
+      : pool;
 
     // Cached search match: include sessions whose cached message content
     // matches the query (works offline too)
@@ -423,6 +449,9 @@ export default function SessionsScreen() {
     pinnedSessions,
     searchQuery,
     cachedSearchResults,
+    activeSessions,
+    archivedList,
+    showArchived,
   ]);
 
   useEffect(() => {
@@ -959,6 +988,35 @@ export default function SessionsScreen() {
         />
       </View>
 
+      {archivedList.length > 0 && (
+        <View style={styles.archiveChipRow}>
+          <TouchableOpacity
+            style={[
+              styles.archiveChip,
+              isDark && styles.archiveChipDark,
+              showArchived && styles.archiveChipActive,
+            ]}
+            onPress={() => setShowArchived((v) => !v)}
+            testID="archive-filter-chip"
+          >
+            <Ionicons
+              name={showArchived ? "archive" : "archive-outline"}
+              size={13}
+              color={showArchived ? "#ffffff" : isDark ? "#888888" : "#666666"}
+            />
+            <Text
+              style={[
+                styles.archiveChipText,
+                isDark && styles.metaDark,
+                showArchived && styles.archiveChipTextActive,
+              ]}
+            >
+              {t("sessionsList.archivedChip")} ({archivedList.length})
+            </Text>
+          </TouchableOpacity>
+        </View>
+      )}
+
       <FlatList
         data={rows}
         keyExtractor={(row) =>
@@ -978,6 +1036,7 @@ export default function SessionsScreen() {
               isDark={isDark}
               accent={accent}
               pinned={pinnedSessions.includes(row.session.id)}
+              archived={showArchived}
               unreadCount={unreadCounts[row.session.id]}
               searchSnippet={row.searchSnippet}
               tags={useSessions.getState().sessionTags[row.session.id]}
@@ -988,6 +1047,13 @@ export default function SessionsScreen() {
                   unpinSession(row.session.id);
                 } else {
                   pinSession(row.session.id);
+                }
+              }}
+              onArchive={() => {
+                if (showArchived) {
+                  unarchiveSession(row.session.id);
+                } else {
+                  archiveSession(row.session.id);
                 }
               }}
               onAddTag={() => {
@@ -1031,7 +1097,9 @@ export default function SessionsScreen() {
           ) : (
             <View style={styles.emptyList}>
               <Text style={[styles.emptyListText, isDark && styles.metaDark]}>
-                {t("sessionsList.empty.noSessions")}
+                {showArchived
+                  ? t("sessionsList.empty.noArchived")
+                  : t("sessionsList.empty.noSessions")}
               </Text>
             </View>
           )
@@ -1435,6 +1503,37 @@ const styles = StyleSheet.create({
     color: "#0a0a0a",
   },
   searchInputDark: {
+    color: "#ffffff",
+  },
+  archiveChipRow: {
+    flexDirection: "row",
+    paddingHorizontal: 16,
+    marginBottom: 4,
+  },
+  archiveChip: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 5,
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+    borderRadius: 999,
+    borderWidth: 1,
+    borderColor: "#dddddd",
+    backgroundColor: "#f5f5f5",
+  },
+  archiveChipDark: {
+    borderColor: "#3a3a3a",
+    backgroundColor: "#2a2a2a",
+  },
+  archiveChipActive: {
+    backgroundColor: "#0a0a0a",
+    borderColor: "#0a0a0a",
+  },
+  archiveChipText: {
+    fontSize: 12,
+    color: "#666666",
+  },
+  archiveChipTextActive: {
     color: "#ffffff",
   },
 });

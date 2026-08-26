@@ -67,6 +67,10 @@ them. Local-only boolean flag in the sessions store (mirrors the existing
 pinning flag); an "Archived" filter chip reveals hidden sessions. Keeps the
 daily list focused on active work.
 
+Status: **shipped** — `partitionArchived()` in `src/lib/session-archive.ts`,
+store actions in `src/stores/sessions.ts`, filter chip + long-press action in
+the sessions list. Archiving also unpins to avoid hidden-but-pinned state.
+
 ### 1.8 Message Edit & Resend
 
 **Effort**: medium  
@@ -580,8 +584,8 @@ Ordered; build top to bottom:
 
 1. **Static app shortcuts** (§5.3) — pure `AndroidManifest.xml` entries, no JS
    changes, depends on nothing.
-2. **Session Archive** (§1.7) — local flag + filter chip, mirrors the existing
-   pinning implementation.
+2. **Session Archive** (§1.7) — SHIPPED. Local flag + filter chip, mirrors the
+   existing pinning implementation.
 3. **Deep Link Scheme** (§2.8) — `expo-linking` handler in `_layout.tsx`;
    unlocks shortcuts-with-payload, notification routing, and the share target.
 4. **Token/Cost Budget Alerts** (§3.9) — thresholds over existing token stats.
@@ -641,7 +645,7 @@ scheduled prompts (§8.6).
 | Connection config export/import    | Low         | Low-Medium     | 28                | DONE     |
 | Image context actions              | Low-Medium  | Low-Medium     | 29                | DONE     |
 | Voice TTS auto-play                | Low         | Medium         | 30                | DONE     |
-| Session archive                    | Low         | Medium         | 31                | NEXT     |
+| Session archive                    | Low         | Medium         | 31                | DONE     |
 | Deep link scheme                   | Low         | Medium         | 32                | NEXT     |
 | Token/cost budget alerts           | Low         | Medium         | 33                | NEXT     |
 | Static app shortcuts               | Low         | Medium         | 34                | NEXT     |

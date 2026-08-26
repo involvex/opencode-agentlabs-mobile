@@ -336,8 +336,11 @@
       "rename": "Rename",
       "pin": "Pin",
       "unpin": "Unpin",
+      "archive": "Archive",
+      "unarchive": "Unarchive",
       "addTag": "Add tag"
     },
+    "archivedChip": "Archived",
     "addTagTitle": "Add tag",
     "addTagMessage": "Enter a tag for this session",
     "removeTagTitle": "Remove tag",
@@ -360,7 +363,8 @@
       "authFailedTitle": "Authentication Failed",
       "authFailedSubtitle": "{{name}} rejected your credentials. Check the username and password to reconnect.",
       "checkCredentialsButton": "Check Credentials",
-      "noSessions": "No sessions yet"
+      "noSessions": "No sessions yet",
+      "noArchived": "No archived sessions"
     },
     "newSessionModal": {
       "title": "New Session",

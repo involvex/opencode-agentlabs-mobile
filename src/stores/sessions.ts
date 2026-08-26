@@ -64,6 +64,7 @@ interface SessionsState {
   hasMore: boolean;
   error: string | null;
   pinnedSessions: string[];
+  archivedSessions: string[];
   unreadCounts: Record<string, number>;
 
   // Actions
@@ -98,6 +99,10 @@ interface SessionsState {
   // Pinning
   pinSession: (sessionID: string) => void;
   unpinSession: (sessionID: string) => void;
+
+  // Archiving
+  archiveSession: (sessionID: string) => void;
+  unarchiveSession: (sessionID: string) => void;
 
   // Unread tracking
   markSessionRead: (sessionID: string) => void;
@@ -155,6 +160,7 @@ export const useSessions = create<SessionsState>((set, get) => ({
   hasMore: false,
   error: null,
   pinnedSessions: [],
+  archivedSessions: [],
   unreadCounts: {},
   abortedSessions: [],
   sessionTags: {},
@@ -734,6 +740,33 @@ export const useSessions = create<SessionsState>((set, get) => ({
     SecureStore.setItemAsync("opencode_pinned_sessions", JSON.stringify(next));
   },
 
+  // Archiving hides a session from the main list without deleting it.
+  // Archiving also unpins — a hidden session pinned to the top of the active
+  // list would be invisible yet pinned, which is confusing state.
+  archiveSession: (sessionID: string) => {
+    const existing = get().archivedSessions;
+    if (!existing.includes(sessionID)) {
+      const next = [...existing, sessionID];
+      set({ archivedSessions: next });
+      SecureStore.setItemAsync(
+        "opencode_archived_sessions",
+        JSON.stringify(next),
+      );
+    }
+    if (get().pinnedSessions.includes(sessionID)) {
+      get().unpinSession(sessionID);
+    }
+  },
+
+  unarchiveSession: (sessionID: string) => {
+    const next = get().archivedSessions.filter((id) => id !== sessionID);
+    set({ archivedSessions: next });
+    SecureStore.setItemAsync(
+      "opencode_archived_sessions",
+      JSON.stringify(next),
+    );
+  },
+
   markSessionRead: (sessionID: string) => {
     const current = get().unreadCounts;
     if (!(sessionID in current)) return;
@@ -773,6 +806,15 @@ SecureStore.getItemAsync("opencode_pinned_sessions")
     if (raw) {
       const parsed = JSON.parse(raw) as string[];
       useSessions.setState({ pinnedSessions: parsed });
+    }
+  })
+  .catch(() => {});
+
+SecureStore.getItemAsync("opencode_archived_sessions")
+  .then((raw) => {
+    if (raw) {
+      const parsed = JSON.parse(raw) as string[];
+      useSessions.setState({ archivedSessions: parsed });
     }
   })
   .catch(() => {});
