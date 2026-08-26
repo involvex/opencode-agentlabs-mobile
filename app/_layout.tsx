@@ -121,6 +121,15 @@ function RootLayout() {
                     name="(tabs)"
                     options={{ headerShown: false }}
                   />
+                  <Stack.Screen name="new" options={{ headerShown: false }} />
+                  <Stack.Screen
+                    name="sessions"
+                    options={{ headerShown: false }}
+                  />
+                  <Stack.Screen
+                    name="connect"
+                    options={{ headerShown: false }}
+                  />
                   <Stack.Screen
                     name="session/[id]"
                     options={{

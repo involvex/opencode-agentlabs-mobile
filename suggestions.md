@@ -175,7 +175,12 @@ losing the original conversation.
 Handle `opencode://session/<id>?conn=<id>` links via `expo-linking` (already a
 dependency): opens the app straight into a specific session on a specific
 connection. Foundation for app shortcuts with payload, notification routing,
-and the share target. Handler goes in `app/_layout.tsx`.
+and the share target.
+
+Status: **shipped** — expo-router native linking (scheme `opencode` was
+already declared) routes `/session/<id>`; `conn` param activates the linked
+connection in `app/session/[id].tsx`. Shortcut URIs route via redirect
+screens `app/new.tsx`, `app/sessions.tsx`, `app/connect.tsx`.
 
 ### 2.9 MCP Tool Browser
 
@@ -586,8 +591,8 @@ Ordered; build top to bottom:
    changes, depends on nothing.
 2. **Session Archive** (§1.7) — SHIPPED. Local flag + filter chip, mirrors the
    existing pinning implementation.
-3. **Deep Link Scheme** (§2.8) — `expo-linking` handler in `_layout.tsx`;
-   unlocks shortcuts-with-payload, notification routing, and the share target.
+3. **Deep Link Scheme** (§2.8) — SHIPPED. expo-router linking + conn param;
+   makes the Batch A shortcuts fully functional.
 4. **Token/Cost Budget Alerts** (§3.9) — thresholds over existing token stats.
 
 ### Batch B — High value, medium effort
@@ -646,7 +651,7 @@ scheduled prompts (§8.6).
 | Image context actions              | Low-Medium  | Low-Medium     | 29                | DONE     |
 | Voice TTS auto-play                | Low         | Medium         | 30                | DONE     |
 | Session archive                    | Low         | Medium         | 31                | DONE     |
-| Deep link scheme                   | Low         | Medium         | 32                | NEXT     |
+| Deep link scheme                   | Low         | Medium         | 32                | DONE     |
 | Token/cost budget alerts           | Low         | Medium         | 33                | NEXT     |
 | Static app shortcuts               | Low         | Medium         | 34                | NEXT     |
 | Notification quick actions         | Low-Medium  | High           | 35                | QUEUED   |

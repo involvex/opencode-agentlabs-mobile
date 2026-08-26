@@ -98,13 +98,14 @@ async function toJpeg(
 }
 
 export default function SessionScreen() {
-  const { id, directory, templateModel, templateAgent, templatePrompt } =
+  const { id, directory, templateModel, templateAgent, templatePrompt, conn } =
     useLocalSearchParams<{
       id: string;
       directory?: string;
       templateModel?: string;
       templateAgent?: string;
       templatePrompt?: string;
+      conn?: string;
     }>();
   const router = useRouter();
   const isDark = useTheme();
@@ -675,16 +676,28 @@ export default function SessionScreen() {
   useFocusEffect(
     useCallback(() => {
       if (!id) return;
-      selectSession(id, directory).then(() => {
-        // Re-fetch pending permissions/questions from the server to recover from
-        // missed SSE events or failed optimistic removals
-        const connState = useConnections.getState();
-        const c = directory
-          ? (connState.clientForDirectory(directory) ?? connState.client)
-          : connState.client;
-        if (c) refreshPending(c, id);
+      // Deep link support (§2.8): ?conn=<connectionID> switches to the linked
+      // connection BEFORE selecting the session, so the client targets the
+      // link's server rather than whatever was last active. Falls back to the
+      // current connection if activation fails (e.g. unknown/stale ID).
+      const ready = (() => {
+        if (!conn) return Promise.resolve();
+        const cs = useConnections.getState();
+        if (cs.activeConnection?.id === conn) return Promise.resolve();
+        return cs.setActiveConnection(conn).catch(() => {});
+      })();
+      void ready.then(() => {
+        selectSession(id, directory).then(() => {
+          // Re-fetch pending permissions/questions from the server to recover from
+          // missed SSE events or failed optimistic removals
+          const connState = useConnections.getState();
+          const c = directory
+            ? (connState.clientForDirectory(directory) ?? connState.client)
+            : connState.client;
+          if (c) refreshPending(c, id);
+        });
       });
-    }, [id, directory, selectSession]),
+    }, [id, directory, conn, selectSession]),
   );
 
   // Sync model chip from latest assistant message

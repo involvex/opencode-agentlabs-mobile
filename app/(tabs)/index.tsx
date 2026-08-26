@@ -11,7 +11,7 @@ import {
   Alert,
   Linking,
 } from "react-native";
-import { router, useFocusEffect } from "expo-router";
+import { router, useFocusEffect, useLocalSearchParams } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
 import { useTranslation } from "react-i18next";
 import { useSessions } from "../../src/stores/sessions";
@@ -358,6 +358,17 @@ export default function SessionsScreen() {
   // Archive view toggle. The main list hides archived sessions; flipping this
   // shows only archived ones (§1.7).
   const [showArchived, setShowArchived] = useState(false);
+  // opencode://new deep link lands here via app/new.tsx with openNew=1.
+  // Visibility derives from BOTH the local flag and the link param — no
+  // effect-driven setState (react-hooks/set-state-in-effect). Every close
+  // path goes through closeNewSession(), which also clears the param so a
+  // later opencode://new re-triggers.
+  const { openNew } = useLocalSearchParams<{ openNew?: string }>();
+  const showNewSessionVisible = showNewSession || openNew === "1";
+  const closeNewSession = useCallback(() => {
+    setShowNewSession(false);
+    if (openNew === "1") router.setParams({ openNew: undefined });
+  }, [openNew]);
   const [cachedSearchResults, setCachedSearchResults] = useState<{
     hits: Record<string, string>;
   }>({ hits: {} });
@@ -689,7 +700,7 @@ export default function SessionsScreen() {
           try {
             const session = await dirClient.session.create({});
             addRecentDirectory(effectiveDir);
-            setShowNewSession(false);
+            closeNewSession();
             setCustomDir("");
             if (session) {
               router.push({
@@ -720,7 +731,7 @@ export default function SessionsScreen() {
         }
 
         const session = await createSession();
-        setShowNewSession(false);
+        closeNewSession();
         setCustomDir("");
         if (session) {
           router.push({
@@ -749,6 +760,7 @@ export default function SessionsScreen() {
       selectedTemplateID,
       templates,
       t,
+      closeNewSession,
     ],
   );
 
@@ -762,13 +774,13 @@ export default function SessionsScreen() {
     (startDir: string | null, mode: "create" | "switch") => {
       setBrowseStartDir(startDir || serverHome || null);
       setBrowseMode(mode);
-      if (mode === "create" && showNewSession) {
+      if (mode === "create" && showNewSessionVisible) {
         restoreNewSessionOnDismiss.current = true;
         setShowNewSession(false);
       }
       browserSheetRef.current?.expand();
     },
-    [serverHome, showNewSession],
+    [serverHome, showNewSessionVisible],
   );
 
   const onBrowserSelect = useCallback(
@@ -1121,8 +1133,8 @@ export default function SessionsScreen() {
       </TouchableOpacity>
 
       <NewSessionModal
-        visible={showNewSession}
-        onClose={() => setShowNewSession(false)}
+        visible={showNewSessionVisible}
+        onClose={closeNewSession}
         isDark={isDark}
         accent={accent}
         t={t}
