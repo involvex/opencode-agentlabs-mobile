@@ -2,6 +2,7 @@
   "common": {
     "cancel": "取消",
     "ok": "确定",
+    "dismiss": "关闭",
     "error": "错误",
     "delete": "删除",
     "retry": "重试",
@@ -138,7 +139,8 @@
   "session": {
     "titleFallback": "会话",
     "toolbar": {
-      "auto": "自动"
+      "auto": "自动",
+      "noOtherAgents": "没有其他可切换的主代理"
     },
     "reply": {
       "inReplyToUser": "回复您",
@@ -150,7 +152,8 @@
       "connected": "已连接 ✓",
       "reverting": "消息已撤回 — 重新发送以确认",
       "undo": "撤销",
-      "offlineCache": "显示缓存消息（离线）"
+      "offlineCache": "显示缓存消息（离线）",
+      "sendError": "消息发送失败：{{message}}"
     },
     "empty": {
       "title": "开始一段对话",

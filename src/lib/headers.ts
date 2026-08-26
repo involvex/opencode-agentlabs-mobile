@@ -30,8 +30,12 @@ export function buildRequestHeaders(
   if (config.directory) {
     // The directory travels in an HTTP header, which is latin1-only. ASCII paths
     // pass through untouched (so the server sees a readable path); anything with
-    // non-ASCII bytes is percent-encoded to stay header-safe.
-    const encoded = /[^\x00-\x7F]/.test(config.directory)
+    // non-ASCII bytes is percent-encoded to stay header-safe. Checked via code
+    // points rather than a control-char regex (eslint no-control-regex).
+    const hasNonAscii = [...config.directory].some(
+      (ch) => ch.charCodeAt(0) > 127,
+    );
+    const encoded = hasNonAscii
       ? encodeURIComponent(config.directory)
       : config.directory;
     headers["x-opencode-directory"] = encoded;

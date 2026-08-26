@@ -1,7 +1,11 @@
 import { create } from "zustand";
 import { useConnections } from "./connections";
 import type { Agent, Command } from "../lib/sdk";
-import { chooseModelSelection } from "../lib/model-selection";
+import {
+  chooseModelSelection,
+  type ModelSelection,
+} from "../lib/model-selection";
+import { cycleAgentName } from "../lib/agent-selection";
 
 export interface ProviderModel {
   id: string;
@@ -19,16 +23,22 @@ export interface Provider {
   models: ProviderModel[];
 }
 
-interface ModelSelection {
-  providerID: string;
-  modelID: string;
-}
-
 function sameModel(left: ModelSelection | null, right: ModelSelection | null) {
   return (
     left?.providerID === right?.providerID && left?.modelID === right?.modelID
   );
 }
+
+// Last-used selections per directory scope. Catalog requests are scoped by
+// the x-opencode-directory header, so each project has its own agent set and
+// provider list — remembering per scope keeps switching between projects
+// from leaking one project's custom agents into another (issue #198).
+interface ScopedSelection {
+  agent: string;
+  model: ModelSelection | null;
+  variant: string | null;
+}
+const scopedSelections = new Map<string, ScopedSelection>();
 
 interface CatalogState {
   agents: Agent[];
@@ -39,14 +49,21 @@ interface CatalogState {
   agent: string; // agent name, e.g. "build"
   model: ModelSelection | null;
   variant: string | null; // model variant for reasoning effort (e.g. "low", "medium", "high")
+  // Directory scope the current selections were loaded for. Undefined means
+  // the active connection's default scope.
+  directory?: string;
   loaded: boolean;
 
   // Actions
-  load: () => Promise<void>;
+  load: (directory?: string) => Promise<void>;
   setAgent: (name: string) => void;
   setModel: (selection: ModelSelection | null) => void;
   setVariant: (variant: string | null) => void;
-  cycleAgent: (direction?: 1 | -1) => void;
+  cycleAgent: (direction?: 1 | -1) => boolean;
+}
+
+function remember(scopeKey: string, selection: ScopedSelection) {
+  scopedSelections.set(scopeKey, selection);
 }
 
 export const useCatalog = create<CatalogState>((set, get) => ({
@@ -59,8 +76,19 @@ export const useCatalog = create<CatalogState>((set, get) => ({
   variant: null,
   loaded: false,
 
-  load: async () => {
-    const client = useConnections.getState().client;
+  load: async (directory) => {
+    const connState = useConnections.getState();
+    // Scope the whole catalog (agents/commands/providers AND the request's
+    // directory header) to the caller's project: the session screen passes its
+    // session's directory so the agent/model lists come from the SAME server
+    // instance the prompts will be sent to. A mismatch here lets the UI offer
+    // an agent name the target instance doesn't have — upstream then throws
+    // "Agent not found" before the user message is even saved, silently
+    // swallowing the prompt (issue #198). No argument keeps the legacy
+    // active-connection client scope.
+    const client = directory
+      ? connState.clientForDirectory(directory)
+      : connState.client;
     if (!client) return;
 
     const [agentResult, commandResult, providerResult] = await Promise.all([
@@ -102,34 +130,47 @@ export const useCatalog = create<CatalogState>((set, get) => ({
     // Filter out hidden agents
     const visible = agents.filter((a) => !a.hidden);
 
-    // Default agent
-    const current = get().agent;
+    // Restore this scope's last selections; while reloading the SAME scope,
+    // unsaved in-store picks win over the snapshot (they may be newer than
+    // the last remember() call).
+    const scopeKey = directory ?? "";
+    const sameScope = get().directory === directory;
+    const stored = scopedSelections.get(scopeKey);
+    const prior: ScopedSelection = sameScope
+      ? { agent: get().agent, model: get().model, variant: get().variant }
+      : { agent: "", model: null, variant: null };
+    const preferredAgent = stored?.agent || prior.agent;
     const agent =
-      current && visible.some((a) => a.name === current)
-        ? current
+      preferredAgent && visible.some((a) => a.name === preferredAgent)
+        ? preferredAgent
         : visible[0]?.name || "build";
 
     // Default model: keep valid existing selection; otherwise prefer connected
     // provider defaults, then first connected model; agent model is last fallback.
-    const existing = get().model;
     const defaultAgent = visible[0];
     const model = chooseModelSelection({
       providers,
       defaults,
-      existing,
+      existing: stored?.model ?? prior.model,
       agentModel: defaultAgent?.model || null,
     });
+    const selectedPrior = stored?.model ?? prior.model;
+    const variant = sameModel(selectedPrior, model)
+      ? (stored?.variant ?? prior.variant)
+      : null;
 
-    set((state) => ({
+    const selection: ScopedSelection = { agent, model, variant };
+    remember(scopeKey, selection);
+
+    set({
       agents: visible,
       commands,
       providers,
       defaults,
-      agent,
-      model,
-      variant: sameModel(state.model, model) ? state.variant : null,
+      directory,
+      ...selection,
       loaded: true,
-    }));
+    });
   },
 
   setAgent: (name) => {
@@ -141,24 +182,38 @@ export const useCatalog = create<CatalogState>((set, get) => ({
       model,
       variant: sameModel(state.model, model) ? state.variant : null,
     }));
+    remember(get().directory ?? "", {
+      agent: get().agent,
+      model: get().model,
+      variant: get().variant,
+    });
   },
 
-  setModel: (selection) =>
+  setModel: (selection) => {
     set((state) => ({
       model: selection,
       variant: sameModel(state.model, selection) ? state.variant : null,
-    })),
+    }));
+    remember(get().directory ?? "", {
+      agent: get().agent,
+      model: get().model,
+      variant: get().variant,
+    });
+  },
 
-  setVariant: (variant) => set({ variant }),
+  setVariant: (variant) => {
+    set({ variant });
+    remember(get().directory ?? "", {
+      agent: get().agent,
+      model: get().model,
+      variant: get().variant,
+    });
+  },
 
   cycleAgent: (direction = 1) => {
-    const { agents, agent } = get();
-    const primary = agents.filter(
-      (a) => a.mode === "primary" || a.mode === "all",
-    );
-    if (primary.length < 2) return;
-    const idx = primary.findIndex((a) => a.name === agent);
-    const next = (idx + direction + primary.length) % primary.length;
-    get().setAgent(primary[next].name);
+    const next = cycleAgentName(get().agents, get().agent, direction);
+    if (!next) return false;
+    get().setAgent(next);
+    return true;
   },
 }));

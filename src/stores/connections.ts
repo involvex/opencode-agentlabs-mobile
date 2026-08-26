@@ -79,6 +79,27 @@ function generateId(): string {
 
 const HEADERS_PREFIX = "opencode_headers_";
 
+// Fire-and-forget fill-in of server metadata (current project + server home).
+// The client must reach this store BEFORE these requests resolve: SSE startup
+// and catalog load key off `client` appearing here (see app/_layout.tsx), and
+// serializing behind two metadata calls delayed live events by up to 2×30s on
+// flaky networks (issue #189 / upstream fix #182).
+function hydrateServerMeta(connectionID: string, client: Client) {
+  void (async () => {
+    const [proj, paths] = await Promise.all([
+      client.project.current().catch(() => null),
+      client.path.get().catch(() => null),
+    ]);
+    // Stale-guard: the user may have switched servers/directories while this
+    // fetch was in flight — never clobber the newer connection's state.
+    if (useConnections.getState().activeConnection?.id !== connectionID) return;
+    useConnections.setState({
+      ...(proj ? { currentProject: proj } : {}),
+      ...(paths?.home ? { serverHome: paths.home } : {}),
+    });
+  })();
+}
+
 function buildClient(
   url: string,
   directory?: string,
@@ -133,8 +154,6 @@ export const useConnections = create<ConnectionsState>((set, get) => ({
       // Create client for active connection
       let client: Client | null = null;
       let base: ClientBase | null = null;
-      let project: Project | null = null;
-      let home: string | null = null;
       if (active) {
         const password = await SecureStore.getItemAsync(
           `${PASSWORDS_PREFIX}${active.id}`,
@@ -144,29 +163,29 @@ export const useConnections = create<ConnectionsState>((set, get) => ({
         const built = buildClient(active.url, active.directory, auth, headers);
         client = built.client;
         base = built.base;
-        // Fetch current project info and server paths
-        try {
-          const [proj, paths] = await Promise.all([
-            client.project.current().catch(() => null),
-            client.path.get().catch(() => null),
-          ]);
-          project = proj;
-          home = paths?.home || null;
-        } catch {
-          // Server might be offline
-        }
+        // Commit the client immediately — SSE/catalog startup must not wait
+        // on metadata (issue #189). Project/home fill in behind it.
+        set({
+          connections,
+          activeConnection: active,
+          client,
+          clientBase: base,
+          recentDirectories,
+          isLoading: false,
+        });
+        hydrateServerMeta(active.id, client);
+      } else {
+        set({
+          connections,
+          activeConnection: null,
+          client: null,
+          clientBase: null,
+          currentProject: null,
+          serverHome: null,
+          recentDirectories,
+          isLoading: false,
+        });
       }
-
-      set({
-        connections,
-        activeConnection: active,
-        client,
-        clientBase: base,
-        currentProject: project,
-        serverHome: home,
-        recentDirectories,
-        isLoading: false,
-      });
     } catch {
       set({ error: "Failed to load connections", isLoading: false });
     }
@@ -197,9 +216,6 @@ export const useConnections = create<ConnectionsState>((set, get) => ({
     let base = get().clientBase;
     let activeConnection = get().activeConnection;
 
-    let project = get().currentProject;
-    let serverHome = get().serverHome;
-
     if (newConnection.active) {
       activeConnection = newConnection;
       const auth = buildAuth(newConnection.username, password);
@@ -212,19 +228,6 @@ export const useConnections = create<ConnectionsState>((set, get) => ({
       );
       client = built.client;
       base = built.base;
-
-      // Fetch server metadata so loadSessions can use clientForDirectory(serverHome)
-      // immediately after the connection is added (same as setActiveConnection does).
-      try {
-        const [proj, paths] = await Promise.all([
-          client.project.current().catch(() => null),
-          client.path.get().catch(() => null),
-        ]);
-        project = proj;
-        serverHome = paths?.home || null;
-      } catch {
-        // Server might be unreachable; proceed without metadata
-      }
     }
 
     set({
@@ -232,9 +235,13 @@ export const useConnections = create<ConnectionsState>((set, get) => ({
       activeConnection,
       client,
       clientBase: base,
-      currentProject: project,
-      serverHome,
+      // New active connection — old metadata no longer describes it
+      currentProject: newConnection.active ? null : get().currentProject,
+      serverHome: newConnection.active ? null : get().serverHome,
     });
+    if (newConnection.active && client) {
+      hydrateServerMeta(newConnection.id, client);
+    }
   },
 
   removeConnection: async (id) => {
@@ -297,8 +304,6 @@ export const useConnections = create<ConnectionsState>((set, get) => ({
     const active = connections.find((c) => c.id === id) || null;
     let client: Client | null = null;
     let base: ClientBase | null = null;
-    let project: Project | null = null;
-    let home: string | null = null;
 
     if (active) {
       const password = await SecureStore.getItemAsync(
@@ -309,17 +314,6 @@ export const useConnections = create<ConnectionsState>((set, get) => ({
       const built = buildClient(active.url, active.directory, auth, headers);
       client = built.client;
       base = built.base;
-
-      try {
-        const [proj, paths] = await Promise.all([
-          client.project.current().catch(() => null),
-          client.path.get().catch(() => null),
-        ]);
-        project = proj;
-        home = paths?.home || null;
-      } catch {
-        // Server might be offline
-      }
 
       // Update last connected time
       active.lastConnected = Date.now();
@@ -334,9 +328,14 @@ export const useConnections = create<ConnectionsState>((set, get) => ({
       activeConnection: active,
       client,
       clientBase: base,
-      currentProject: project,
-      serverHome: home,
+      // Switching servers — previous connection's metadata no longer applies;
+      // hydrateServerMeta fills fresh values behind this commit.
+      currentProject: null,
+      serverHome: null,
     });
+    if (client && active) {
+      hydrateServerMeta(active.id, client);
+    }
   },
 
   testConnection: async (connection, source, password) => {
@@ -388,28 +387,16 @@ export const useConnections = create<ConnectionsState>((set, get) => ({
       const auth = buildAuth(active.username, password);
       const headers = await loadAuthHeaders(id);
       const built = buildClient(active.url, active.directory, auth, headers);
-      try {
-        const [project, paths] = await Promise.all([
-          built.client.project.current().catch(() => null),
-          built.client.path.get().catch(() => null),
-        ]);
-        set({
-          connections,
-          activeConnection: active,
-          client: built.client,
-          clientBase: built.base,
-          currentProject: project,
-          serverHome: paths?.home || null,
-        });
-      } catch {
-        set({
-          connections,
-          activeConnection: active,
-          client: built.client,
-          clientBase: built.base,
-          currentProject: null,
-        });
-      }
+      // Commit the rebuilt client first (SSE/catalog key off it), then let
+      // metadata fill in behind — a directory change here must not stall
+      // live events for up to 2×30s (issue #189).
+      set({
+        connections,
+        activeConnection: active,
+        client: built.client,
+        clientBase: built.base,
+      });
+      hydrateServerMeta(active.id, built.client);
     } else {
       set({ connections });
     }

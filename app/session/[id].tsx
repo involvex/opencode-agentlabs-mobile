@@ -150,6 +150,13 @@ export default function SessionScreen() {
     (s) => !!(currentSession && s.sending[currentSession.id]),
   );
 
+  // Async send failures (server rejects prompt_async AFTER returning 204 —
+  // e.g. "Agent not found" thrown before the user message is even saved)
+  // surface only through this store field. Without rendering it, a rejected
+  // prompt looks like total silence: optimistic bubble stays, nothing ever
+  // streams back (issue #198).
+  const sendError = useSessions((s) => s.error);
+
   const { authenticateForMessage } = useAuth();
   const {
     client,
@@ -293,7 +300,7 @@ export default function SessionScreen() {
 
   useEffect(() => {
     useSlashCommands.getState().load();
-  }, [currentSession]);
+  }, []);
 
   const registryInstance = useMemo(() => {
     const r = new SlashCommandRegistry();
@@ -647,6 +654,17 @@ export default function SessionScreen() {
     flatListRef.current?.scrollToOffset({ offset: 0, animated });
   }, []);
 
+  // Catalog must be scoped to the session's own project: prompts are sent
+  // through a client rooted at that directory (sendMessage → clientFor),
+  // so the agent/model chips must list what THAT server instance has.
+  // Otherwise a cross-project session can offer an agent name its instance
+  // doesn't define, and upstream throws "Agent not found" before saving the
+  // message (issue #198). Re-runs once currentSession resolves and its
+  // directory becomes known.
+  useEffect(() => {
+    loadCatalog(sessionDirectory ?? directory);
+  }, [sessionDirectory, directory, loadCatalog]);
+
   // Re-select on every focus, not just mount. currentSession/messages/
   // permissions are a single global store, and the native stack keeps screens
   // underneath a pushed one mounted. Without re-selecting on focus, navigating
@@ -657,7 +675,6 @@ export default function SessionScreen() {
   useFocusEffect(
     useCallback(() => {
       if (!id) return;
-      loadCatalog();
       selectSession(id, directory).then(() => {
         // Re-fetch pending permissions/questions from the server to recover from
         // missed SSE events or failed optimistic removals
@@ -667,7 +684,7 @@ export default function SessionScreen() {
           : connState.client;
         if (c) refreshPending(c, id);
       });
-    }, [id, directory, selectSession, loadCatalog]),
+    }, [id, directory, selectSession]),
   );
 
   // Sync model chip from latest assistant message
@@ -1008,6 +1025,18 @@ export default function SessionScreen() {
     [setModel],
   );
 
+  // Agent cycling must never be a silent no-op: with fewer than two primary
+  // agents loaded (e.g. /agent failing under this directory scope) the old
+  // code returned void and taps appeared dead (issue #198).
+  const handleCycleAgent = useCallback(
+    (direction: 1 | -1) => {
+      if (!cycleAgent(direction)) {
+        Alert.alert(t("session.toolbar.noOtherAgents"));
+      }
+    },
+    [cycleAgent, t],
+  );
+
   // Current agent display
   const currentAgent = agents.find((a) => a.name === agent);
   const agentColor = currentAgent?.color || "#8b5cf6";
@@ -1175,6 +1204,23 @@ export default function SessionScreen() {
             </View>
           )}
 
+          {/* Async send/session failure — prompt_async returns 204 before the
+            server validates agent/model, so rejections only arrive via SSE.
+            Without this banner a rejected message looks like pure silence. */}
+          {sendError && (
+            <View style={[s.banner, s.bannerError]}>
+              <Text style={s.bannerText} numberOfLines={4}>
+                {t("session.banners.sendError", { message: sendError })}
+              </Text>
+              <TouchableOpacity
+                onPress={() => useSessions.setState({ error: null })}
+                hitSlop={8}
+              >
+                <Text style={s.bannerErrorAction}>{t("common.dismiss")}</Text>
+              </TouchableOpacity>
+            </View>
+          )}
+
           {isLoading ? (
             <View style={s.loading}>
               <ActivityIndicator
@@ -1304,8 +1350,8 @@ export default function SessionScreen() {
           <View style={[s.toolbar, isDark && s.toolbarDark]}>
             <TouchableOpacity
               style={[s.agentChip, { borderColor: agentColor }]}
-              onPress={() => cycleAgent()}
-              onLongPress={() => cycleAgent(-1)}
+              onPress={() => handleCycleAgent(1)}
+              onLongPress={() => handleCycleAgent(-1)}
             >
               <View style={[s.agentDot, { backgroundColor: agentColor }]} />
               <Text style={[s.agentLabel, isDark && s.textWhite]}>
@@ -1782,6 +1828,15 @@ const s = StyleSheet.create({
     justifyContent: "space-between",
   },
   bannerAction: { color: "#93c5fd", fontSize: 13, fontWeight: "700" },
+
+  // Async send/session failure banner (issue #198)
+  bannerError: {
+    backgroundColor: "#991b1b",
+    flexDirection: "row",
+    justifyContent: "space-between",
+    gap: 8,
+  },
+  bannerErrorAction: { color: "#fecaca", fontSize: 13, fontWeight: "700" },
 
   // Reply preview
   replyPreview: {

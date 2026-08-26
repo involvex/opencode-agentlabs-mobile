@@ -2,6 +2,7 @@
   "common": {
     "cancel": "Cancel",
     "ok": "OK",
+    "dismiss": "Dismiss",
     "error": "Error",
     "delete": "Delete",
     "retry": "Retry",
@@ -138,7 +139,8 @@
   "session": {
     "titleFallback": "Session",
     "toolbar": {
-      "auto": "Auto"
+      "auto": "Auto",
+      "noOtherAgents": "No other primary agents available"
     },
     "reply": {
       "inReplyToUser": "In reply to you",
@@ -150,7 +152,8 @@
       "connected": "Connected ✓",
       "reverting": "Message reverted — resend to confirm",
       "undo": "Undo",
-      "offlineCache": "Showing cached messages (offline)"
+      "offlineCache": "Showing cached messages (offline)",
+      "sendError": "Message failed: {{message}}"
     },
     "empty": {
       "title": "Start a conversation",
