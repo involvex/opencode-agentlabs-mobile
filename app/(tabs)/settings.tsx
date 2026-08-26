@@ -24,6 +24,7 @@ import * as Clipboard from "expo-clipboard";
 import {
   categories,
   categoryMeta,
+  actionMap,
   setup as setupNotifications,
   granted as notificationsGranted,
 } from "../../src/lib/notifications";
@@ -301,6 +302,32 @@ export default function SettingsScreen() {
             </Text>
           </View>
         )}
+        <View style={[styles.settingRow, isDark && styles.settingRowDark]}>
+          <Text
+            style={[
+              styles.settingDescription,
+              isDark && styles.metaDark,
+              { color: isDark ? "#a1a1aa" : "#525252", marginLeft: 16 },
+            ]}
+          >
+            {t("settings.notifications.quickActionsHint")}
+          </Text>
+        </View>
+        {categories.map((category) => {
+          const enabled = notifications[category];
+          const actions = actionMap[category];
+          if (!enabled || actions.length === 0) return null;
+          const meta = categoryMeta[category];
+          return (
+            <SettingRow
+              key={`${category}-actions`}
+              icon={meta.icon as keyof typeof Ionicons.glyphMap}
+              label={t(meta.labelKey)}
+              description={actions.map((a) => t(a.titleKey)).join(" · ")}
+              isDark={isDark}
+            />
+          );
+        })}
       </SettingSection>
 
       <SettingSection title={t("settings.sections.privacy")} isDark={isDark}>
@@ -983,5 +1010,33 @@ const styles = StyleSheet.create({
   },
   budgetHintDark: {
     color: "#666666",
+  },
+  quickHint: {
+    fontSize: 12,
+    color: "#525252",
+    paddingHorizontal: 16,
+    paddingTop: 8,
+  },
+  quickHintDark: {
+    color: "#a1a1aa",
+  },
+  quickRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 10,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderTopWidth: StyleSheet.hairlineWidth,
+    borderTopColor: "#e5e5e5",
+  },
+  quickRowDark: {
+    borderTopColor: "#2a2a2a",
+  },
+  quickLabel: {
+    color: "#666666",
+    minWidth: 80,
+  },
+  quickLabelDark: {
+    color: "#a1a1aa",
   },
 });

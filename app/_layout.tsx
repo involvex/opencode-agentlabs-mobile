@@ -48,7 +48,8 @@ function RootLayout() {
 
     notifications.configure(() => useSettings.getState().notifications);
 
-    const unsubNotifications = notifications.onTap((data) => {
+    const unsubNotifications = notifications.onTap((data, action) => {
+      if (action === "dismiss") return;
       if (data.sessionId) router.push(`/session/${data.sessionId}`);
       else router.push("/");
     });

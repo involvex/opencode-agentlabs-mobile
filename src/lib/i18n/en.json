@@ -416,6 +416,8 @@
     }
   },
   "notifications": {
+    "quickActionsTitle": "Quick Actions",
+    "quickActionsHint": "Buttons shown when a notification fires for an enabled category.",
     "categories": {
       "permissions": {
         "label": "Permission Requests",

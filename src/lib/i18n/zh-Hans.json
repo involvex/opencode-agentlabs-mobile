@@ -416,6 +416,8 @@
     }
   },
   "notifications": {
+    "quickActionsTitle": "快捷操作",
+    "quickActionsHint": "启用类别的通知触发时显示的按钮。",
     "categories": {
       "permissions": {
         "label": "权限请求",

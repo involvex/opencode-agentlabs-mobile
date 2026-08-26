@@ -247,14 +247,16 @@ export async function send(payload: Payload) {
 // Tap handler — returns cleanup function
 // ---------------------------------------------------------------------------
 
-export function onTap(handler: (data: NotificationData) => void) {
+export function onTap(
+  handler: (data: NotificationData, action?: string) => void,
+) {
   const subscription = Notifications.addNotificationResponseReceivedListener(
     (response) => {
       const raw = response.notification.request.content.data;
       const data = raw as unknown as NotificationData | undefined;
       if (!data) return;
       if (data.sessionId || data.category === "connection") {
-        handler(data);
+        handler(data, response.actionIdentifier);
       }
     },
   );
