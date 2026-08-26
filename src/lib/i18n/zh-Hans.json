@@ -437,6 +437,11 @@
         "label": "连接",
         "description": "当应用长时间失去连接时"
       }
+    },
+    "actions": {
+      "open-session": "打开会话",
+      "retry": "重试",
+      "dismiss": "取消"
     }
   },
   "errorBoundary": {

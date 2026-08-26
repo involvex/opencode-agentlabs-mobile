@@ -437,6 +437,11 @@
         "label": "Connection",
         "description": "When the app loses connection for an extended period"
       }
+    },
+    "actions": {
+      "open-session": "Open Session",
+      "retry": "Retry",
+      "dismiss": "Dismiss"
     }
   },
   "errorBoundary": {

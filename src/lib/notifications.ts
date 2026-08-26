@@ -59,6 +59,57 @@ export const defaultPreferences: Record<Category, boolean> = {
   connection: true,
 };
 
+export const actionMap: Record<Category, ActionMap[]> = {
+  permissions: [
+    {
+      id: "open-session",
+      titleKey: "notifications.actions.open-session",
+      style: "default",
+    },
+  ],
+  questions: [
+    {
+      id: "open-session",
+      titleKey: "notifications.actions.open-session",
+      style: "default",
+    },
+    { id: "retry", titleKey: "notifications.actions.retry", style: "default" },
+    {
+      id: "dismiss",
+      titleKey: "notifications.actions.dismiss",
+      style: "destructive",
+    },
+  ],
+  completed: [
+    {
+      id: "open-session",
+      titleKey: "notifications.actions.open-session",
+      style: "default",
+    },
+    { id: "retry", titleKey: "notifications.actions.retry", style: "default" },
+  ],
+  errors: [
+    {
+      id: "open-session",
+      titleKey: "notifications.actions.open-session",
+      style: "default",
+    },
+    { id: "retry", titleKey: "notifications.actions.retry", style: "default" },
+    {
+      id: "dismiss",
+      titleKey: "notifications.actions.dismiss",
+      style: "destructive",
+    },
+  ],
+  connection: [
+    {
+      id: "open-session",
+      titleKey: "notifications.actions.open-session",
+      style: "default",
+    },
+  ],
+};
+
 // ---------------------------------------------------------------------------
 // Notification payload — what callers pass in
 // ---------------------------------------------------------------------------
@@ -70,12 +121,22 @@ export interface Payload {
   sessionId: string;
   dedupeKey?: string;
   dedupeCooldownMs?: number;
+  action?: string;
+}
+
+export type NotificationAction = "open-session" | "retry" | "dismiss";
+
+export interface ActionMap {
+  id: string;
+  titleKey: string;
+  style?: "default" | "destructive";
 }
 
 // Data embedded in the notification for tap handling
 interface NotificationData {
   category: Category;
   sessionId: string;
+  action?: string;
 }
 
 // ---------------------------------------------------------------------------
@@ -161,9 +222,22 @@ export async function send(payload: Payload) {
       data: {
         category: payload.category,
         sessionId: payload.sessionId,
+        action: payload.action,
       } satisfies NotificationData as Record<string, unknown>,
       sound: Platform.OS === "android" ? "ping" : "ping.wav",
       ...(Platform.OS === "android" ? { channelId: "prompts" } : {}),
+      ...(payload.category in actionMap
+        ? {
+            actions: actionMap[payload.category].map((a) => ({
+              identifier: a.id,
+              title: a.titleKey,
+              options: {
+                opensApp: true,
+                isDestructive: a.style === "destructive",
+              },
+            })),
+          }
+        : {}),
     },
     trigger: null,
   });
