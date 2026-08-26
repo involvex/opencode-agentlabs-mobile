@@ -21,12 +21,11 @@ interface Settings {
   theme: Theme;
   accentColor: string;
   autoPlaySpeech: boolean;
-  // Usage budget limits (§3.9). 0 disables a limit.
-  // Costs are in USD; tokens count assistant output tokens.
   budgetSessionCost: number;
   budgetSessionTokens: number;
   budgetDailyCost: number;
   budgetDailyTokens: number;
+  disabledActions: Record<Category, string[]>;
 }
 
 export type BudgetLimitKey =
@@ -50,6 +49,13 @@ const DEFAULTS: Settings = {
   budgetSessionTokens: 0,
   budgetDailyCost: 0,
   budgetDailyTokens: 0,
+  disabledActions: {
+    permissions: [],
+    questions: [],
+    completed: [],
+    errors: [],
+    connection: [],
+  },
 };
 
 interface SettingsState extends Settings {
@@ -66,6 +72,11 @@ interface SettingsState extends Settings {
   setAccentColor: (color: string) => Promise<void>;
   setAutoPlaySpeech: (enabled: boolean) => Promise<void>;
   setBudgetLimit: (key: BudgetLimitKey, value: number) => Promise<void>;
+  setDisabledForCategory: (
+    category: Category,
+    actionID: string,
+    disabled: boolean,
+  ) => Promise<void>;
 }
 
 function clampTerminalFontSize(size: number): number {
@@ -92,6 +103,7 @@ function snapshot(get: () => SettingsState): Settings {
     budgetSessionTokens: get().budgetSessionTokens,
     budgetDailyCost: get().budgetDailyCost,
     budgetDailyTokens: get().budgetDailyTokens,
+    disabledActions: get().disabledActions,
   };
 }
 
@@ -107,7 +119,6 @@ export const useSettings = create<SettingsState>((set, get) => ({
     const raw = await SecureStore.getItemAsync(SETTINGS_KEY);
     if (raw) {
       const parsed = JSON.parse(raw) as Partial<Settings>;
-      // Merge stored settings with defaults so new fields/categories get their default
       const merged = mergeStoredSettings(DEFAULTS, parsed);
       set({ ...merged, loaded: true });
       setAppLocale(merged.locale);
@@ -130,7 +141,7 @@ export const useSettings = create<SettingsState>((set, get) => ({
 
   setLocale: async (locale) => {
     set({ locale });
-    setAppLocale(locale); // applies immediately
+    setAppLocale(locale);
     await persist({ ...snapshot(get), locale });
   },
 
@@ -175,5 +186,15 @@ export const useSettings = create<SettingsState>((set, get) => ({
     const clamped = Math.max(0, Math.round(value) || 0);
     set({ [key]: clamped } as Partial<Settings>);
     await persist(snapshot(get));
+  },
+
+  setDisabledForCategory: async (category, actionID, disabled) => {
+    const current = get().disabledActions[category] ?? [];
+    const next = disabled
+      ? [...new Set([...current, actionID])]
+      : current.filter((x) => x !== actionID);
+    const disabledActions = { ...get().disabledActions, [category]: next };
+    set({ disabledActions });
+    await persist({ ...snapshot(get), disabledActions });
   },
 }));

@@ -443,7 +443,10 @@
     "actions": {
       "open-session": "Open Session",
       "retry": "Retry",
-      "dismiss": "Dismiss"
+      "dismiss": "Dismiss",
+      "openSessionLabel": "Open session action",
+      "retryLabel": "Retry action",
+      "dismissLabel": "Dismiss action"
     }
   },
   "errorBoundary": {

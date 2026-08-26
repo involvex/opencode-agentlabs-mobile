@@ -10,11 +10,12 @@ import * as SplashScreen from "expo-splash-screen";
 import i18n from "../src/lib/i18n/config";
 import { useAuth } from "../src/stores/auth";
 import { useConnections } from "../src/stores/connections";
-import { useEvents } from "../src/stores/events";
+import { useEvents, refreshPending } from "../src/stores/events";
 import { useCatalog } from "../src/stores/catalog";
 import { useSettings } from "../src/stores/settings";
 import { useBudget } from "../src/stores/budget";
-import { useTheme } from "../src/lib/theme";
+import { useSessions } from "../src/stores/sessions";
+import { useTheme, PRESET_ACCENT_COLORS } from "../src/lib/theme";
 import { AuthGate } from "../src/components/AuthGate";
 import { ErrorBoundary } from "../src/components/ErrorBoundary";
 import { SplashScreen as BrandSplash } from "../src/components/SplashScreen";
@@ -48,8 +49,33 @@ function RootLayout() {
 
     notifications.configure(() => useSettings.getState().notifications);
 
-    const unsubNotifications = notifications.onTap((data, action) => {
-      if (action === "dismiss") return;
+    const unsubNotifications = notifications.onTap(async (data, action) => {
+      const categories = useEvents.getState();
+      const sessionStore = useSessions.getState();
+      const connectionStore = useConnections.getState();
+
+      switch (action) {
+        case "dismiss":
+          return;
+        case "retry":
+          if (data.category === "connection") {
+            categories.connect();
+            return;
+          }
+          if (data.category === "errors" && data.sessionId) {
+            categories.clearErrored(data.sessionId);
+            sessionStore.clearAborted(data.sessionId);
+            void sessionStore.refreshMessages();
+            return;
+          }
+          if (data.sessionId && connectionStore.client) {
+            void refreshPending(connectionStore.client, data.sessionId);
+            void sessionStore.refreshMessages();
+            return;
+          }
+          break;
+      }
+
       if (data.sessionId) router.push(`/session/${data.sessionId}`);
       else router.push("/");
     });

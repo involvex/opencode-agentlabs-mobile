@@ -73,12 +73,6 @@ export const actionMap: Record<Category, ActionMap[]> = {
       titleKey: "notifications.actions.open-session",
       style: "default",
     },
-    { id: "retry", titleKey: "notifications.actions.retry", style: "default" },
-    {
-      id: "dismiss",
-      titleKey: "notifications.actions.dismiss",
-      style: "destructive",
-    },
   ],
   completed: [
     {
@@ -86,7 +80,6 @@ export const actionMap: Record<Category, ActionMap[]> = {
       titleKey: "notifications.actions.open-session",
       style: "default",
     },
-    { id: "retry", titleKey: "notifications.actions.retry", style: "default" },
   ],
   errors: [
     {
@@ -107,6 +100,7 @@ export const actionMap: Record<Category, ActionMap[]> = {
       titleKey: "notifications.actions.open-session",
       style: "default",
     },
+    { id: "retry", titleKey: "notifications.actions.retry", style: "default" },
   ],
 };
 

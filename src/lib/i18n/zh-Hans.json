@@ -443,7 +443,10 @@
     "actions": {
       "open-session": "打开会话",
       "retry": "重试",
-      "dismiss": "取消"
+      "dismiss": "取消",
+      "openSessionLabel": "打开会话操作",
+      "retryLabel": "重试操作",
+      "dismissLabel": "取消操作"
     }
   },
   "errorBoundary": {
