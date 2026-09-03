@@ -1,4 +1,4 @@
-import { memo, useCallback } from "react";
+import { memo, useCallback, useMemo } from "react";
 import {
   View,
   Text,
@@ -15,6 +15,12 @@ import { useTranslation } from "react-i18next";
 import { Markdown } from "../markdown";
 import { ToolCallCard } from "./ToolCallCard";
 import { ReasoningBlock } from "./ReasoningBlock";
+import { AgentPartCard } from "./AgentPartCard";
+import { StepBlock, pairStepParts } from "./StepBlock";
+import { CompactionBanner } from "./CompactionBanner";
+import { SnapshotPartCard } from "./SnapshotPartCard";
+import { PatchPartCard } from "./PatchPartCard";
+import { RetryBanner } from "./RetryBanner";
 import { useDensity } from "../../lib/density";
 import { useSettings } from "../../stores/settings";
 import { formatRelativeTime, formatAbsoluteTime } from "../../lib/time-format";
@@ -63,6 +69,17 @@ export const MessageBubble = memo(
     const fileParts = parts.filter(
       (p) => p.type === "file" && isImageMime(p.mime),
     );
+    const agentParts = parts.filter(
+      (p) => p.type === "agent" || p.type === "subtask",
+    );
+    const stepParts = parts.filter(
+      (p) => p.type === "step-start" || p.type === "step-finish",
+    );
+    const compactionParts = parts.filter((p) => p.type === "compaction");
+    const snapshotParts = parts.filter((p) => p.type === "snapshot");
+    const patchParts = parts.filter((p) => p.type === "patch");
+    const retryParts = parts.filter((p) => p.type === "retry");
+    const stepPairs = useMemo(() => pairStepParts(stepParts), [stepParts]);
     const text = textParts.map((p) => p.text).join("\n") || "";
     const reasoning = reasoningParts.map((p) => p.text).join("\n") || "";
 
@@ -247,6 +264,11 @@ export const MessageBubble = memo(
           <ReasoningBlock text={reasoning} isDark={isDark} />
         )}
 
+        {/* Steps (step-start/step-finish pairs) */}
+        {stepPairs.length > 0 && (
+          <StepBlock parts={stepPairs} isDark={isDark} />
+        )}
+
         {/* Message text */}
         {text.length > 0 &&
           (isUser ? (
@@ -266,9 +288,38 @@ export const MessageBubble = memo(
             </View>
           ))}
 
+        {/* Agent/subtask invocations (collapsible) */}
+        {agentParts.map((agent) => (
+          <AgentPartCard key={agent.id} tool={agent} isDark={isDark} />
+        ))}
+
         {/* Tool calls */}
         {toolParts.map((tool) => (
           <ToolCallCard key={tool.id} tool={tool} isDark={isDark} />
+        ))}
+
+        {/* Patch parts */}
+        {patchParts.map((patch) => (
+          <PatchPartCard key={patch.id} part={patch} isDark={isDark} />
+        ))}
+
+        {/* Snapshot parts */}
+        {snapshotParts.map((snapshot) => (
+          <SnapshotPartCard key={snapshot.id} part={snapshot} isDark={isDark} />
+        ))}
+
+        {/* Compaction banners */}
+        {compactionParts.map((compaction) => (
+          <CompactionBanner
+            key={compaction.id}
+            part={compaction}
+            isDark={isDark}
+          />
+        ))}
+
+        {/* Retry banners */}
+        {retryParts.map((retry) => (
+          <RetryBanner key={retry.id} part={retry} isDark={isDark} />
         ))}
 
         {/* Tokens/cost for assistant messages */}

@@ -394,11 +394,7 @@ function MetaItem({
 }) {
   return (
     <View style={s.metaItem}>
-      <Ionicons
-        name={icon as any}
-        size={12}
-        color={isDark ? "#555555" : "#999999"}
-      />
+      <Ionicons name={icon} size={12} color={isDark ? "#555555" : "#999999"} />
       <Text style={[s.metaLabel, isDark && s.dimDark]}>{label}</Text>
       <Text style={[s.metaValue, isDark && s.metaValueDark]}>{value}</Text>
     </View>

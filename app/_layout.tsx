@@ -15,7 +15,7 @@ import { useCatalog } from "../src/stores/catalog";
 import { useSettings } from "../src/stores/settings";
 import { useBudget } from "../src/stores/budget";
 import { useSessions } from "../src/stores/sessions";
-import { useTheme, PRESET_ACCENT_COLORS } from "../src/lib/theme";
+import { useTheme } from "../src/lib/theme";
 import { AuthGate } from "../src/components/AuthGate";
 import { ErrorBoundary } from "../src/components/ErrorBoundary";
 import { SplashScreen as BrandSplash } from "../src/components/SplashScreen";

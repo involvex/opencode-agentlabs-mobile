@@ -121,7 +121,7 @@ export function PromptLibrarySheet({
               size={20}
               color={isDark ? "#888888" : "#666666"}
             />
-          </TouchableOpacity>{" "}
+          </TouchableOpacity>
         </View>
 
         <View style={s.searchContainer}>

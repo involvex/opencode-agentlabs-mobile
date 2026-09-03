@@ -1,3 +1,5 @@
+"use no memo";
+
 import { useMemo, useCallback, useRef } from "react";
 import {
   View,
@@ -169,7 +171,7 @@ export function SlashPopover({
                   onPress={() => handleSelect(cmd)}
                 >
                   <Ionicons
-                    name={(cmd.icon ?? "code-slash-outline") as any}
+                    name={cmd.icon ?? "code-slash-outline"}
                     size={18}
                     color={
                       cmd.type === "custom"

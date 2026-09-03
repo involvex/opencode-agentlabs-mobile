@@ -73,6 +73,24 @@ Never repeat the same uid target more than 3 times.
 
 ---
 
+## 2026-09-03: Part type rendering fix (blank messages for unseen Part types)
+
+**Problem**: `MessageBubble.tsx` only rendered 4 of the 12 `Part` types (`text`, `reasoning`, `tool`, `file`), silently dropping `agent`, `subtask`, `step-start`, `step-finish`, `compaction`, `snapshot`, `patch`, and `retry` parts. Assistant messages containing only the dropped types appeared as blank bubbles.
+
+**Mistake 1 — `Part` is an interface, not a discriminated union**: First attempt used `Extract<Part, { type: "..." }>` for type-narrowing filters. Since `Part` is a single interface (not a union), `Extract` produced `never`, causing "Property 'id' does not exist on type 'never'" errors. Used plain `.filter((p) => p.type === "...")` instead, matching the existing `textParts`/`toolParts` pattern in the same file.
+
+**Correct pattern**: When the `Part` type is a single interface with a `type` string field (not a discriminated union), use simple boolean filters without type predicates. The existing code already used this pattern for `text`, `reasoning`, `tool`, and `file` parts.
+
+**Mistake 2 — Prop name mismatch on `AgentPartCard`**: Named the prop `part` but `AgentPartCard` expects `tool` (its API predates this work). Fixed by matching the existing component's signature: `tool={agent} isDark={isDark}`.
+
+**Mistake 3 — `useMemo` dependency array mismatch with React Compiler**: Adding `part.state` alongside `part.state?.input` in `PatchPartCard`'s `useMemo` dep array caused `react-hooks/exhaustive-deps` warnings (unnecessary dependency). React Compiler wants exactly what it infers (`part.state.input`), but ESLint wants `part.state` (since `part.state?.input` is a sub-property access). Final solution: use `[part.state]` alone — it's both sufficient (covers `input`/`output`) and satisfies the compiler.
+
+**Mistake 4 — `step-start`/`step-finish` pairing is a post-hoc assembly**: `StepBlock` exports a `pairStepParts()` helper that groups scattered `step-start`/`step-finish` parts into pairs. In `MessageBubble`, `pairStepParts` is called inside `useMemo` so `StepBlock` receives a stable reference and preserves its `expanded` state across re-renders.
+
+**Time cost**: ~30 min. The React Compiler `react-hooks/preserve-manual-memoization` errors were the main slowdown — they fire as errors (not warnings) and require both ESLint and TypeScript to agree on the dep array.
+
+---
+
 ## Template for future entries
 
 ```

@@ -557,6 +557,39 @@
       "patternOnly": "Pattern: {{pattern}}",
       "patternWithPath": "Pattern: {{pattern}} in {{path}}"
     },
+    "agentPartCard": {
+      "agent": "Agent",
+      "subtask": "Subtask",
+      "inputLabel": "Input",
+      "outputLabel": "Output",
+      "noDetails": "No details available"
+    },
+    "stepBlock": {
+      "title": "Steps",
+      "summary": "{{count}} steps",
+      "untitledStep": "Untitled step"
+    },
+    "patchPartCard": {
+      "defaultTitle": "File Patch",
+      "noDetails": "No patch details available"
+    },
+    "snapshotPartCard": {
+      "untitled": "snapshot.txt",
+      "inputLabel": "Input",
+      "outputLabel": "Output",
+      "preview": "Preview",
+      "fileRef": "File reference"
+    },
+    "compactionBanner": {
+      "default": "Conversation compacted",
+      "label": "Compacted",
+      "inputLabel": "Prompt sent",
+      "outputLabel": "Response"
+    },
+    "retryBanner": {
+      "label": "Retry",
+      "attempt": "Attempt {{n}}"
+    },
     "sessionInfo": {
       "noUsageData": "No usage data yet",
       "loading": "Loading...",

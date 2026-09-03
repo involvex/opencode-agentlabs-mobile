@@ -1,3 +1,5 @@
+"use no memo";
+
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   ActivityIndicator,
@@ -34,10 +36,17 @@ interface Props {
 type WsState = "connecting" | "connected" | "disconnected" | "error";
 type TerminalMode = "server" | "local";
 
+const generateId = () => Math.random().toString(36).substr(2, 9);
+
 const lineStyles = StyleSheet.create({
   line: { color: "#1a1a1a", lineHeight: 20 },
   lineDark: { color: "#e5e5e5" },
 });
+
+interface TerminalLine {
+  id: string;
+  text: string;
+}
 
 function AnsiLine({
   text,
@@ -48,16 +57,27 @@ function AnsiLine({
   isDark: boolean;
   fontSize: number;
 }) {
-  const segments = useMemo(() => ansiToSegments(text, isDark), [text, isDark]);
+  const segments = useMemo(() => {
+    const segs = ansiToSegments(text, isDark);
+    if (segs.length === 0) {
+      console.log("AnsiLine: empty segments for text:", JSON.stringify(text));
+    }
+    return segs;
+  }, [text, isDark]);
+
+  const renderedSegments = segments
+    .filter((seg) => seg.text.length > 0)
+    .map((seg, i) => (
+      <Text key={`seg-${i}-${JSON.stringify(seg.style)}`} style={seg.style}>
+        {seg.text}
+      </Text>
+    ));
+
   return (
     <Text
       style={[lineStyles.line, isDark && lineStyles.lineDark, { fontSize }]}
     >
-      {segments.map((seg) => (
-        <Text key={seg.text} style={seg.style}>
-          {seg.text}
-        </Text>
-      ))}
+      {renderedSegments.length > 0 ? renderedSegments : " "}
     </Text>
   );
 }
@@ -81,7 +101,7 @@ function TerminalSocket({
   onWsError,
   authorization,
 }: TerminalSocketProps) {
-  const [output, setOutput] = useState<string[]>([]);
+  const [output, setOutput] = useState<TerminalLine[]>([]);
   const [input, setInput] = useState("");
   const [wsState, setWsState] = useState<WsState>("connecting");
   const wsRef = useRef<PtyWebSocket | null>(null);
@@ -100,18 +120,24 @@ function TerminalSocket({
           const lines = normalizeTerminalChunk(chunk);
           if (lines.length === 1) {
             if (next.length > 0) {
-              next[next.length - 1] += lines[0];
+              next[next.length - 1] = {
+                ...next[next.length - 1],
+                text: next[next.length - 1].text + lines[0],
+              };
             } else {
-              next.push(lines[0]);
+              next.push({ id: generateId(), text: lines[0] });
             }
           } else {
             if (next.length > 0) {
-              next[next.length - 1] += lines[0];
+              next[next.length - 1] = {
+                ...next[next.length - 1],
+                text: next[next.length - 1].text + lines[0],
+              };
             } else {
-              next.push(lines[0]);
+              next.push({ id: generateId(), text: lines[0] });
             }
             for (let i = 1; i < lines.length; i++) {
-              next.push(lines[i]);
+              next.push({ id: generateId(), text: lines[i] });
             }
           }
           const MAX_LINES = 2000;
@@ -188,10 +214,10 @@ function TerminalSocket({
         style={[styles.output, isDark && styles.outputDark]}
         contentContainerStyle={styles.outputContent}
       >
-        {output.map((line, idx) => (
+        {output.map((line) => (
           <AnsiLine
-            key={line.length === 0 ? `empty-${idx}` : line}
-            text={line}
+            key={line.id}
+            text={line.text}
             isDark={isDark}
             fontSize={terminalFontSize}
           />
@@ -271,8 +297,11 @@ function LocalTerminalView({
   onClose: () => void;
   onSwitchToServer?: () => void;
 }) {
-  const [output, setOutput] = useState<string[]>([
-    "Local terminal ready. Type commands to execute on device.",
+  const [output, setOutput] = useState<TerminalLine[]>([
+    {
+      id: "initial",
+      text: "Local terminal ready. Type commands to execute on device.",
+    },
   ]);
   const [input, setInput] = useState("");
   const [executing, setExecuting] = useState(false);
@@ -284,7 +313,7 @@ function LocalTerminalView({
     if (!trimmed || executing) return;
 
     setExecuting(true);
-    setOutput((prev) => [...prev, `$ ${trimmed}`]);
+    setOutput((prev) => [...prev, { id: generateId(), text: `$ ${trimmed}` }]);
     setInput("");
 
     try {
@@ -293,7 +322,10 @@ function LocalTerminalView({
       if (lines) {
         const normalized = lines.split("\n").map((l) => l.replace(/\r$/, ""));
         setOutput((prev) => {
-          const next = [...prev, ...normalized];
+          const next = [
+            ...prev,
+            ...normalized.map((text) => ({ id: generateId(), text })),
+          ];
           const MAX_LINES = 2000;
           if (next.length > MAX_LINES) {
             return next.slice(next.length - MAX_LINES);
@@ -302,12 +334,18 @@ function LocalTerminalView({
         });
       }
       if (result.exitCode !== 0) {
-        setOutput((prev) => [...prev, `[Exit code: ${result.exitCode}]`]);
+        setOutput((prev) => [
+          ...prev,
+          { id: generateId(), text: `[Exit code: ${result.exitCode}]` },
+        ]);
       }
     } catch (error) {
       setOutput((prev) => [
         ...prev,
-        `Error: ${error instanceof Error ? error.message : String(error)}`,
+        {
+          id: generateId(),
+          text: `Error: ${error instanceof Error ? error.message : String(error)}`,
+        },
       ]);
     } finally {
       setExecuting(false);
@@ -349,10 +387,10 @@ function LocalTerminalView({
         style={[styles.output, isDark && styles.outputDark]}
         contentContainerStyle={styles.outputContent}
       >
-        {output.map((line, idx) => (
+        {output.map((line) => (
           <AnsiLine
-            key={line.length === 0 ? `empty-${idx}` : line}
-            text={line}
+            key={line.id}
+            text={line.text}
             isDark={isDark}
             fontSize={terminalFontSize}
           />

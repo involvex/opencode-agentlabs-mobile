@@ -1,3 +1,5 @@
+"use no memo";
+
 import { useMemo } from "react";
 import { View, Text, StyleSheet } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
@@ -12,10 +14,85 @@ import type {
 } from "../../lib/slash-commands";
 import { COMMAND_CATEGORIES, DEFAULT_BUILTINS } from "../../lib/slash-commands";
 
+const s = StyleSheet.create({
+  container: {
+    flex: 1,
+    paddingHorizontal: 16,
+    paddingTop: 8,
+    backgroundColor: "#ffffff",
+  },
+  containerDark: { backgroundColor: "#1a1a1a" },
+  title: {
+    fontSize: 20,
+    fontWeight: "700",
+    color: "#0a0a0a",
+    marginBottom: 4,
+  },
+  titleDark: { color: "#ffffff" },
+  subtitle: {
+    fontSize: 14,
+    color: "#666666",
+    marginBottom: 16,
+  },
+  subtitleDark: { color: "#888888" },
+  group: { marginBottom: 12 },
+  groupHeader: {
+    fontSize: 12,
+    fontWeight: "700",
+    color: "#999999",
+    textTransform: "uppercase",
+    letterSpacing: 0.5,
+    marginBottom: 6,
+  },
+  groupHeaderDark: { color: "#666666" },
+  item: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 10,
+    paddingVertical: 8,
+  },
+  itemDark: {},
+  textCol: { flex: 1 },
+  trigger: { fontSize: 14, fontWeight: "600", color: "#0a0a0a" },
+  textWhite: { color: "#ffffff" },
+  desc: { fontSize: 12, color: "#999999", marginTop: 1 },
+  metaDark: { color: "#666666" },
+  sheet: { backgroundColor: "#ffffff" },
+  sheetDark: { backgroundColor: "#1a1a1a" },
+});
+
 interface Props {
   isDark: boolean;
   sheetRef: React.RefObject<BottomSheet | null>;
   customCommands: SlashCommand[];
+}
+
+function SlashCommandItem({
+  cmd,
+  isDark,
+}: {
+  cmd: SlashCommand;
+  isDark: boolean;
+}) {
+  return (
+    <View style={[s.item, isDark && s.itemDark]}>
+      <Text>
+        <Ionicons
+          name={cmd.icon ?? "code-slash-outline"}
+          size={18}
+          color={isDark ? "#888888" : "#666666"}
+        />
+      </Text>
+      <View style={s.textCol}>
+        <Text style={[s.trigger, isDark && s.textWhite]}>/{cmd.trigger}</Text>
+        {cmd.description && (
+          <Text style={[s.desc, isDark && s.metaDark]} numberOfLines={1}>
+            {cmd.description}
+          </Text>
+        )}
+      </View>
+    </View>
+  );
 }
 
 export function SlashHelpSheet({ isDark, sheetRef, customCommands }: Props) {
@@ -84,26 +161,11 @@ export function SlashHelpSheet({ isDark, sheetRef, customCommands }: Props) {
               {COMMAND_CATEGORIES[cat] ?? cat}
             </Text>
             {cmds.map((cmd) => (
-              <View key={cmd.trigger} style={[s.item, isDark && s.itemDark]}>
-                <Ionicons
-                  name={(cmd.icon ?? "code-slash-outline") as any}
-                  size={18}
-                  color={isDark ? "#888888" : "#666666"}
-                />
-                <View style={s.textCol}>
-                  <Text style={[s.trigger, isDark && s.textWhite]}>
-                    /{cmd.trigger}
-                  </Text>
-                  {cmd.description && (
-                    <Text
-                      style={[s.desc, isDark && s.metaDark]}
-                      numberOfLines={1}
-                    >
-                      {cmd.description}
-                    </Text>
-                  )}
-                </View>
-              </View>
+              <SlashCommandItem
+                key={cmd.trigger + cmd.description}
+                cmd={cmd}
+                isDark={isDark}
+              />
             ))}
           </View>
         ))}
@@ -111,50 +173,3 @@ export function SlashHelpSheet({ isDark, sheetRef, customCommands }: Props) {
     </BottomSheet>
   );
 }
-
-const s = StyleSheet.create({
-  container: {
-    flex: 1,
-    paddingHorizontal: 16,
-    paddingTop: 8,
-    backgroundColor: "#ffffff",
-  },
-  containerDark: { backgroundColor: "#1a1a1a" },
-  title: {
-    fontSize: 20,
-    fontWeight: "700",
-    color: "#0a0a0a",
-    marginBottom: 4,
-  },
-  titleDark: { color: "#ffffff" },
-  subtitle: {
-    fontSize: 14,
-    color: "#666666",
-    marginBottom: 16,
-  },
-  subtitleDark: { color: "#888888" },
-  group: { marginBottom: 12 },
-  groupHeader: {
-    fontSize: 12,
-    fontWeight: "700",
-    color: "#999999",
-    textTransform: "uppercase",
-    letterSpacing: 0.5,
-    marginBottom: 6,
-  },
-  groupHeaderDark: { color: "#666666" },
-  item: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 10,
-    paddingVertical: 8,
-  },
-  itemDark: {},
-  textCol: { flex: 1 },
-  trigger: { fontSize: 14, fontWeight: "600", color: "#0a0a0a" },
-  textWhite: { color: "#ffffff" },
-  desc: { fontSize: 12, color: "#999999", marginTop: 1 },
-  metaDark: { color: "#666666" },
-  sheet: { backgroundColor: "#ffffff" },
-  sheetDark: { backgroundColor: "#1a1a1a" },
-});
