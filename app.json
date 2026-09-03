@@ -7,14 +7,6 @@
     "scheme": "opencode",
     "userInterfaceStyle": "automatic",
     "icon": "./assets/icon.png",
-    "splash": {
-      "image": "./assets/splash-icon.png",
-      "resizeMode": "contain",
-      "backgroundColor": "#0F172A",
-      "dark": {
-        "backgroundColor": "#0F172A"
-      }
-    },
     "android": {
       "package": "com.involvex.opencodemobile",
       "versionCode": 40,
@@ -57,7 +49,17 @@
       "expo-localization",
       "expo-font",
       "expo-status-bar",
-      "expo-splash-screen"
+      [
+        "expo-splash-screen",
+        {
+          "image": "./assets/splash-icon.png",
+          "resizeMode": "contain",
+          "backgroundColor": "#0F172A",
+          "dark": {
+            "backgroundColor": "#0F172A"
+          }
+        }
+      ]
     ],
     "experiments": {
       "typedRoutes": true,

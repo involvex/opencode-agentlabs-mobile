@@ -35,6 +35,7 @@ import {
 } from "../../src/lib/telemetry";
 import { PRIVACY_POLICY_URL } from "../../src/lib/links";
 import type { LocalePreference } from "../../src/lib/i18n/locale-resolve";
+import * as pkg from "../../package.json";
 
 function SettingRow({
   icon,
@@ -530,7 +531,7 @@ export default function SettingsScreen() {
         />
 
         <SettingRow
-          icon="palette-outline"
+          icon="folder-outline"
           label={t("settings.appearance.accentColor.label")}
           description={t("settings.appearance.accentColor.description")}
           isDark={isDark}
@@ -677,8 +678,38 @@ export default function SettingsScreen() {
         <SettingRow
           icon="information-circle"
           label={t("settings.about.version")}
-          description="1.0.0"
+          description={pkg.version}
           isDark={isDark}
+        />
+        <SettingRow
+          icon="document-text"
+          label="Author"
+          description="involvex"
+          isDark={isDark}
+          onPress={() => Linking.openURL("https://github.com/involvex")}
+          right={
+            <Ionicons
+              name="open-outline"
+              size={20}
+              color={isDark ? "#666666" : "#999999"}
+            />
+          }
+        />
+        <SettingRow
+          icon="heart-outline"
+          label="Funding"
+          description="Support the project"
+          isDark={isDark}
+          onPress={() =>
+            Linking.openURL("https://github.com/sponsors/involvex")
+          }
+          right={
+            <Ionicons
+              name="open-outline"
+              size={20}
+              color={isDark ? "#666666" : "#999999"}
+            />
+          }
         />
         <SettingRow
           icon="logo-github"
@@ -686,7 +717,9 @@ export default function SettingsScreen() {
           description={t("settings.about.github.description")}
           isDark={isDark}
           onPress={() =>
-            Linking.openURL("https://github.com/anomalyco/opencode")
+            Linking.openURL(
+              "https://github.com/involvex/opencode-agentlabs-mobile",
+            )
           }
           right={
             <Ionicons

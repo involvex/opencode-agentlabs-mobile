@@ -50,7 +50,7 @@
       "version": "Version",
       "github": {
         "label": "GitHub",
-        "description": "View source code"
+        "description": "Fork off dzianisv/opencode-mobile"
       },
       "docs": {
         "label": "Documentation",

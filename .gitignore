@@ -31,3 +31,4 @@ negative-S*.png
 config.json
 -w
 tsconfig.tsbuildinfo
+.cline
