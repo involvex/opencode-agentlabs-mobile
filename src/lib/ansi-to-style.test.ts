@@ -1,6 +1,6 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { ansiToSegments } from "./ansi-to-style.ts";
+import { ansiToSegments, stripAnsi } from "./ansi-to-style.ts";
 
 test("empty input returns single default segment", () => {
   const segs = ansiToSegments("", false);
@@ -211,4 +211,24 @@ test("incomplete CSI mid-line with text after is stripped", () => {
   const segs = ansiToSegments("a\x1b[38;5;14\xffb", false);
   assert.equal(segs.length, 1);
   assert.equal(segs[0].text, "aÿb");
+});
+
+test("stripAnsi: removes SGR sequences", () => {
+  assert.equal(stripAnsi("\x1b[31mred\x1b[0m"), "red");
+});
+
+test("stripAnsi: removes 256-color sequences", () => {
+  assert.equal(stripAnsi("\x1b[38;5;14mcolored\x1b[0m"), "colored");
+});
+
+test("stripAnsi: removes stray fragments without ESC", () => {
+  assert.equal(stripAnsi("hello[38;5;14m world"), "hello world");
+  assert.equal(stripAnsi("hello[m world"), "hello world");
+  assert.equal(stripAnsi("hello[38;5;14 world"), "hello world");
+});
+
+test("stripAnsi: handles bash tool output with mixed ANSI", () => {
+  const input =
+    "\x1b[1m$ ls\x1b[0m\n\x1b[32mfile1.txt\x1b[0m\n\x1b[34mdir/\x1b[0m";
+  assert.equal(stripAnsi(input), "$ ls\nfile1.txt\ndir/");
 });
