@@ -20,6 +20,7 @@ import { useEvents } from "../../src/stores/events";
 import { useCatalog } from "../../src/stores/catalog";
 import { useTemplates } from "../../src/stores/templates";
 import { useTheme, useAccentColor } from "../../src/lib/theme";
+import { useDensity } from "../../src/lib/density";
 import type BottomSheet from "@gorhom/bottom-sheet";
 import type { Session, Project } from "../../src/lib/sdk";
 import {
@@ -88,6 +89,7 @@ function SessionItem({
   onAddTag?: () => void;
 }) {
   const { t } = useTranslation();
+  const density = useDensity();
 
   const onPress = () => {
     router.push({
@@ -129,22 +131,36 @@ function SessionItem({
 
   return (
     <TouchableOpacity
-      style={[styles.sessionItem, isDark && styles.sessionItemDark]}
+      style={[
+        styles.sessionItem,
+        isDark && styles.sessionItemDark,
+        { padding: 12 * density.padding },
+      ]}
       onPress={onPress}
       onLongPress={onLongPress}
       testID={`session-item-${session.id}`}
     >
-      <View style={styles.sessionContent}>
+      <View style={[styles.sessionContent, { gap: 8 * density.gap }]}>
         <View style={styles.sessionHeader}>
           <Text
-            style={[styles.sessionTitle, isDark && styles.textDark]}
+            style={[
+              styles.sessionTitle,
+              isDark && styles.textDark,
+              { fontSize: 16 * density.font },
+            ]}
             numberOfLines={1}
           >
             {session.title || t("sessionsList.untitledSession")}
           </Text>
         </View>
-        <View style={styles.sessionMetaRow}>
-          <Text style={[styles.sessionMeta, isDark && styles.metaDark]}>
+        <View style={[styles.sessionMetaRow, { gap: 4 * density.gap }]}>
+          <Text
+            style={[
+              styles.sessionMeta,
+              isDark && styles.metaDark,
+              { fontSize: 12 * density.font },
+            ]}
+          >
             {formatTime(session.time.updated, t)}
             {/* summary is always present but files defaults to 0 until the
                 server populates it — only show the count when it's meaningful,
