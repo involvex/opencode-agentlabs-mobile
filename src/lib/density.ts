@@ -15,3 +15,4 @@ export function useDensity() {
 }
 
 export type { Density };
+export { scaled, ds } from "./density-helpers";

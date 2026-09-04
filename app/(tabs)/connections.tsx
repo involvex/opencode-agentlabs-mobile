@@ -15,6 +15,7 @@ import { useConnections } from "../../src/stores/connections";
 import { useSettings } from "../../src/stores/settings";
 import { useTheme, useAccentColor } from "../../src/lib/theme";
 import type { ServerConnection } from "../../src/lib/types";
+import { useDensity } from "../../src/lib/density";
 
 const PAGE_SIZE_OPTIONS = [10, 25, 50, 100, 200] as const;
 
@@ -36,6 +37,7 @@ function ConnectionItem({
   onDelete: () => void;
 }) {
   const { t } = useTranslation();
+  const density = useDensity();
   const typeIcon =
     connection.type === "local"
       ? "wifi"
@@ -55,6 +57,7 @@ function ConnectionItem({
     <TouchableOpacity
       style={[
         styles.connectionItem,
+        { padding: 16 * density.padding },
         isDark && styles.connectionItemDark,
         isActive && styles.connectionItemActive,
         isActive && isDark && styles.connectionItemActiveDark,
@@ -62,7 +65,16 @@ function ConnectionItem({
       onPress={onSelect}
       onLongPress={handleLongPress}
     >
-      <View style={styles.connectionIcon}>
+      <View
+        style={[
+          styles.connectionIcon,
+          {
+            width: 44 * density.padding,
+            height: 44 * density.padding,
+            borderRadius: 22 * density.padding,
+          },
+        ]}
+      >
         <Ionicons
           name={typeIcon}
           size={24}
@@ -74,6 +86,7 @@ function ConnectionItem({
           <Text
             style={[
               styles.connectionName,
+              { fontSize: 16 * density.font },
               isDark && styles.textDark,
               isActive && styles.connectionNameActive,
               isActive && isDark && styles.connectionNameActiveDark,
@@ -99,6 +112,7 @@ function ConnectionItem({
         <Text
           style={[
             styles.connectionUrl,
+            { fontSize: 13 * density.font },
             isDark && styles.metaDark,
             isActive && styles.connectionUrlActive,
           ]}
@@ -145,6 +159,7 @@ export default function ConnectionsScreen() {
     removeConnection,
   } = useConnections();
   const { pageSize, setPageSize } = useSettings();
+  const density = useDensity();
 
   const handleDelete = (connection: ServerConnection) => {
     Alert.alert(

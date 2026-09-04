@@ -19,12 +19,14 @@ import { probeConnection, shareReport } from "../../src/lib/diagnostics";
 import { parseUrl } from "../../src/lib/diagnostics-classify";
 import { buildAuth } from "../../src/lib/auth";
 import { AnalyticsEvent, track } from "../../src/lib/analytics";
+import { useDensity } from "../../src/lib/density";
 
 export default function AddConnectionScreen() {
   const isDark = useTheme();
   const { t } = useTranslation();
 
   const { addConnection, testConnection } = useConnections();
+  const density = useDensity();
 
   const [mode, setMode] = useState<"quick" | "advanced">("quick");
   const [type, setType] = useState<ConnectionType>("local");
@@ -223,16 +225,33 @@ export default function AddConnectionScreen() {
         contentContainerStyle={styles.content}
         keyboardShouldPersistTaps="handled"
       >
-        <View style={styles.quickHeader}>
+        <View
+          style={[
+            styles.quickHeader,
+            { paddingVertical: 24 * density.padding },
+          ]}
+        >
           <Ionicons
             name="wifi"
             size={48}
             color={isDark ? "#ffffff" : "#0a0a0a"}
           />
-          <Text style={[styles.quickTitle, isDark && styles.textDark]}>
+          <Text
+            style={[
+              styles.quickTitle,
+              { fontSize: 24 * density.font },
+              isDark && styles.textDark,
+            ]}
+          >
             {t("connection.add.quick.title")}
           </Text>
-          <Text style={[styles.quickSubtitle, isDark && styles.hintDark]}>
+          <Text
+            style={[
+              styles.quickSubtitle,
+              { fontSize: 15 * density.font },
+              isDark && styles.hintDark,
+            ]}
+          >
             {t("connection.add.quick.subtitle")}
           </Text>
         </View>
@@ -328,7 +347,15 @@ export default function AddConnectionScreen() {
 
         {/* Connect button */}
         <TouchableOpacity
-          style={[styles.connectButton, isDark && styles.connectButtonDark]}
+          style={[
+            styles.connectButton,
+            {
+              padding: 16 * density.padding,
+              gap: 8 * density.gap,
+              marginTop: 24 * density.padding,
+            },
+            isDark && styles.connectButtonDark,
+          ]}
           onPress={handleQuickConnect}
           disabled={isConnecting}
           testID="connect-submit-button"
@@ -348,6 +375,7 @@ export default function AddConnectionScreen() {
               <Text
                 style={[
                   styles.connectButtonText,
+                  { fontSize: 18 * density.font },
                   isDark && styles.connectButtonTextDark,
                 ]}
               >
@@ -428,7 +456,10 @@ export default function AddConnectionScreen() {
   return (
     <ScrollView
       style={[styles.container, isDark && styles.containerDark]}
-      contentContainerStyle={styles.content}
+      contentContainerStyle={[
+        styles.content,
+        { padding: 16 * density.padding },
+      ]}
       keyboardShouldPersistTaps="handled"
     >
       <TouchableOpacity

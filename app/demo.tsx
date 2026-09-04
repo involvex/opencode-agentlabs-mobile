@@ -11,6 +11,7 @@ import { Stack, useRouter } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
 import { useTranslation } from "react-i18next";
 import { useTheme } from "../src/lib/theme";
+import { useDensity } from "../src/lib/density";
 import { MessageBubble, PermissionPrompt } from "../src/components/chat";
 import {
   buildDemoScript,
@@ -37,6 +38,7 @@ export default function DemoScreen() {
   const router = useRouter();
   const isDark = useTheme();
   const { t } = useTranslation();
+  const density = useDensity();
 
   // Built once per mount from pure, hardcoded data (src/lib/demo-script.ts).
   const script = useMemo(() => buildDemoScript(), []);
@@ -81,13 +83,28 @@ export default function DemoScreen() {
         style={[s.container, isDark && s.containerDark]}
         testID="demo-screen"
       >
-        <View style={[s.banner, isDark && s.bannerDark]} testID="demo-banner">
+        <View
+          style={[
+            s.banner,
+            {
+              paddingHorizontal: 16 * density.padding,
+              paddingVertical: 10 * density.padding,
+            },
+            isDark && s.bannerDark,
+          ]}
+          testID="demo-banner"
+        >
           <Ionicons name="play-circle-outline" size={16} color="#8b5cf6" />
-          <Text style={s.bannerText}>{t("demo.banner")}</Text>
+          <Text style={[s.bannerText, { fontSize: 13 * density.font }]}>
+            {t("demo.banner")}
+          </Text>
         </View>
 
         <ScrollView
-          contentContainerStyle={s.scrollContent}
+          contentContainerStyle={[
+            s.scrollContent,
+            { padding: 16 * density.padding },
+          ]}
           keyboardShouldPersistTaps="handled"
         >
           <MessageBubble
@@ -118,21 +135,48 @@ export default function DemoScreen() {
           )}
 
           <View
-            style={[s.ctaCard, isDark && s.ctaCardDark]}
+            style={[
+              s.ctaCard,
+              { padding: 20 * density.padding },
+              isDark && s.ctaCardDark,
+            ]}
             testID="demo-cta-card"
           >
-            <Text style={[s.ctaTitle, isDark && s.textWhite]}>
+            <Text
+              style={[
+                s.ctaTitle,
+                { fontSize: 17 * density.font },
+                isDark && s.textWhite,
+              ]}
+            >
               {t("demo.ctaTitle")}
             </Text>
-            <Text style={[s.ctaSubtitle, isDark && s.metaDark]}>
+            <Text
+              style={[
+                s.ctaSubtitle,
+                { fontSize: 13 * density.font, marginTop: 6 * density.padding },
+                isDark && s.metaDark,
+              ]}
+            >
               {t("demo.ctaSubtitle")}
             </Text>
             <TouchableOpacity
-              style={s.connectButton}
+              style={[
+                s.connectButton,
+                {
+                  marginTop: 16 * density.padding,
+                  paddingHorizontal: 24 * density.padding,
+                  paddingVertical: 12 * density.padding,
+                },
+              ]}
               onPress={handleConnectPress}
               testID="demo-connect-button"
             >
-              <Text style={s.connectButtonText}>{t("demo.connectButton")}</Text>
+              <Text
+                style={[s.connectButtonText, { fontSize: 15 * density.font }]}
+              >
+                {t("demo.connectButton")}
+              </Text>
             </TouchableOpacity>
             <TouchableOpacity
               style={s.hostedCtaLink}

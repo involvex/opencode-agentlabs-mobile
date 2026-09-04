@@ -9,21 +9,40 @@ import { Ionicons } from "@expo/vector-icons";
 import { useEvents } from "../../src/stores/events";
 import { useTheme } from "../../src/lib/theme";
 import type { SSEEvent } from "../../src/stores/events";
+import { useDensity } from "../../src/lib/density";
 
 export default function SSEInspectorScreen() {
   const isDark = useTheme();
   const eventLog = useEvents((s) => s.eventLog);
   const clearEventLog = useEvents((s) => s.clearEventLog);
   const connected = useEvents((s) => s.connected);
+  const density = useDensity();
 
   const handleClear = () => {
     clearEventLog();
   };
 
   const renderEvent = ({ item }: { item: SSEEvent }) => (
-    <View style={[styles.eventItem, isDark && styles.eventItemDark]}>
-      <Text style={styles.eventType}>{item.type}</Text>
-      <Text style={[styles.eventTime, isDark && styles.eventTimeDark]}>
+    <View
+      style={[
+        styles.eventItem,
+        {
+          paddingHorizontal: 16 * density.padding,
+          paddingVertical: 10 * density.padding,
+        },
+        isDark && styles.eventItemDark,
+      ]}
+    >
+      <Text style={[styles.eventType, { fontSize: 15 * density.font }]}>
+        {item.type}
+      </Text>
+      <Text
+        style={[
+          styles.eventTime,
+          { fontSize: 12 * density.font },
+          isDark && styles.eventTimeDark,
+        ]}
+      >
         {new Date(item.timestamp).toLocaleTimeString()}
       </Text>
       {item.properties && Object.keys(item.properties).length > 0 && (
@@ -35,15 +54,28 @@ export default function SSEInspectorScreen() {
   );
 
   return (
-    <View style={[styles.container, isDark && styles.containerDark]}>
+    <View
+      style={[
+        styles.container,
+        { padding: 16 * density.padding },
+        isDark && styles.containerDark,
+      ]}
+    >
       <View style={styles.header}>
-        <Text style={[styles.title, isDark && styles.titleDark]}>
+        <Text
+          style={[
+            styles.title,
+            { fontSize: 18 * density.font },
+            isDark && styles.titleDark,
+          ]}
+        >
           SSE Event Inspector
         </Text>
-        <View style={styles.headerActions}>
+        <View style={[styles.headerActions, { gap: 12 * density.gap }]}>
           <Text
             style={[
               styles.connectionStatus,
+              { fontSize: 13 * density.font },
               isDark && styles.connectionStatusDark,
             ]}
           >

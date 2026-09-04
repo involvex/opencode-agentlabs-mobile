@@ -9,6 +9,7 @@ import {
 import { Ionicons } from "@expo/vector-icons";
 import { useTranslation } from "react-i18next";
 import { useAuth } from "../stores/auth";
+import { useDensity } from "../lib/density";
 
 interface Props {
   children: ReactNode;
@@ -18,6 +19,7 @@ export function AuthGate({ children }: Props) {
   const colorScheme = useColorScheme();
   const isDark = colorScheme === "dark";
   const { t } = useTranslation();
+  const density = useDensity();
 
   const {
     isAuthenticated,
@@ -58,23 +60,45 @@ export function AuthGate({ children }: Props) {
 
   return (
     <View style={[styles.container, isDark && styles.containerDark]}>
-      <View style={styles.content}>
+      <View style={[styles.content, { padding: 32 * density.padding }]}>
         <Ionicons
           name={iconName}
           size={64}
           color={isDark ? "#ffffff" : "#0a0a0a"}
         />
-        <Text style={[styles.title, isDark && styles.textDark]}>
+        <Text
+          style={[
+            styles.title,
+            { fontSize: 24 * density.font, marginTop: 24 * density.padding },
+            isDark && styles.textDark,
+          ]}
+        >
           {t("authGate.title")}
         </Text>
-        <Text style={[styles.subtitle, isDark && styles.subtitleDark]}>
+        <Text
+          style={[
+            styles.subtitle,
+            { fontSize: 16 * density.font, marginTop: 8 * density.padding },
+            isDark && styles.subtitleDark,
+          ]}
+        >
           {t("authGate.subtitle")}
         </Text>
 
         {error && <Text style={styles.error}>{error}</Text>}
 
         <TouchableOpacity
-          style={[styles.button, isDark && styles.buttonDark]}
+          style={[
+            styles.button,
+            {
+              paddingHorizontal: 32 * density.padding,
+              paddingVertical: 16 * density.padding,
+              borderRadius: 12 * density.padding,
+              marginTop: 32 * density.padding,
+              gap: 12 * density.gap,
+            },
+            isDark && styles.buttonDark,
+          ]}
           onPress={authenticate}
         >
           <Ionicons
@@ -82,7 +106,13 @@ export function AuthGate({ children }: Props) {
             size={24}
             color={isDark ? "#0a0a0a" : "#ffffff"}
           />
-          <Text style={[styles.buttonText, isDark && styles.buttonTextDark]}>
+          <Text
+            style={[
+              styles.buttonText,
+              { fontSize: 18 * density.font },
+              isDark && styles.buttonTextDark,
+            ]}
+          >
             {t("authGate.unlockButton")}
           </Text>
         </TouchableOpacity>

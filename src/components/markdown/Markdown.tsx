@@ -11,6 +11,7 @@ import {
 import { useMarkdown, Renderer } from "react-native-marked";
 import { CodeBlock } from "./CodeBlock";
 import { log } from "../../lib/logbuffer";
+import { useDensity } from "../../lib/density";
 
 // react-native-marked's base Renderer hardcodes `selectable` on every plain
 // text node it produces (text/strong/em/del/heading/codespan). On Android,
@@ -179,10 +180,40 @@ function MarkdownContent({
   theme,
   isDark,
 }: MarkdownContentProps) {
+  const density = useDensity();
   const safe = typeof children === "string" ? children : "";
+  const dTheme = useMemo(
+    () => ({
+      ...theme,
+      text: {
+        ...theme.text,
+        fontSize: 15 * density.font,
+        lineHeight: 22 * density.font,
+      },
+      h1: { ...theme.h1, fontSize: 22 * density.font },
+      h2: { ...theme.h2, fontSize: 19 * density.font },
+      h3: { ...theme.h3, fontSize: 16 * density.font },
+      blockquote: { ...theme.blockquote, paddingLeft: 12 * density.padding },
+      code: {
+        ...theme.code,
+        fontSize: 13 * density.font,
+        paddingHorizontal: 5 * density.padding,
+        paddingVertical: 2 * density.padding,
+      },
+      codespan: {
+        ...theme.codespan,
+        fontSize: 13 * density.font,
+        paddingHorizontal: 4 * density.padding,
+        paddingVertical: 1 * density.padding,
+      },
+      hr: { ...theme.hr, marginVertical: 12 * density.padding },
+    }),
+    [theme, density],
+  );
+
   const elements = useMarkdown(safe, {
     renderer,
-    styles: theme,
+    styles: dTheme,
     colorScheme: isDark ? "dark" : "light",
   });
 

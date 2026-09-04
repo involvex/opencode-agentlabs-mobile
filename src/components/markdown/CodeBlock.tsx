@@ -10,6 +10,7 @@ import {
 } from "react-native";
 import * as Clipboard from "expo-clipboard";
 import { WIDE_CONTENT_SCROLL_CONFIG } from "../../lib/scroll-config";
+import { useDensity } from "../../lib/density";
 
 interface Props {
   code: string;
@@ -19,6 +20,7 @@ interface Props {
 export function CodeBlock({ code, language }: Props) {
   const isDark = useColorScheme() === "dark";
   const [copied, setCopied] = useState(false);
+  const density = useDensity();
 
   const copy = async () => {
     try {
@@ -29,13 +31,34 @@ export function CodeBlock({ code, language }: Props) {
   };
 
   return (
-    <View style={[styles.container, isDark && styles.containerDark]}>
-      <View style={[styles.header, isDark && styles.headerDark]}>
+    <View
+      style={[
+        styles.container,
+        { marginVertical: 8 * density.padding },
+        isDark && styles.containerDark,
+      ]}
+    >
+      <View
+        style={[
+          styles.header,
+          {
+            paddingHorizontal: 12 * density.padding,
+            paddingVertical: 6 * density.padding,
+          },
+          isDark && styles.headerDark,
+        ]}
+      >
         <Text style={[styles.language, isDark && styles.languageDark]}>
           {language || "code"}
         </Text>
         <TouchableOpacity onPress={copy} hitSlop={8}>
-          <Text style={[styles.copyBtn, isDark && styles.copyBtnDark]}>
+          <Text
+            style={[
+              styles.copyBtn,
+              { fontSize: 11 * density.font },
+              isDark && styles.copyBtnDark,
+            ]}
+          >
             {copied ? "Copied!" : "Copy"}
           </Text>
         </TouchableOpacity>
@@ -43,9 +66,19 @@ export function CodeBlock({ code, language }: Props) {
       <ScrollView
         {...WIDE_CONTENT_SCROLL_CONFIG}
         testID="code-block-scroll"
-        contentContainerStyle={styles.codeScroll}
+        contentContainerStyle={[
+          styles.codeScroll,
+          { padding: 12 * density.padding },
+        ]}
       >
-        <Text style={[styles.code, isDark && styles.codeDark]} selectable>
+        <Text
+          style={[
+            styles.code,
+            { fontSize: 13 * density.font },
+            isDark && styles.codeDark,
+          ]}
+          selectable
+        >
           {code}
         </Text>
       </ScrollView>

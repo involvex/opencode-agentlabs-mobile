@@ -21,6 +21,7 @@ import {
 import { Ionicons } from "@expo/vector-icons";
 import { useTranslation } from "react-i18next";
 import { PRIVACY_POLICY_URL } from "../lib/links";
+import { useDensity } from "../lib/density";
 
 interface Props {
   visible: boolean;
@@ -32,6 +33,7 @@ export function TelemetryConsentModal({ visible, onAllow, onDecline }: Props) {
   const colorScheme = useColorScheme();
   const isDark = colorScheme === "dark";
   const { t } = useTranslation();
+  const density = useDensity();
 
   return (
     <Modal
@@ -43,21 +45,53 @@ export function TelemetryConsentModal({ visible, onAllow, onDecline }: Props) {
     >
       <View style={styles.overlay}>
         <View
-          style={[styles.card, isDark && styles.cardDark]}
+          style={[
+            styles.card,
+            { padding: 28 * density.padding },
+            isDark && styles.cardDark,
+          ]}
           testID="telemetry-consent-card"
         >
           {/* Icon */}
-          <View style={[styles.iconWrap, isDark && styles.iconWrapDark]}>
+          <View
+            style={[
+              styles.iconWrap,
+              {
+                width: 72 * density.padding,
+                height: 72 * density.padding,
+                borderRadius: 18 * density.padding,
+              },
+              isDark && styles.iconWrapDark,
+            ]}
+          >
             <Ionicons name="bug-outline" size={40} color="#3b82f6" />
           </View>
 
           {/* Title */}
-          <Text style={[styles.title, isDark && styles.textDark]}>
+          <Text
+            style={[
+              styles.title,
+              {
+                fontSize: 22 * density.font,
+                marginBottom: 12 * density.padding,
+              },
+              isDark && styles.textDark,
+            ]}
+          >
             {t("telemetryConsent.title")}
           </Text>
 
           {/* Body */}
-          <Text style={[styles.body, isDark && styles.bodyDark]}>
+          <Text
+            style={[
+              styles.body,
+              {
+                fontSize: 15 * density.font,
+                marginBottom: 20 * density.padding,
+              },
+              isDark && styles.bodyDark,
+            ]}
+          >
             {t("telemetryConsent.body")}
           </Text>
 
@@ -103,10 +137,14 @@ export function TelemetryConsentModal({ visible, onAllow, onDecline }: Props) {
           </TouchableOpacity>
 
           {/* Actions */}
-          <View style={styles.actions}>
+          <View style={[styles.actions, { gap: 12 * density.gap }]}>
             <TouchableOpacity
               style={[
                 styles.btn,
+                {
+                  paddingVertical: 14 * density.padding,
+                  borderRadius: 12 * density.padding,
+                },
                 styles.btnDecline,
                 isDark && styles.btnDeclineDark,
               ]}
@@ -117,6 +155,7 @@ export function TelemetryConsentModal({ visible, onAllow, onDecline }: Props) {
               <Text
                 style={[
                   styles.btnDeclineText,
+                  { fontSize: 16 * density.font },
                   isDark && styles.btnDeclineTextDark,
                 ]}
               >
@@ -124,12 +163,21 @@ export function TelemetryConsentModal({ visible, onAllow, onDecline }: Props) {
               </Text>
             </TouchableOpacity>
             <TouchableOpacity
-              style={[styles.btn, styles.btnAllow]}
+              style={[
+                styles.btn,
+                {
+                  paddingVertical: 14 * density.padding,
+                  borderRadius: 12 * density.padding,
+                },
+                styles.btnAllow,
+              ]}
               onPress={onAllow}
               accessibilityLabel={t("telemetryConsent.allowA11yLabel")}
               testID="telemetry-allow-button"
             >
-              <Text style={styles.btnAllowText}>
+              <Text
+                style={[styles.btnAllowText, { fontSize: 16 * density.font }]}
+              >
                 {t("telemetryConsent.allowButton")}
               </Text>
             </TouchableOpacity>
