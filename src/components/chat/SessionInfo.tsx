@@ -12,6 +12,7 @@ import { useTranslation } from "react-i18next";
 import type { Message, Session } from "../../lib/sdk";
 import type { Provider } from "../../stores/catalog";
 import { useSessions } from "../../stores/sessions";
+import { useDensity } from "../../lib/density";
 
 interface Props {
   session: Session | null;
@@ -74,6 +75,7 @@ export function SessionInfo({
   onClose,
 }: Props) {
   const { t } = useTranslation();
+  const density = useDensity();
   // Match TUI: last assistant message tokens (context window), cumulative cost
   const stats = useMemo(() => {
     let cost = 0;
@@ -125,7 +127,17 @@ export function SessionInfo({
   const updated = session?.time.updated;
 
   return (
-    <View style={[s.container, isDark && s.containerDark]}>
+    <View
+      style={[
+        s.container,
+        isDark && s.containerDark,
+        {
+          paddingHorizontal: 12 * density.padding,
+          paddingVertical: 8 * density.padding,
+          gap: 8 * density.gap,
+        },
+      ]}
+    >
       {/* Top row: tokens + context % + cost — matches TUI header */}
       <View style={s.row}>
         <View style={s.costRow}>
@@ -135,22 +147,44 @@ export function SessionInfo({
             color={isDark ? "#888888" : "#666666"}
           />
           {hasTokens && (
-            <Text style={[s.tokens, isDark && s.textDark]}>
+            <Text
+              style={[
+                s.tokens,
+                isDark && s.textDark,
+                { fontSize: 14 * density.font },
+              ]}
+            >
               {stats.total.toLocaleString()}
               {stats.percent > 0 && (
                 <Text
-                  style={[s.percent, isDark && s.dimDark]}
+                  style={[
+                    s.percent,
+                    isDark && s.dimDark,
+                    { fontSize: 13 * density.font },
+                  ]}
                 >{`  ${stats.percent}%`}</Text>
               )}
             </Text>
           )}
           {hasCost && (
-            <Text style={[s.cost, isDark && s.dimDark]}>
+            <Text
+              style={[
+                s.cost,
+                isDark && s.dimDark,
+                { fontSize: 13 * density.font },
+              ]}
+            >
               ({formatCost(stats.cost)})
             </Text>
           )}
           {!hasTokens && !hasCost && (
-            <Text style={[s.cost, isDark && s.dimDark]}>
+            <Text
+              style={[
+                s.cost,
+                isDark && s.dimDark,
+                { fontSize: 13 * density.font },
+              ]}
+            >
               {t("chat.sessionInfo.noUsageData")}
             </Text>
           )}
@@ -183,18 +217,20 @@ export function SessionInfo({
 
       {/* Token breakdown pills */}
       {hasTokens && (
-        <View style={s.breakdown}>
+        <View style={[s.breakdown, { gap: 6 * density.gap }]}>
           <TokenPill
             label={t("chat.sessionInfo.pills.in")}
             value={stats.input}
             color="#3b82f6"
             isDark={isDark}
+            density={density}
           />
           <TokenPill
             label={t("chat.sessionInfo.pills.out")}
             value={stats.output}
             color="#10b981"
             isDark={isDark}
+            density={density}
           />
           {stats.reasoning > 0 && (
             <TokenPill
@@ -202,6 +238,7 @@ export function SessionInfo({
               value={stats.reasoning}
               color="#f59e0b"
               isDark={isDark}
+              density={density}
             />
           )}
           {stats.cacheRead > 0 && (
@@ -210,6 +247,7 @@ export function SessionInfo({
               value={stats.cacheRead}
               color="#8b5cf6"
               isDark={isDark}
+              density={density}
             />
           )}
           {stats.cacheWrite > 0 && (
@@ -218,19 +256,21 @@ export function SessionInfo({
               value={stats.cacheWrite}
               color="#ec4899"
               isDark={isDark}
+              density={density}
             />
           )}
         </View>
       )}
 
       {/* Session metadata */}
-      <View style={s.meta}>
+      <View style={[s.meta, { gap: 12 * density.gap }]}>
         {created && (
           <MetaItem
             icon="time-outline"
             label={t("chat.sessionInfo.meta.created")}
             value={formatTime(created, t)}
             isDark={isDark}
+            density={density}
           />
         )}
         {updated && updated !== created && (
@@ -239,6 +279,7 @@ export function SessionInfo({
             label={t("chat.sessionInfo.meta.updated")}
             value={formatTime(updated, t)}
             isDark={isDark}
+            density={density}
           />
         )}
         <MetaItem
@@ -246,6 +287,7 @@ export function SessionInfo({
           label={t("chat.sessionInfo.meta.messages")}
           value={String(messages.length) + (hasMore ? "+" : "")}
           isDark={isDark}
+          density={density}
         />
         {summary && summary.files > 0 && (
           <MetaItem
@@ -253,6 +295,7 @@ export function SessionInfo({
             label={t("chat.sessionInfo.meta.changes")}
             value={`${summary.files}f +${summary.additions} -${summary.deletions}`}
             isDark={isDark}
+            density={density}
           />
         )}
         {session?.share?.url && (
@@ -261,6 +304,7 @@ export function SessionInfo({
             label={t("chat.sessionInfo.meta.shared")}
             value={t("chat.sessionInfo.meta.yes")}
             isDark={isDark}
+            density={density}
           />
         )}
       </View>
@@ -271,11 +315,23 @@ export function SessionInfo({
           const tags = useSessions.getState().sessionTags[session.id] || [];
           if (tags.length === 0) return null;
           return (
-            <View style={s.tagsRow}>
+            <View
+              style={[
+                s.tagsRow,
+                { gap: 6 * density.gap, marginTop: 8 * density.padding },
+              ]}
+            >
               {tags.map((tag) => (
                 <TouchableOpacity
                   key={tag}
-                  style={s.tagChip}
+                  style={[
+                    s.tagChip,
+                    {
+                      gap: 4 * density.gap,
+                      paddingHorizontal: 8 * density.padding,
+                      paddingVertical: 3 * density.padding,
+                    },
+                  ]}
                   onPress={() => {
                     Alert.alert(
                       t("sessionsList.removeTagTitle", "Remove tag"),
@@ -296,7 +352,9 @@ export function SessionInfo({
                     );
                   }}
                 >
-                  <Text style={s.tagText}>{tag}</Text>
+                  <Text style={[s.tagText, { fontSize: 12 * density.font }]}>
+                    {tag}
+                  </Text>
                   <Ionicons name="close-circle" size={14} color="#888888" />
                 </TouchableOpacity>
               ))}
@@ -305,10 +363,18 @@ export function SessionInfo({
         })()}
 
       {/* Navigation actions */}
-      <View style={s.actions}>
+      <View style={[s.actions, { gap: 8 * density.gap }]}>
         {hasMore && (
           <TouchableOpacity
-            style={[s.action, isDark && s.actionDark]}
+            style={[
+              s.action,
+              isDark && s.actionDark,
+              {
+                gap: 5 * density.gap,
+                paddingHorizontal: 10 * density.padding,
+                paddingVertical: 6 * density.padding,
+              },
+            ]}
             onPress={onLoadAll}
             disabled={loadingAll}
           >
@@ -324,7 +390,13 @@ export function SessionInfo({
                 color={isDark ? "#888888" : "#666666"}
               />
             )}
-            <Text style={[s.actionText, isDark && s.dimDark]}>
+            <Text
+              style={[
+                s.actionText,
+                isDark && s.dimDark,
+                { fontSize: 12 * density.font },
+              ]}
+            >
               {loadingAll
                 ? t("chat.sessionInfo.loading")
                 : t("chat.sessionInfo.loadAllMessages")}
@@ -333,7 +405,15 @@ export function SessionInfo({
         )}
         {messages.length > 0 && (
           <TouchableOpacity
-            style={[s.action, isDark && s.actionDark]}
+            style={[
+              s.action,
+              isDark && s.actionDark,
+              {
+                gap: 5 * density.gap,
+                paddingHorizontal: 10 * density.padding,
+                paddingVertical: 6 * density.padding,
+              },
+            ]}
             onPress={onExport}
           >
             <Ionicons
@@ -341,14 +421,28 @@ export function SessionInfo({
               size={14}
               color={isDark ? "#888888" : "#666666"}
             />
-            <Text style={[s.actionText, isDark && s.dimDark]}>
+            <Text
+              style={[
+                s.actionText,
+                isDark && s.dimDark,
+                { fontSize: 12 * density.font },
+              ]}
+            >
               {t("chat.sessionInfo.exportSession")}
             </Text>
           </TouchableOpacity>
         )}
         {messages.length > 0 && onSummarize && (
           <TouchableOpacity
-            style={[s.action, isDark && s.actionDark]}
+            style={[
+              s.action,
+              isDark && s.actionDark,
+              {
+                gap: 5 * density.gap,
+                paddingHorizontal: 10 * density.padding,
+                paddingVertical: 6 * density.padding,
+              },
+            ]}
             onPress={onSummarize}
           >
             <Ionicons
@@ -356,14 +450,28 @@ export function SessionInfo({
               size={14}
               color={isDark ? "#888888" : "#666666"}
             />
-            <Text style={[s.actionText, isDark && s.dimDark]}>
+            <Text
+              style={[
+                s.actionText,
+                isDark && s.dimDark,
+                { fontSize: 12 * density.font },
+              ]}
+            >
               {t("chat.sessionInfo.summarizeSession")}
             </Text>
           </TouchableOpacity>
         )}
         {messages.length > 0 && (
           <TouchableOpacity
-            style={[s.action, isDark && s.actionDark]}
+            style={[
+              s.action,
+              isDark && s.actionDark,
+              {
+                gap: 5 * density.gap,
+                paddingHorizontal: 10 * density.padding,
+                paddingVertical: 6 * density.padding,
+              },
+            ]}
             onPress={onScrollToTop}
           >
             <Ionicons
@@ -371,7 +479,13 @@ export function SessionInfo({
               size={14}
               color={isDark ? "#888888" : "#666666"}
             />
-            <Text style={[s.actionText, isDark && s.dimDark]}>
+            <Text
+              style={[
+                s.actionText,
+                isDark && s.dimDark,
+                { fontSize: 12 * density.font },
+              ]}
+            >
               {t("chat.sessionInfo.jumpToBeginning")}
             </Text>
           </TouchableOpacity>
@@ -386,17 +500,35 @@ function MetaItem({
   label,
   value,
   isDark,
+  density,
 }: {
   icon: string;
   label: string;
   value: string;
   isDark: boolean;
+  density: { padding: number; font: number; gap: number };
 }) {
   return (
     <View style={s.metaItem}>
       <Ionicons name={icon} size={12} color={isDark ? "#555555" : "#999999"} />
-      <Text style={[s.metaLabel, isDark && s.dimDark]}>{label}</Text>
-      <Text style={[s.metaValue, isDark && s.metaValueDark]}>{value}</Text>
+      <Text
+        style={[
+          s.metaLabel,
+          isDark && s.dimDark,
+          { fontSize: 11 * density.font },
+        ]}
+      >
+        {label}
+      </Text>
+      <Text
+        style={[
+          s.metaValue,
+          isDark && s.metaValueDark,
+          { fontSize: 11 * density.font },
+        ]}
+      >
+        {value}
+      </Text>
     </View>
   );
 }
@@ -406,23 +538,46 @@ function TokenPill({
   value,
   color,
   isDark,
+  density,
 }: {
   label: string;
   value: number;
   color: string;
   isDark: boolean;
+  density: { padding: number; font: number; gap: number };
 }) {
   return (
     <View
       style={[
         s.pill,
-        { borderColor: color + "40" },
+        {
+          borderColor: color + "40",
+          gap: 4 * density.gap,
+          paddingHorizontal: 8 * density.padding,
+          paddingVertical: 3 * density.padding,
+        },
         isDark && { backgroundColor: color + "15" },
       ]}
     >
       <View style={[s.dot, { backgroundColor: color }]} />
-      <Text style={[s.pillLabel, isDark && s.dimDark]}>{label}</Text>
-      <Text style={[s.pillValue, isDark && s.textDark]}>{compact(value)}</Text>
+      <Text
+        style={[
+          s.pillLabel,
+          isDark && s.dimDark,
+          { fontSize: 11 * density.font },
+        ]}
+      >
+        {label}
+      </Text>
+      <Text
+        style={[
+          s.pillValue,
+          isDark && s.textDark,
+          { fontSize: 11 * density.font },
+        ]}
+      >
+        {compact(value)}
+      </Text>
     </View>
   );
 }

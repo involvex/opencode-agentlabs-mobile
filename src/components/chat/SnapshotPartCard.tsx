@@ -9,6 +9,7 @@ import {
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { useTranslation } from "react-i18next";
+import { useDensity } from "../../lib/density";
 import type { Part } from "../../lib/sdk";
 
 const mono = Platform.OS === "ios" ? "Menlo" : "monospace";
@@ -23,6 +24,7 @@ export function SnapshotPartCard({
   isDark: boolean;
 }) {
   const { t } = useTranslation();
+  const density = useDensity();
   const [expanded, setExpanded] = useState(false);
 
   const filename =
@@ -49,11 +51,12 @@ export function SnapshotPartCard({
         isDark && s.cardDark,
         isImage && s.imageCard,
         isImage && isDark && s.imageCardDark,
+        { padding: 10 * density.padding, marginTop: 8 * density.padding },
       ]}
       onPress={toggle}
       activeOpacity={hasDetail ? 0.7 : 1}
     >
-      <View style={s.header}>
+      <View style={[s.header, { gap: 8 * density.gap }]}>
         <Ionicons
           name={
             isImage
@@ -67,13 +70,25 @@ export function SnapshotPartCard({
         />
         <View style={s.info}>
           <Text
-            style={[s.filename, isDark && s.filenameDark]}
+            style={[
+              s.filename,
+              isDark && s.filenameDark,
+              { fontSize: 13 * density.font },
+            ]}
             numberOfLines={1}
           >
             {filename}
           </Text>
           {part.mime && (
-            <Text style={[s.mime, isDark && s.mimeDark]}>{part.mime}</Text>
+            <Text
+              style={[
+                s.mime,
+                isDark && s.mimeDark,
+                { fontSize: 11 * density.font },
+              ]}
+            >
+              {part.mime}
+            </Text>
           )}
         </View>
         {hasDetail && (
@@ -86,7 +101,12 @@ export function SnapshotPartCard({
       </View>
 
       {expanded && hasDetail && (
-        <View style={s.expandedContent}>
+        <View
+          style={[
+            s.expandedContent,
+            { marginTop: 8 * density.padding, gap: 8 * density.gap },
+          ]}
+        >
           {isImage && part.url && (
             <Image
               source={{ uri: part.url }}
@@ -95,13 +115,28 @@ export function SnapshotPartCard({
             />
           )}
           {isPdf && (
-            <View style={[s.pdfPreview, isDark && s.pdfPreviewDark]}>
+            <View
+              style={[
+                s.pdfPreview,
+                isDark && s.pdfPreviewDark,
+                { padding: 20 * density.padding },
+              ]}
+            >
               <Ionicons
                 name="document-text-outline"
                 size={40}
                 color="#ef4444"
               />
-              <Text style={[s.pdfHint, isDark && s.pdfHintDark]}>
+              <Text
+                style={[
+                  s.pdfHint,
+                  isDark && s.pdfHintDark,
+                  {
+                    fontSize: 12 * density.font,
+                    marginTop: 8 * density.padding,
+                  },
+                ]}
+              >
                 {t(
                   "chat.snapshotPartCard.pdfHint",
                   "PDF file — open on your computer to view",
@@ -110,9 +145,19 @@ export function SnapshotPartCard({
             </View>
           )}
           {textContent && (
-            <View style={[s.codeBlock, isDark && s.codeBlockDark]}>
+            <View
+              style={[
+                s.codeBlock,
+                isDark && s.codeBlockDark,
+                { padding: 8 * density.padding },
+              ]}
+            >
               <Text
-                style={[s.codePre, isDark && s.codePteDark]}
+                style={[
+                  s.codePre,
+                  isDark && s.codePteDark,
+                  { fontSize: 12 * density.font },
+                ]}
                 selectable
                 numberOfLines={40}
               >
@@ -122,12 +167,28 @@ export function SnapshotPartCard({
           )}
           {part.state?.input !== undefined && (
             <View style={s.detailGroup}>
-              <Text style={[s.detailLabel, isDark && s.detailLabelDark]}>
+              <Text
+                style={[
+                  s.detailLabel,
+                  isDark && s.detailLabelDark,
+                  { fontSize: 10 * density.font },
+                ]}
+              >
                 {t("chat.snapshotPartCard.inputLabel", "Input")}
               </Text>
-              <View style={[s.codeBlock, isDark && s.codeBlockDark]}>
+              <View
+                style={[
+                  s.codeBlock,
+                  isDark && s.codeBlockDark,
+                  { padding: 8 * density.padding },
+                ]}
+              >
                 <Text
-                  style={[s.codePre, isDark && s.codePteDark]}
+                  style={[
+                    s.codePre,
+                    isDark && s.codePteDark,
+                    { fontSize: 12 * density.font },
+                  ]}
                   selectable
                   numberOfLines={20}
                 >
@@ -140,12 +201,28 @@ export function SnapshotPartCard({
           )}
           {part.state?.output !== undefined && (
             <View style={s.detailGroup}>
-              <Text style={[s.detailLabel, isDark && s.detailLabelDark]}>
+              <Text
+                style={[
+                  s.detailLabel,
+                  isDark && s.detailLabelDark,
+                  { fontSize: 10 * density.font },
+                ]}
+              >
                 {t("chat.snapshotPartCard.outputLabel", "Output")}
               </Text>
-              <View style={[s.codeBlock, isDark && s.codeBlockDark]}>
+              <View
+                style={[
+                  s.codeBlock,
+                  isDark && s.codeBlockDark,
+                  { padding: 8 * density.padding },
+                ]}
+              >
                 <Text
-                  style={[s.codePre, isDark && s.codePteDark]}
+                  style={[
+                    s.codePre,
+                    isDark && s.codePteDark,
+                    { fontSize: 12 * density.font },
+                  ]}
                   selectable
                   numberOfLines={20}
                 >
@@ -157,9 +234,21 @@ export function SnapshotPartCard({
             </View>
           )}
           {typeof part.state?.error?.message === "string" && (
-            <View style={[s.errorBanner, isDark && s.errorBannerDark]}>
+            <View
+              style={[
+                s.errorBanner,
+                isDark && s.errorBannerDark,
+                { gap: 6 * density.gap, padding: 8 * density.padding },
+              ]}
+            >
               <Ionicons name="alert-circle" size={14} color="#ef4444" />
-              <Text style={[s.errorText, isDark && s.errorTextDark]}>
+              <Text
+                style={[
+                  s.errorText,
+                  isDark && s.errorTextDark,
+                  { fontSize: 12 * density.font },
+                ]}
+              >
                 {part.state.error.message}
               </Text>
             </View>

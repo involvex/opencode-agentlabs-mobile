@@ -17,6 +17,7 @@ import { useTranslation } from "react-i18next";
 import type { Client, FileEntry } from "../../lib/sdk";
 import { parentOf, nameOf } from "../../lib/path-utils";
 import { normalizeRoots, type FileRoot } from "../../lib/file-roots";
+import { useDensity } from "../../lib/density";
 
 interface Props {
   sheetRef: React.RefObject<BottomSheet | null>;
@@ -40,6 +41,7 @@ export function DirectoryBrowserSheet({
   onDismiss,
 }: Props) {
   const { t } = useTranslation();
+  const density = useDensity();
   const [browseDir, setBrowseDir] = useState<string | null>(null);
   const [entries, setEntries] = useState<FileEntry[]>([]);
   const [loading, setLoading] = useState(false);
@@ -210,8 +212,23 @@ export function DirectoryBrowserSheet({
       onChange={handleSheetChange}
     >
       <BottomSheetView>
-        <View style={s.header}>
-          <Text style={[s.title, isDark && s.white]}>
+        <View
+          style={[
+            s.header,
+            {
+              paddingHorizontal: 16 * density.padding,
+              paddingBottom: 8 * density.padding,
+              gap: 8 * density.gap,
+            },
+          ]}
+        >
+          <Text
+            style={[
+              s.title,
+              isDark && s.white,
+              { fontSize: 18 * density.font },
+            ]}
+          >
             {t("chat.directoryBrowserSheet.title")}
           </Text>
           <View style={s.pathRow}>
@@ -236,7 +253,11 @@ export function DirectoryBrowserSheet({
               />
             </TouchableOpacity>
             <Text
-              style={[s.path, isDark && s.dimDark]}
+              style={[
+                s.path,
+                isDark && s.dimDark,
+                { fontSize: 12 * density.font },
+              ]}
               numberOfLines={1}
               ellipsizeMode="head"
             >
@@ -246,7 +267,16 @@ export function DirectoryBrowserSheet({
         </View>
 
         {roots.length > 0 && (
-          <View style={s.rootsRow}>
+          <View
+            style={[
+              s.rootsRow,
+              {
+                gap: 8 * density.gap,
+                paddingHorizontal: 16 * density.padding,
+                paddingBottom: 10 * density.padding,
+              },
+            ]}
+          >
             {roots.map((root) => (
               <TouchableOpacity
                 key={root.path}
@@ -254,6 +284,11 @@ export function DirectoryBrowserSheet({
                   s.rootChip,
                   isDark && s.rootChipDark,
                   browseDir === root.path && s.rootChipActive,
+                  {
+                    gap: 5 * density.gap,
+                    paddingHorizontal: 10 * density.padding,
+                    paddingVertical: 6 * density.padding,
+                  },
                 ]}
                 onPress={() => enter(root.path)}
                 testID={`directory-root-${root.label}`}
@@ -276,6 +311,7 @@ export function DirectoryBrowserSheet({
                     s.rootChipText,
                     isDark && s.rootChipTextDark,
                     browseDir === root.path && s.rootChipTextActive,
+                    { fontSize: 12 * density.font },
                   ]}
                   numberOfLines={1}
                 >
@@ -286,9 +322,25 @@ export function DirectoryBrowserSheet({
           </View>
         )}
 
-        <View style={s.inputWrap}>
+        <View
+          style={[
+            s.inputWrap,
+            {
+              paddingHorizontal: 16 * density.padding,
+              paddingBottom: 8 * density.padding,
+              gap: 8 * density.gap,
+            },
+          ]}
+        >
           <BottomSheetTextInput
-            style={[s.input, isDark && s.inputDark]}
+            style={[
+              s.input,
+              isDark && s.inputDark,
+              {
+                paddingHorizontal: 12 * density.padding,
+                fontSize: 14 * density.font,
+              },
+            ]}
             placeholder={t("chat.directoryBrowserSheet.jumpPlaceholder")}
             placeholderTextColor={isDark ? "#666666" : "#999999"}
             value={jumpPath}
@@ -319,7 +371,15 @@ export function DirectoryBrowserSheet({
           keyExtractor={(item: FileEntry) => item.absolute}
           renderItem={({ item }: { item: FileEntry }) => (
             <TouchableOpacity
-              style={[s.row, isDark && s.rowDark]}
+              style={[
+                s.row,
+                isDark && s.rowDark,
+                {
+                  gap: 12 * density.gap,
+                  paddingHorizontal: 14 * density.padding,
+                  paddingVertical: 11 * density.padding,
+                },
+              ]}
               onPress={() => enter(item.absolute)}
               testID={`directory-row-${item.name}`}
               activeOpacity={0.7}
@@ -342,6 +402,7 @@ export function DirectoryBrowserSheet({
                   s.rowLabel,
                   isDark && s.white,
                   item.ignored && s.rowLabelDim,
+                  { fontSize: 14 * density.font },
                 ]}
                 numberOfLines={1}
               >
@@ -354,7 +415,13 @@ export function DirectoryBrowserSheet({
               />
             </TouchableOpacity>
           )}
-          contentContainerStyle={s.list}
+          contentContainerStyle={[
+            s.list,
+            {
+              paddingHorizontal: 16 * density.padding,
+              paddingBottom: 8 * density.padding,
+            },
+          ]}
           ListHeaderComponent={
             loading ? (
               <View style={s.centerBox}>
@@ -362,13 +429,21 @@ export function DirectoryBrowserSheet({
               </View>
             ) : error ? (
               <View style={s.centerBox}>
-                <Text style={s.errorText}>{error}</Text>
+                <Text style={[s.errorText, { fontSize: 13 * density.font }]}>
+                  {error}
+                </Text>
               </View>
             ) : null
           }
           ListEmptyComponent={
             !loading && !error ? (
-              <Text style={[s.emptyText, isDark && s.dimDark]}>
+              <Text
+                style={[
+                  s.emptyText,
+                  isDark && s.dimDark,
+                  { fontSize: 13 * density.font },
+                ]}
+              >
                 {browseDir
                   ? t("chat.directoryBrowserSheet.noSubfolders")
                   : t("chat.directoryBrowserSheet.enterPathHint")}
@@ -377,12 +452,21 @@ export function DirectoryBrowserSheet({
           }
         />
 
-        <View style={s.footer}>
+        <View
+          style={[
+            s.footer,
+            {
+              paddingHorizontal: 16 * density.padding,
+              paddingVertical: 12 * density.padding,
+            },
+          ]}
+        >
           <TouchableOpacity
             style={[
               s.selectBtn,
               isDark && s.selectBtnDark,
               !browseDir && s.selectBtnDisabled,
+              { gap: 8 * density.gap },
             ]}
             onPress={handleUseFolder}
             disabled={!browseDir}
@@ -394,7 +478,11 @@ export function DirectoryBrowserSheet({
               color={isDark ? "#0a0a0a" : "#ffffff"}
             />
             <Text
-              style={[s.selectBtnText, isDark && s.selectBtnTextDark]}
+              style={[
+                s.selectBtnText,
+                isDark && s.selectBtnTextDark,
+                { fontSize: 15 * density.font },
+              ]}
               numberOfLines={1}
             >
               {t("chat.directoryBrowserSheet.useFolderButton", {

@@ -17,6 +17,7 @@ import type {
 } from "../../lib/slash-commands";
 import { COMMAND_CATEGORIES, filterCommands } from "../../lib/slash-commands";
 import { useSlashCommands } from "../../stores/slash-commands";
+import { useDensity } from "../../lib/density";
 
 interface Props {
   query: string;
@@ -38,6 +39,7 @@ export function SlashPopover({
 }: Props) {
   const { t } = useTranslation();
   const { recent, favorites, addRecent, toggleFavorite } = useSlashCommands();
+  const density = useDensity();
   const scrollViewRef = useRef<ScrollView>(null);
   const itemRefs = useRef<Map<string, View>>(new Map());
 
@@ -127,13 +129,40 @@ export function SlashPopover({
   if (filtered.length === 0) {
     return (
       <View
-        style={[s.popover, isDark && s.popoverDark, { maxWidth: MAX_WIDTH }]}
+        style={[
+          s.popover,
+          isDark && s.popoverDark,
+          {
+            maxWidth: MAX_WIDTH,
+            marginHorizontal: 16 * density.padding,
+            marginBottom: 8 * density.padding,
+          },
+        ]}
       >
-        <Text style={[s.empty, isDark && s.emptyDark]}>
+        <Text
+          style={[
+            s.empty,
+            isDark && s.emptyDark,
+            {
+              fontSize: 14 * density.font,
+              paddingVertical: 16 * density.padding,
+              paddingHorizontal: 16 * density.padding,
+            },
+          ]}
+        >
           {t("chat.slashPopover.noMatches")}
         </Text>
         <TouchableOpacity onPress={onDismiss}>
-          <Text style={[s.helpLink, isDark && s.helpLinkDark]}>
+          <Text
+            style={[
+              s.helpLink,
+              isDark && s.helpLinkDark,
+              {
+                fontSize: 13 * density.font,
+                paddingBottom: 12 * density.padding,
+              },
+            ]}
+          >
             {t("chat.slashPopover.helpLink")}
           </Text>
         </TouchableOpacity>
@@ -142,16 +171,37 @@ export function SlashPopover({
   }
 
   return (
-    <View style={[s.popover, isDark && s.popoverDark, { maxWidth: MAX_WIDTH }]}>
+    <View
+      style={[
+        s.popover,
+        isDark && s.popoverDark,
+        {
+          maxWidth: MAX_WIDTH,
+          marginHorizontal: 16 * density.padding,
+          marginBottom: 8 * density.padding,
+        },
+      ]}
+    >
       <ScrollView
         ref={scrollViewRef}
         keyboardShouldPersistTaps="always"
-        style={s.scroll}
+        style={[s.scroll, { paddingVertical: 8 * density.padding }]}
         nestedScrollEnabled
       >
         {Array.from(grouped.entries()).map(([groupKey, cmds]) => (
           <View key={groupKey} style={s.group}>
-            <Text style={[s.groupHeader, isDark && s.groupHeaderDark]}>
+            <Text
+              style={[
+                s.groupHeader,
+                isDark && s.groupHeaderDark,
+                {
+                  fontSize: 11 * density.font,
+                  paddingHorizontal: 16 * density.padding,
+                  paddingTop: 8 * density.padding,
+                  paddingBottom: 4 * density.padding,
+                },
+              ]}
+            >
               {groupKey === "favorites"
                 ? t("chat.slashPopover.favorites")
                 : groupKey === "recent"
@@ -167,7 +217,15 @@ export function SlashPopover({
                   ref={(ref) => {
                     if (ref) itemRefs.current.set(cmd.trigger, ref);
                   }}
-                  style={[s.item, isDark && s.itemDark]}
+                  style={[
+                    s.item,
+                    isDark && s.itemDark,
+                    {
+                      gap: 10 * density.gap,
+                      paddingHorizontal: 16 * density.padding,
+                      paddingVertical: 10 * density.padding,
+                    },
+                  ]}
                   onPress={() => handleSelect(cmd)}
                 >
                   <Ionicons
@@ -182,12 +240,22 @@ export function SlashPopover({
                     }
                   />
                   <View style={s.textCol}>
-                    <Text style={[s.trigger, isDark && s.textWhite]}>
+                    <Text
+                      style={[
+                        s.trigger,
+                        isDark && s.textWhite,
+                        { fontSize: 14 * density.font },
+                      ]}
+                    >
                       /{cmd.trigger}
                     </Text>
                     {cmd.description && (
                       <Text
-                        style={[s.desc, isDark && s.metaDark]}
+                        style={[
+                          s.desc,
+                          isDark && s.metaDark,
+                          { fontSize: 12 * density.font },
+                        ]}
                         numberOfLines={1}
                       >
                         {cmd.description}
@@ -206,8 +274,19 @@ export function SlashPopover({
                     />
                   </TouchableOpacity>
                   {cmd.type === "custom" && (
-                    <View style={[s.badge, isDark && s.badgeDark]}>
-                      <Text style={s.badgeText}>
+                    <View
+                      style={[
+                        s.badge,
+                        isDark && s.badgeDark,
+                        {
+                          paddingHorizontal: 6 * density.padding,
+                          paddingVertical: 2 * density.padding,
+                        },
+                      ]}
+                    >
+                      <Text
+                        style={[s.badgeText, { fontSize: 10 * density.font }]}
+                      >
                         {t("chat.slashPopover.customBadge")}
                       </Text>
                     </View>

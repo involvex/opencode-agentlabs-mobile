@@ -9,6 +9,7 @@ import {
 import { Ionicons } from "@expo/vector-icons";
 import { useTranslation } from "react-i18next";
 import { WIDE_CONTENT_SCROLL_CONFIG } from "../../lib/scroll-config";
+import { useDensity } from "../../lib/density";
 import type { Part } from "../../lib/sdk";
 
 const STEP_ICONS: Record<string, string> = {
@@ -55,6 +56,7 @@ interface Props {
 
 export function StepBlock({ parts, isDark }: Props) {
   const { t } = useTranslation();
+  const density = useDensity();
   const [expanded, setExpanded] = useState(false);
 
   const stepCount = parts.length;
@@ -90,23 +92,39 @@ export function StepBlock({ parts, isDark }: Props) {
 
   return (
     <TouchableOpacity
-      style={[s.block, isDark && s.blockDark]}
+      style={[
+        s.block,
+        isDark && s.blockDark,
+        { padding: 10 * density.padding, marginBottom: 8 * density.padding },
+      ]}
       onPress={() => setExpanded(!expanded)}
       activeOpacity={0.7}
     >
-      <View style={s.header}>
+      <View style={[s.header, { gap: 6 * density.gap }]}>
         <Ionicons
           name={expanded ? "chevron-down" : "chevron-forward"}
           size={16}
           color={isDark ? "#666666" : "#999999"}
         />
         <Ionicons name="stats-chart-outline" size={16} color="#3b82f6" />
-        <Text style={[s.label, isDark && s.labelDark]}>
+        <Text
+          style={[
+            s.label,
+            isDark && s.labelDark,
+            { fontSize: 12 * density.font },
+          ]}
+        >
           {t("chat.stepBlock.title", "Steps")} ·{" "}
-          <Text style={s.stepCount}>{stepCount}</Text>
+          <Text style={[s.stepCount, { fontSize: 11 * density.font }]}>
+            {stepCount}
+          </Text>
         </Text>
         <Text
-          style={[s.summary, isDark && s.summaryDark]}
+          style={[
+            s.summary,
+            isDark && s.summaryDark,
+            { fontSize: 12 * density.font, marginTop: 4 * density.padding },
+          ]}
           numberOfLines={expanded ? undefined : 1}
         >
           {summaryText}
@@ -126,13 +144,21 @@ export function StepBlock({ parts, isDark }: Props) {
           showsVerticalScrollIndicator={false}
           style={s.expandedScroll}
         >
-          <View style={s.expandedContent}>
+          <View style={[s.expandedContent, { gap: 6 * density.gap }]}>
             {parts.map((pair) => (
-              <View key={`${pair.index}-${pair.start.id}`} style={s.stepItem}>
-                <View style={s.stepRow}>
+              <View
+                key={`${pair.index}-${pair.start.id}`}
+                style={[s.stepItem, { gap: 4 * density.gap }]}
+              >
+                <View style={[s.stepRow, { gap: 6 * density.gap }]}>
                   <View
                     style={[
                       s.stepDot,
+                      {
+                        width: 18 * density.padding,
+                        height: 18 * density.padding,
+                        borderRadius: 9 * density.padding,
+                      },
                       pair.finish
                         ? isDark
                           ? s.stepDotCompleteDark
@@ -149,7 +175,14 @@ export function StepBlock({ parts, isDark }: Props) {
                     />
                   </View>
                   <Text
-                    style={[s.stepText, isDark && s.stepTextDark]}
+                    style={[
+                      s.stepText,
+                      isDark && s.stepTextDark,
+                      {
+                        fontSize: 13 * density.font,
+                        lineHeight: 20 * density.font,
+                      },
+                    ]}
                     selectable
                   >
                     {pair.start.text ||
@@ -158,7 +191,16 @@ export function StepBlock({ parts, isDark }: Props) {
                 </View>
                 {pair.finish && pair.finish.text && (
                   <Text
-                    style={[s.stepResult, isDark && s.stepResultDark]}
+                    style={[
+                      s.stepResult,
+                      isDark && s.stepResultDark,
+                      {
+                        fontSize: 12 * density.font,
+                        lineHeight: 18 * density.font,
+                        marginLeft: 24 * density.padding,
+                        marginTop: 2 * density.padding,
+                      },
+                    ]}
                     selectable
                   >
                     {pair.finish.text}

@@ -13,6 +13,7 @@ import BottomSheet, {
   BottomSheetView,
 } from "@gorhom/bottom-sheet";
 import { useTranslation } from "react-i18next";
+import { useDensity } from "../../lib/density";
 
 interface Props {
   sheetRef: React.RefObject<BottomSheet | null>;
@@ -36,6 +37,7 @@ export function DirectorySwitcher({
   onBrowse,
 }: Props) {
   const { t } = useTranslation();
+  const density = useDensity();
   const [custom, setCustom] = useState("");
 
   const handleSelect = useCallback(
@@ -102,14 +104,28 @@ export function DirectorySwitcher({
         if (idx === -1) setCustom("");
       }}
     >
-      <View style={s.header}>
-        <Text style={[s.title, isDark && s.white]}>
+      <View
+        style={[
+          s.header,
+          {
+            paddingHorizontal: 16 * density.padding,
+            paddingBottom: 8 * density.padding,
+            gap: 6 * density.gap,
+          },
+        ]}
+      >
+        <Text
+          style={[s.title, isDark && s.white, { fontSize: 18 * density.font }]}
+        >
           {t("chat.directorySwitcher.title")}
         </Text>
         {shortCurrent && (
           <View style={s.current}>
             <Ionicons name="folder" size={14} color="#8b5cf6" />
-            <Text style={s.currentText} numberOfLines={1}>
+            <Text
+              style={[s.currentText, { fontSize: 13 * density.font }]}
+              numberOfLines={1}
+            >
               {shortCurrent}
             </Text>
           </View>
@@ -118,9 +134,26 @@ export function DirectorySwitcher({
 
       <BottomSheetView>
         {/* Custom directory input */}
-        <View style={s.inputWrap}>
+        <View
+          style={[
+            s.inputWrap,
+            {
+              paddingHorizontal: 16 * density.padding,
+              paddingBottom: 8 * density.padding,
+              gap: 8 * density.gap,
+            },
+          ]}
+        >
           <BottomSheetTextInput
-            style={[s.input, isDark && s.inputDark]}
+            style={[
+              s.input,
+              isDark && s.inputDark,
+              {
+                paddingHorizontal: 14 * density.padding,
+                paddingVertical: 10 * density.padding,
+                fontSize: 15 * density.font,
+              },
+            ]}
             placeholder={serverHome ? `${serverHome}/...` : "/path/to/project"}
             placeholderTextColor={isDark ? "#666666" : "#999999"}
             value={custom}
@@ -151,26 +184,73 @@ export function DirectorySwitcher({
 
         {/* Quick path chips */}
         {(serverHome || onBrowse) && (
-          <View style={s.chips}>
+          <View
+            style={[
+              s.chips,
+              {
+                gap: 8 * density.gap,
+                paddingHorizontal: 16 * density.padding,
+                paddingBottom: 12 * density.padding,
+              },
+            ]}
+          >
             {serverHome && (
               <>
                 <TouchableOpacity
-                  style={[s.chip, isDark && s.chipDark]}
+                  style={[
+                    s.chip,
+                    isDark && s.chipDark,
+                    {
+                      paddingHorizontal: 12 * density.padding,
+                      paddingVertical: 6 * density.padding,
+                    },
+                  ]}
                   onPress={() => setCustom(serverHome)}
                 >
-                  <Text style={[s.chipText, isDark && s.chipTextDark]}>~</Text>
+                  <Text
+                    style={[
+                      s.chipText,
+                      isDark && s.chipTextDark,
+                      { fontSize: 13 * density.font },
+                    ]}
+                  >
+                    ~
+                  </Text>
                 </TouchableOpacity>
                 <TouchableOpacity
-                  style={[s.chip, isDark && s.chipDark]}
+                  style={[
+                    s.chip,
+                    isDark && s.chipDark,
+                    {
+                      paddingHorizontal: 12 * density.padding,
+                      paddingVertical: 6 * density.padding,
+                    },
+                  ]}
                   onPress={() => setCustom(serverHome + "/")}
                 >
-                  <Text style={[s.chipText, isDark && s.chipTextDark]}>~/</Text>
+                  <Text
+                    style={[
+                      s.chipText,
+                      isDark && s.chipTextDark,
+                      { fontSize: 13 * density.font },
+                    ]}
+                  >
+                    ~/
+                  </Text>
                 </TouchableOpacity>
               </>
             )}
             {onBrowse && (
               <TouchableOpacity
-                style={[s.chip, s.chipBrowse, isDark && s.chipDark]}
+                style={[
+                  s.chip,
+                  s.chipBrowse,
+                  isDark && s.chipDark,
+                  {
+                    paddingHorizontal: 12 * density.padding,
+                    paddingVertical: 6 * density.padding,
+                  },
+                ]}
                 onPress={() => {
                   sheetRef.current?.close();
                   onBrowse();
@@ -181,7 +261,13 @@ export function DirectorySwitcher({
                   size={14}
                   color={isDark ? "#8b5cf6" : "#6d28d9"}
                 />
-                <Text style={[s.chipText, isDark && s.chipTextDark]}>
+                <Text
+                  style={[
+                    s.chipText,
+                    isDark && s.chipTextDark,
+                    { fontSize: 13 * density.font },
+                  ]}
+                >
                   {t("chat.directorySwitcher.browseLabel")}
                 </Text>
               </TouchableOpacity>
@@ -198,7 +284,16 @@ export function DirectorySwitcher({
           }
           renderItem={({ item }: { item: (typeof items)[number] }) => (
             <TouchableOpacity
-              style={[s.row, isDark && s.rowDark, item.active && s.rowActive]}
+              style={[
+                s.row,
+                isDark && s.rowDark,
+                item.active && s.rowActive,
+                {
+                  paddingHorizontal: 16 * density.padding,
+                  paddingVertical: 12 * density.padding,
+                  gap: 12 * density.gap,
+                },
+              ]}
               onPress={() => handleSelect(item.dir)}
               activeOpacity={0.7}
             >
@@ -217,6 +312,7 @@ export function DirectorySwitcher({
                     s.rowLabel,
                     isDark && s.white,
                     item.active && s.rowLabelActive,
+                    { fontSize: 15 * density.font },
                   ]}
                   numberOfLines={1}
                 >
@@ -224,14 +320,24 @@ export function DirectorySwitcher({
                 </Text>
                 {item.dir && (
                   <Text
-                    style={[s.rowPath, isDark && s.dimDark]}
+                    style={[
+                      s.rowPath,
+                      isDark && s.dimDark,
+                      { fontSize: 12 * density.font },
+                    ]}
                     numberOfLines={1}
                   >
                     {item.dir}
                   </Text>
                 )}
                 {!item.dir && (
-                  <Text style={[s.rowPath, isDark && s.dimDark]}>
+                  <Text
+                    style={[
+                      s.rowPath,
+                      isDark && s.dimDark,
+                      { fontSize: 12 * density.font },
+                    ]}
+                  >
                     {t("chat.directorySwitcher.usesServerDir")}
                   </Text>
                 )}
@@ -244,7 +350,18 @@ export function DirectorySwitcher({
           contentContainerStyle={s.list}
           ListHeaderComponent={
             items.length > 1 ? (
-              <Text style={[s.section, isDark && s.dimDark]}>
+              <Text
+                style={[
+                  s.section,
+                  isDark && s.dimDark,
+                  {
+                    fontSize: 12 * density.font,
+                    paddingHorizontal: 16 * density.padding,
+                    paddingTop: 4 * density.padding,
+                    paddingBottom: 8 * density.padding,
+                  },
+                ]}
+              >
                 {t("chat.directorySwitcher.recentProjectsLabel")}
               </Text>
             ) : null

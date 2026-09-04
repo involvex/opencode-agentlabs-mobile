@@ -15,6 +15,7 @@ import BottomSheet, {
 } from "@gorhom/bottom-sheet";
 import { useTranslation } from "react-i18next";
 import type { PromptSnippet } from "../../stores/prompts";
+import { useDensity } from "../../lib/density";
 
 interface Props {
   prompts: PromptSnippet[];
@@ -34,6 +35,7 @@ export function PromptLibrarySheet({
   onDelete,
 }: Props) {
   const { t } = useTranslation();
+  const density = useDensity();
   const [query, setQuery] = useState("");
   const [saveTitle, setSaveTitle] = useState("");
   const [saving, setSaving] = useState(false);
@@ -107,8 +109,22 @@ export function PromptLibrarySheet({
       )}
     >
       <BottomSheetView style={{ flex: 1 }}>
-        <View style={s.header}>
-          <Text style={[s.title, isDark && s.textWhite]}>
+        <View
+          style={[
+            s.header,
+            {
+              paddingHorizontal: 16 * density.padding,
+              paddingBottom: 12 * density.padding,
+            },
+          ]}
+        >
+          <Text
+            style={[
+              s.title,
+              isDark && s.textWhite,
+              { fontSize: 18 * density.font },
+            ]}
+          >
             {t("prompts.title")}
           </Text>
           <TouchableOpacity
@@ -124,14 +140,29 @@ export function PromptLibrarySheet({
           </TouchableOpacity>
         </View>
 
-        <View style={s.searchContainer}>
+        <View
+          style={[
+            s.searchContainer,
+            {
+              gap: 8 * density.gap,
+              marginHorizontal: 16 * density.padding,
+              marginBottom: 8 * density.padding,
+              paddingHorizontal: 12 * density.padding,
+              paddingVertical: 8 * density.padding,
+            },
+          ]}
+        >
           <Ionicons
             name="search-outline"
             size={18}
             color={isDark ? "#666666" : "#999999"}
           />
           <TextInput
-            style={[s.searchInput, isDark && s.searchInputDark]}
+            style={[
+              s.searchInput,
+              isDark && s.searchInputDark,
+              { fontSize: 14 * density.font },
+            ]}
             placeholder={t("prompts.searchPlaceholder")}
             placeholderTextColor={isDark ? "#666666" : "#999999"}
             value={query}
@@ -141,7 +172,17 @@ export function PromptLibrarySheet({
         </View>
 
         <TextInput
-          style={[s.saveInput, isDark && s.saveInputDark]}
+          style={[
+            s.saveInput,
+            isDark && s.saveInputDark,
+            {
+              marginHorizontal: 16 * density.padding,
+              marginBottom: 8 * density.padding,
+              paddingHorizontal: 12 * density.padding,
+              paddingVertical: 8 * density.padding,
+              fontSize: 14 * density.font,
+            },
+          ]}
           placeholder={t("prompts.savePlaceholder")}
           placeholderTextColor={isDark ? "#666666" : "#999999"}
           value={saveTitle}
@@ -160,19 +201,35 @@ export function PromptLibrarySheet({
           ]}
           renderItem={({ item }) => (
             <TouchableOpacity
-              style={[s.row, isDark && s.rowDark]}
+              style={[
+                s.row,
+                isDark && s.rowDark,
+                {
+                  gap: 12 * density.gap,
+                  paddingHorizontal: 16 * density.padding,
+                  paddingVertical: 12 * density.padding,
+                },
+              ]}
               onPress={() => handleSelect(item)}
               testID={`prompt-item-${item.id}`}
             >
               <View style={s.rowText}>
                 <Text
-                  style={[s.rowName, isDark && s.textWhite]}
+                  style={[
+                    s.rowName,
+                    isDark && s.textWhite,
+                    { fontSize: 15 * density.font },
+                  ]}
                   numberOfLines={1}
                 >
                   {item.title}
                 </Text>
                 <Text
-                  style={[s.rowDesc, isDark && s.metaDark]}
+                  style={[
+                    s.rowDesc,
+                    isDark && s.metaDark,
+                    { fontSize: 12 * density.font },
+                  ]}
                   numberOfLines={2}
                 >
                   {item.body || t("prompts.emptyBody")}
@@ -192,13 +249,27 @@ export function PromptLibrarySheet({
             </TouchableOpacity>
           )}
           ListEmptyComponent={() => (
-            <View style={s.emptyState}>
+            <View
+              style={[
+                s.emptyState,
+                {
+                  gap: 12 * density.gap,
+                  paddingHorizontal: 32 * density.padding,
+                },
+              ]}
+            >
               <Ionicons
                 name="library-outline"
                 size={32}
                 color={isDark ? "#444444" : "#cccccc"}
               />
-              <Text style={[s.emptyText, isDark && s.textWhite]}>
+              <Text
+                style={[
+                  s.emptyText,
+                  isDark && s.textWhite,
+                  { fontSize: 14 * density.font },
+                ]}
+              >
                 {t("prompts.emptyState")}
               </Text>
             </View>

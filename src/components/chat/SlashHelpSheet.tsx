@@ -13,6 +13,7 @@ import type {
   SlashCommandCategory,
 } from "../../lib/slash-commands";
 import { COMMAND_CATEGORIES, DEFAULT_BUILTINS } from "../../lib/slash-commands";
+import { useDensity } from "../../lib/density";
 
 const s = StyleSheet.create({
   container: {
@@ -70,12 +71,20 @@ interface Props {
 function SlashCommandItem({
   cmd,
   isDark,
+  density,
 }: {
   cmd: SlashCommand;
   isDark: boolean;
+  density: { padding: number; font: number; gap: number };
 }) {
   return (
-    <View style={[s.item, isDark && s.itemDark]}>
+    <View
+      style={[
+        s.item,
+        isDark && s.itemDark,
+        { gap: 10 * density.gap, paddingVertical: 8 * density.padding },
+      ]}
+    >
       <Text>
         <Ionicons
           name={cmd.icon ?? "code-slash-outline"}
@@ -84,9 +93,24 @@ function SlashCommandItem({
         />
       </Text>
       <View style={s.textCol}>
-        <Text style={[s.trigger, isDark && s.textWhite]}>/{cmd.trigger}</Text>
+        <Text
+          style={[
+            s.trigger,
+            isDark && s.textWhite,
+            { fontSize: 14 * density.font },
+          ]}
+        >
+          /{cmd.trigger}
+        </Text>
         {cmd.description && (
-          <Text style={[s.desc, isDark && s.metaDark]} numberOfLines={1}>
+          <Text
+            style={[
+              s.desc,
+              isDark && s.metaDark,
+              { fontSize: 12 * density.font },
+            ]}
+            numberOfLines={1}
+          >
             {cmd.description}
           </Text>
         )}
@@ -97,6 +121,7 @@ function SlashCommandItem({
 
 export function SlashHelpSheet({ isDark, sheetRef, customCommands }: Props) {
   const { t } = useTranslation();
+  const density = useDensity();
   const snapPoints = useMemo(() => ["60%", "85%"], []);
 
   const grouped = useMemo(() => {
@@ -145,19 +170,52 @@ export function SlashHelpSheet({ isDark, sheetRef, customCommands }: Props) {
         />
       )}
     >
-      <BottomSheetView style={[s.container, isDark && s.containerDark]}>
-        <Text style={[s.title, isDark && s.titleDark]}>
+      <BottomSheetView
+        style={[
+          s.container,
+          isDark && s.containerDark,
+          {
+            paddingHorizontal: 16 * density.padding,
+            paddingTop: 8 * density.padding,
+          },
+        ]}
+      >
+        <Text
+          style={[
+            s.title,
+            isDark && s.titleDark,
+            { fontSize: 20 * density.font, marginBottom: 4 * density.padding },
+          ]}
+        >
           {t("chat.slashHelp.title", "Slash Commands")}
         </Text>
-        <Text style={[s.subtitle, isDark && s.subtitleDark]}>
+        <Text
+          style={[
+            s.subtitle,
+            isDark && s.subtitleDark,
+            { fontSize: 14 * density.font, marginBottom: 16 * density.padding },
+          ]}
+        >
           {t(
             "chat.slashHelp.subtitle",
             "Type / in the composer to see available commands.",
           )}
         </Text>
         {entries.map(([cat, cmds]) => (
-          <View key={cat} style={s.group}>
-            <Text style={[s.groupHeader, isDark && s.groupHeaderDark]}>
+          <View
+            key={cat}
+            style={[s.group, { marginBottom: 12 * density.padding }]}
+          >
+            <Text
+              style={[
+                s.groupHeader,
+                isDark && s.groupHeaderDark,
+                {
+                  fontSize: 12 * density.font,
+                  marginBottom: 6 * density.padding,
+                },
+              ]}
+            >
               {COMMAND_CATEGORIES[cat] ?? cat}
             </Text>
             {cmds.map((cmd) => (
@@ -165,6 +223,7 @@ export function SlashHelpSheet({ isDark, sheetRef, customCommands }: Props) {
                 key={cmd.trigger + cmd.description}
                 cmd={cmd}
                 isDark={isDark}
+                density={density}
               />
             ))}
           </View>

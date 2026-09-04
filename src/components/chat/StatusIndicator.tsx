@@ -3,6 +3,7 @@ import { useTranslation } from "react-i18next";
 import { useEvents } from "../../stores/events";
 import { useSessions } from "../../stores/sessions";
 import { useAccentColor } from "../../lib/theme";
+import { useDensity } from "../../lib/density";
 
 interface Props {
   sessionID: string;
@@ -12,6 +13,7 @@ interface Props {
 export function StatusIndicator({ sessionID, isDark }: Props) {
   const { t } = useTranslation();
   const accent = useAccentColor();
+  const density = useDensity();
   const status = useEvents((s) => s.sessionStatus[sessionID]);
   const text = useEvents((s) => s.statusText[sessionID]);
   const optimistic = useSessions((s) => s.sending[sessionID]);
@@ -29,9 +31,25 @@ export function StatusIndicator({ sessionID, isDark }: Props) {
       : text || t("chat.statusIndicator.working");
 
   return (
-    <View style={[s.bar, isDark && s.barDark]}>
+    <View
+      style={[
+        s.bar,
+        isDark && s.barDark,
+        {
+          gap: 8 * density.gap,
+          paddingHorizontal: 16 * density.padding,
+          paddingVertical: 8 * density.padding,
+        },
+      ]}
+    >
       <ActivityIndicator size="small" color={accent} />
-      <Text style={[s.text, isDark && s.textDark, { color: accent }]}>
+      <Text
+        style={[
+          s.text,
+          isDark && s.textDark,
+          { color: accent, fontSize: 13 * density.font },
+        ]}
+      >
         {label}
       </Text>
     </View>

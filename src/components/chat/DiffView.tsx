@@ -1,6 +1,7 @@
 import { View, Text, StyleSheet, Platform, ScrollView } from "react-native";
 import { WIDE_CONTENT_SCROLL_CONFIG } from "../../lib/scroll-config";
 import { computeDiff } from "./diff-compute";
+import { useDensity } from "../../lib/density";
 
 const mono = Platform.OS === "ios" ? "Menlo" : "monospace";
 
@@ -11,12 +12,19 @@ interface Props {
 }
 
 export function DiffView({ before, after, isDark }: Props) {
+  const density = useDensity();
   const lines = computeDiff(before, after);
 
   if (lines.length === 0) return null;
 
   return (
-    <View style={[s.container, isDark && s.containerDark]}>
+    <View
+      style={[
+        s.container,
+        isDark && s.containerDark,
+        { marginTop: 6 * density.padding },
+      ]}
+    >
       <ScrollView {...WIDE_CONTENT_SCROLL_CONFIG} testID="diff-view-scroll">
         <View>
           {lines.map((line) => (
@@ -26,9 +34,22 @@ export function DiffView({ before, after, isDark }: Props) {
                 s.line,
                 line.type === "add" && (isDark ? s.addDark : s.add),
                 line.type === "remove" && (isDark ? s.removeDark : s.remove),
+                {
+                  paddingHorizontal: 8 * density.padding,
+                  paddingVertical: 1 * density.padding,
+                },
               ]}
             >
-              <Text style={[s.prefix, isDark && s.prefixDark]}>
+              <Text
+                style={[
+                  s.prefix,
+                  isDark && s.prefixDark,
+                  {
+                    fontSize: 12 * density.font,
+                    lineHeight: 20 * density.font,
+                  },
+                ]}
+              >
                 {line.type === "add" ? "+" : line.type === "remove" ? "-" : " "}
               </Text>
               <Text
@@ -37,6 +58,10 @@ export function DiffView({ before, after, isDark }: Props) {
                   isDark && s.textDark,
                   line.type === "add" && s.addText,
                   line.type === "remove" && s.removeText,
+                  {
+                    fontSize: 12 * density.font,
+                    lineHeight: 20 * density.font,
+                  },
                 ]}
                 selectable
               >

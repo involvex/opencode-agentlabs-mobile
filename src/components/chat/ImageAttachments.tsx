@@ -7,6 +7,7 @@ import {
   ScrollView,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
+import { useDensity } from "../../lib/density";
 
 export interface Attachment {
   uri: string;
@@ -24,14 +25,24 @@ interface Props {
 }
 
 export function ImageAttachments({ attachments, isDark, onRemove }: Props) {
+  const density = useDensity();
   if (attachments.length === 0) return null;
 
   return (
-    <View style={[s.container, isDark && s.containerDark]}>
+    <View
+      style={[
+        s.container,
+        isDark && s.containerDark,
+        {
+          paddingHorizontal: 12 * density.padding,
+          paddingVertical: 8 * density.padding,
+        },
+      ]}
+    >
       <ScrollView
         horizontal
         showsHorizontalScrollIndicator={false}
-        contentContainerStyle={s.scroll}
+        contentContainerStyle={[s.scroll, { gap: 8 * density.gap }]}
       >
         {attachments.map((att, idx) => (
           <View key={`${att.uri}-${idx}`} style={s.thumb}>
@@ -47,7 +58,17 @@ export function ImageAttachments({ attachments, isDark, onRemove }: Props) {
               <Ionicons name="close" size={14} color="#ffffff" />
             </TouchableOpacity>
             {att.filename && (
-              <Text style={[s.label, isDark && s.labelDark]} numberOfLines={1}>
+              <Text
+                style={[
+                  s.label,
+                  isDark && s.labelDark,
+                  {
+                    fontSize: 10 * density.font,
+                    marginTop: 2 * density.padding,
+                  },
+                ]}
+                numberOfLines={1}
+              >
                 {att.filename}
               </Text>
             )}

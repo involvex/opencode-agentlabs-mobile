@@ -10,6 +10,7 @@ import {
 import { Ionicons } from "@expo/vector-icons";
 import { useTranslation } from "react-i18next";
 import { WIDE_CONTENT_SCROLL_CONFIG } from "../../lib/scroll-config";
+import { useDensity } from "../../lib/density";
 import type { Part } from "../../lib/sdk";
 
 const mono = Platform.OS === "ios" ? "Menlo" : "monospace";
@@ -22,6 +23,7 @@ export function CompactionBanner({
   isDark: boolean;
 }) {
   const { t } = useTranslation();
+  const density = useDensity();
   const [expanded, setExpanded] = useState(false);
 
   const summary =
@@ -41,17 +43,40 @@ export function CompactionBanner({
 
   return (
     <TouchableOpacity
-      style={[s.banner, isDark && s.bannerDark]}
+      style={[
+        s.banner,
+        isDark && s.bannerDark,
+        { padding: 10 * density.padding, marginBottom: 8 * density.padding },
+      ]}
       onPress={toggle}
       activeOpacity={0.7}
     >
-      <View style={s.header}>
+      <View
+        style={[
+          s.header,
+          { gap: 6 * density.gap, marginBottom: 4 * density.padding },
+        ]}
+      >
         <Ionicons name="archive-outline" size={14} color="#6366f1" />
-        <Text style={[s.label, isDark && s.labelDark]}>
+        <Text
+          style={[
+            s.label,
+            isDark && s.labelDark,
+            { fontSize: 11 * density.font },
+          ]}
+        >
           {t("chat.compactionBanner.label", "Compacted")}
         </Text>
         {elapsed && (
-          <Text style={[s.elapsed, isDark && s.elapsedDark]}>{elapsed}</Text>
+          <Text
+            style={[
+              s.elapsed,
+              isDark && s.elapsedDark,
+              { fontSize: 10 * density.font },
+            ]}
+          >
+            {elapsed}
+          </Text>
         )}
         <Ionicons
           name={expanded ? "chevron-up" : "chevron-down"}
@@ -60,7 +85,11 @@ export function CompactionBanner({
         />
       </View>
       <Text
-        style={[s.summary, isDark && s.summaryDark]}
+        style={[
+          s.summary,
+          isDark && s.summaryDark,
+          { fontSize: 12 * density.font, lineHeight: 18 * density.font },
+        ]}
         numberOfLines={2}
         selectable
       >
@@ -73,16 +102,32 @@ export function CompactionBanner({
           showsVerticalScrollIndicator={false}
           style={s.expandedScroll}
         >
-          <View style={s.expandedContent}>
+          <View style={[s.expandedContent, { gap: 8 * density.gap }]}>
             {typeof part.state?.input === "string" &&
               part.state.input.length > 0 && (
                 <View style={s.detailGroup}>
-                  <Text style={[s.detailLabel, isDark && s.detailLabelDark]}>
+                  <Text
+                    style={[
+                      s.detailLabel,
+                      isDark && s.detailLabelDark,
+                      { fontSize: 10 * density.font },
+                    ]}
+                  >
                     {t("chat.compactionBanner.inputLabel", "Prompt sent")}
                   </Text>
-                  <View style={[s.codeBlock, isDark && s.codeBlockDark]}>
+                  <View
+                    style={[
+                      s.codeBlock,
+                      isDark && s.codeBlockDark,
+                      { padding: 8 * density.padding },
+                    ]}
+                  >
                     <Text
-                      style={[s.codePre, isDark && s.codePreDark]}
+                      style={[
+                        s.codePre,
+                        isDark && s.codePreDark,
+                        { fontSize: 12 * density.font },
+                      ]}
                       selectable
                       numberOfLines={20}
                     >
@@ -94,12 +139,28 @@ export function CompactionBanner({
             {typeof part.state?.output === "string" &&
               part.state.output.length > 0 && (
                 <View style={s.detailGroup}>
-                  <Text style={[s.detailLabel, isDark && s.detailLabelDark]}>
+                  <Text
+                    style={[
+                      s.detailLabel,
+                      isDark && s.detailLabelDark,
+                      { fontSize: 10 * density.font },
+                    ]}
+                  >
                     {t("chat.compactionBanner.outputLabel", "Response")}
                   </Text>
-                  <View style={[s.codeBlock, isDark && s.codeBlockDark]}>
+                  <View
+                    style={[
+                      s.codeBlock,
+                      isDark && s.codeBlockDark,
+                      { padding: 8 * density.padding },
+                    ]}
+                  >
                     <Text
-                      style={[s.codePre, isDark && s.codePreDark]}
+                      style={[
+                        s.codePre,
+                        isDark && s.codePreDark,
+                        { fontSize: 12 * density.font },
+                      ]}
                       selectable
                       numberOfLines={30}
                     >
@@ -110,10 +171,20 @@ export function CompactionBanner({
               )}
             {typeof part.state?.error?.message === "string" &&
               part.state.error.message.length > 0 && (
-                <View style={[s.errorBanner, isDark && s.errorBannerDark]}>
+                <View
+                  style={[
+                    s.errorBanner,
+                    isDark && s.errorBannerDark,
+                    { gap: 6 * density.gap, padding: 8 * density.padding },
+                  ]}
+                >
                   <Ionicons name="alert-circle" size={14} color="#ef4444" />
                   <Text
-                    style={[s.errorText, isDark && s.errorTextDark]}
+                    style={[
+                      s.errorText,
+                      isDark && s.errorTextDark,
+                      { fontSize: 12 * density.font },
+                    ]}
                     selectable
                   >
                     {part.state.error.message}
@@ -123,7 +194,13 @@ export function CompactionBanner({
             {!part.state?.input &&
               !part.state?.output &&
               !part.state?.error?.message && (
-                <Text style={[s.emptyHint, isDark && s.emptyHintDark]}>
+                <Text
+                  style={[
+                    s.emptyHint,
+                    isDark && s.emptyHintDark,
+                    { fontSize: 11 * density.font },
+                  ]}
+                >
                   {t(
                     "chat.compactionBanner.noDetails",
                     "No additional details",

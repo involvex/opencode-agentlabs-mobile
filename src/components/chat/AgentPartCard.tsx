@@ -11,6 +11,7 @@ import {
 import { Ionicons } from "@expo/vector-icons";
 import { useTranslation } from "react-i18next";
 import { WIDE_CONTENT_SCROLL_CONFIG } from "../../lib/scroll-config";
+import { useDensity } from "../../lib/density";
 import type { Part } from "../../lib/sdk";
 
 const mono = Platform.OS === "ios" ? "Menlo" : "monospace";
@@ -69,16 +70,36 @@ interface AgentDetailProps {
 
 function AgentDetail({ input, output, error, isDark }: AgentDetailProps) {
   const { t } = useTranslation();
+  const density = useDensity();
   const hasInput = input !== undefined && input !== null;
   const hasOutput = output !== undefined && output !== null;
 
   return (
-    <View style={s.detailSection}>
+    <View
+      style={[
+        s.detailSection,
+        { gap: 8 * density.gap, marginTop: 8 * density.padding },
+      ]}
+    >
       {typeof error === "string" && error.length > 0 && (
-        <View style={[s.errorBannerInline, isDark && s.errorBannerDark]}>
+        <View
+          style={[
+            s.errorBannerInline,
+            isDark && s.errorBannerDark,
+            {
+              gap: 6 * density.gap,
+              marginTop: 6 * density.padding,
+              padding: 8 * density.padding,
+            },
+          ]}
+        >
           <Ionicons name="alert-circle" size={14} color="#ef4444" />
           <Text
-            style={[s.errorText, isDark && s.errorTextDark]}
+            style={[
+              s.errorText,
+              isDark && s.errorTextDark,
+              { fontSize: 12 * density.font },
+            ]}
             selectable
             numberOfLines={3}
           >
@@ -88,12 +109,28 @@ function AgentDetail({ input, output, error, isDark }: AgentDetailProps) {
       )}
       {hasInput && (
         <View style={s.detailGroup}>
-          <Text style={[s.detailLabel, isDark && s.detailLabelDark]}>
+          <Text
+            style={[
+              s.detailLabel,
+              isDark && s.detailLabelDark,
+              { fontSize: 11 * density.font },
+            ]}
+          >
             {t("chat.agentPartCard.inputLabel", "Input")}
           </Text>
-          <View style={[s.codeBlock, isDark && s.codeBlockDark]}>
+          <View
+            style={[
+              s.codeBlock,
+              isDark && s.codeBlockDark,
+              { padding: 10 * density.padding },
+            ]}
+          >
             <Text
-              style={[s.codePre, isDark && s.codePteDark]}
+              style={[
+                s.codePre,
+                isDark && s.codePteDark,
+                { fontSize: 12 * density.font },
+              ]}
               selectable
               numberOfLines={40}
             >
@@ -106,12 +143,28 @@ function AgentDetail({ input, output, error, isDark }: AgentDetailProps) {
       )}
       {hasOutput && (
         <View style={s.detailGroup}>
-          <Text style={[s.detailLabel, isDark && s.detailLabelDark]}>
+          <Text
+            style={[
+              s.detailLabel,
+              isDark && s.detailLabelDark,
+              { fontSize: 11 * density.font },
+            ]}
+          >
             {t("chat.agentPartCard.outputLabel", "Output")}
           </Text>
-          <View style={[s.codeBlock, isDark && s.codeBlockDark]}>
+          <View
+            style={[
+              s.codeBlock,
+              isDark && s.codeBlockDark,
+              { padding: 10 * density.padding },
+            ]}
+          >
             <Text
-              style={[s.codePre, isDark && s.codePteDark]}
+              style={[
+                s.codePre,
+                isDark && s.codePteDark,
+                { fontSize: 12 * density.font },
+              ]}
               selectable
               numberOfLines={40}
             >
@@ -136,7 +189,13 @@ function AgentDetail({ input, output, error, isDark }: AgentDetailProps) {
         />
       )}
       {!hasInput && !hasOutput && !error && (
-        <Text style={[s.emptyHint, isDark && s.emptyHintDark]}>
+        <Text
+          style={[
+            s.emptyHint,
+            isDark && s.emptyHintDark,
+            { fontSize: 12 * density.font },
+          ]}
+        >
           {t("chat.agentPartCard.noDetails", "No details available")}
         </Text>
       )}
@@ -223,6 +282,7 @@ export function AgentPartCard({
   isDark: boolean;
 }) {
   const { t } = useTranslation();
+  const density = useDensity();
   const [expanded, setExpanded] = useState(false);
 
   const status = tool.state?.status || "pending";
@@ -249,13 +309,14 @@ export function AgentPartCard({
         isDark && s.cardDark,
         status === "error" && s.cardError,
         status === "error" && isDark && s.cardErrorDark,
+        { padding: 10 * density.padding, marginTop: 8 * density.padding },
       ]}
       onPress={toggle}
       activeOpacity={hasDetail ? 0.7 : 1}
     >
       {/* Header row */}
       <View style={s.header}>
-        <View style={s.headerLeft}>
+        <View style={[s.headerLeft, { gap: 8 * density.gap }]}>
           <Ionicons
             name={
               label === t("chat.agentPartCard.subtask")
@@ -266,16 +327,39 @@ export function AgentPartCard({
             color={color}
           />
           <View style={s.nameContainer}>
-            <Text style={[s.name, isDark && s.nameDark]} numberOfLines={1}>
+            <Text
+              style={[
+                s.name,
+                isDark && s.nameDark,
+                { fontSize: 13 * density.font },
+              ]}
+              numberOfLines={1}
+            >
               {agentName}
             </Text>
-            <Text style={[s.label, isDark && s.labelDark]}>{label}</Text>
+            <Text
+              style={[
+                s.label,
+                isDark && s.labelDark,
+                { fontSize: 11 * density.font },
+              ]}
+            >
+              {label}
+            </Text>
           </View>
           {elapsed && (
-            <Text style={[s.elapsed, isDark && s.elapsedDark]}>{elapsed}</Text>
+            <Text
+              style={[
+                s.elapsed,
+                isDark && s.elapsedDark,
+                { fontSize: 11 * density.font },
+              ]}
+            >
+              {elapsed}
+            </Text>
           )}
         </View>
-        <View style={s.headerRight}>
+        <View style={[s.headerRight, { gap: 6 * density.gap }]}>
           {status === "running" && (
             <ActivityIndicator size="small" color={color} />
           )}
@@ -300,10 +384,24 @@ export function AgentPartCard({
 
       {/* Error banner (always visible when collapsed) */}
       {error && !expanded && (
-        <View style={[s.errorBannerInline, isDark && s.errorBannerDark]}>
+        <View
+          style={[
+            s.errorBannerInline,
+            isDark && s.errorBannerDark,
+            {
+              gap: 6 * density.gap,
+              marginTop: 6 * density.padding,
+              padding: 8 * density.padding,
+            },
+          ]}
+        >
           <Ionicons name="alert-circle" size={12} color="#ef4444" />
           <Text
-            style={[s.errorText, isDark && s.errorTextDark]}
+            style={[
+              s.errorText,
+              isDark && s.errorTextDark,
+              { fontSize: 12 * density.font },
+            ]}
             numberOfLines={2}
             selectable
           >

@@ -2,6 +2,7 @@ import { useState } from "react";
 import { View, Text, TouchableOpacity, StyleSheet } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { useTranslation } from "react-i18next";
+import { useDensity } from "../../lib/density";
 
 interface Props {
   text: string;
@@ -10,17 +11,28 @@ interface Props {
 
 export function ReasoningBlock({ text, isDark }: Props) {
   const { t } = useTranslation();
+  const density = useDensity();
   const [expanded, setExpanded] = useState(false);
 
   return (
     <TouchableOpacity
-      style={[s.block, isDark && s.blockDark]}
+      style={[
+        s.block,
+        isDark && s.blockDark,
+        { padding: 10 * density.padding, marginBottom: 8 * density.padding },
+      ]}
       onPress={() => setExpanded(!expanded)}
       activeOpacity={0.7}
     >
-      <View style={s.header}>
+      <View style={[s.header, { gap: 6 * density.gap }]}>
         <Ionicons name="bulb-outline" size={14} color="#f59e0b" />
-        <Text style={[s.label, isDark && s.labelDark]}>
+        <Text
+          style={[
+            s.label,
+            isDark && s.labelDark,
+            { fontSize: 12 * density.font },
+          ]}
+        >
           {t("chat.reasoningBlock.label")}
         </Text>
         <Ionicons
@@ -30,7 +42,18 @@ export function ReasoningBlock({ text, isDark }: Props) {
         />
       </View>
       {expanded && (
-        <Text style={[s.text, isDark && s.textDark]} selectable>
+        <Text
+          style={[
+            s.text,
+            isDark && s.textDark,
+            {
+              fontSize: 13 * density.font,
+              lineHeight: 20 * density.font,
+              marginTop: 8 * density.padding,
+            },
+          ]}
+          selectable
+        >
           {text}
         </Text>
       )}

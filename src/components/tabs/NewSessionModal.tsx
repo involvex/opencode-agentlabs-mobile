@@ -13,6 +13,7 @@ import {
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import type { Project } from "../../lib/sdk";
+import { useDensity } from "../../lib/density";
 
 export interface NewSessionModalProps {
   visible: boolean;
@@ -269,6 +270,7 @@ export function NewSessionModal({
   recentDirectories,
   serverProjects,
 }: NewSessionModalProps) {
+  const density = useDensity();
   const handleSaveTemplate = useCallback(async () => {
     await onSaveTemplate();
   }, [onSaveTemplate]);
@@ -294,9 +296,26 @@ export function NewSessionModal({
           activeOpacity={1}
           onPress={onClose}
         />
-        <View style={[styles.modalContent, isDark && styles.modalContentDark]}>
-          <View style={styles.modalHeader}>
-            <Text style={[styles.modalTitle, isDark && styles.textDark]}>
+        <View
+          style={[
+            styles.modalContent,
+            isDark && styles.modalContentDark,
+            {
+              padding: 20 * density.padding,
+              paddingBottom: 40 * density.padding,
+            },
+          ]}
+        >
+          <View
+            style={[styles.modalHeader, { marginBottom: 20 * density.padding }]}
+          >
+            <Text
+              style={[
+                styles.modalTitle,
+                isDark && styles.textDark,
+                { fontSize: 20 * density.font },
+              ]}
+            >
               {t("sessionsList.newSessionModal.title")}
             </Text>
             <TouchableOpacity onPress={onClose}>
@@ -309,20 +328,40 @@ export function NewSessionModal({
           </View>
 
           <ScrollView
-            style={styles.modalScrollBody}
+            style={[
+              styles.modalScrollBody,
+              { marginBottom: 16 * density.padding },
+            ]}
             keyboardShouldPersistTaps="handled"
           >
-            <Text style={[styles.modalLabel, isDark && styles.metaDark]}>
+            <Text
+              style={[
+                styles.modalLabel,
+                isDark && styles.metaDark,
+                {
+                  fontSize: 13 * density.font,
+                  marginBottom: 8 * density.padding,
+                },
+              ]}
+            >
               {t("sessionsList.newSessionModal.currentProjectLabel")}
             </Text>
             <TouchableOpacity
-              style={[styles.modalDirBox, isDark && styles.modalDirBoxDark]}
+              style={[
+                styles.modalDirBox,
+                isDark && styles.modalDirBoxDark,
+                { gap: 12 * density.gap, padding: 16 * density.padding },
+              ]}
               onPress={() => onCreate()}
               disabled={isCreating}
             >
               <Ionicons name="folder" size={20} color={accent} />
               <Text
-                style={[styles.modalDirText, isDark && styles.textDark]}
+                style={[
+                  styles.modalDirText,
+                  isDark && styles.textDark,
+                  { fontSize: 15 * density.font },
+                ]}
                 numberOfLines={2}
               >
                 {currentProject?.path?.absolute ||
@@ -338,7 +377,7 @@ export function NewSessionModal({
                   style={[
                     styles.modalLabel,
                     isDark && styles.metaDark,
-                    { marginTop: 16 },
+                    { marginTop: 16 * density.padding },
                   ]}
                 >
                   {t("sessionsList.newSessionModal.recentProjectsLabel")}
@@ -356,6 +395,12 @@ export function NewSessionModal({
                         styles.projectRow,
                         isDark && styles.projectRowDark,
                         isCurrent && styles.projectRowActive,
+                        {
+                          gap: 12 * density.gap,
+                          paddingHorizontal: 14 * density.padding,
+                          paddingVertical: 11 * density.padding,
+                          marginBottom: 6 * density.padding,
+                        },
                       ]}
                       onPress={() => onCreate(dir)}
                       disabled={isCreating}
@@ -409,7 +454,7 @@ export function NewSessionModal({
                   style={[
                     styles.modalLabel,
                     isDark && styles.metaDark,
-                    { marginTop: 16 },
+                    { marginTop: 16 * density.padding },
                   ]}
                 >
                   {t("sessionsList.newSessionModal.serverProjectsLabel")}
@@ -470,7 +515,7 @@ export function NewSessionModal({
               style={[
                 styles.projectRow,
                 isDark && styles.projectRowDark,
-                { marginTop: 16 },
+                { marginTop: 16 * density.padding },
               ]}
               onPress={() =>
                 onBrowse(
@@ -506,13 +551,21 @@ export function NewSessionModal({
               style={[
                 styles.modalLabel,
                 isDark && styles.metaDark,
-                { marginTop: 16 },
+                { marginTop: 16 * density.padding },
               ]}
             >
               {t("sessionsList.newSessionModal.enterPathLabel")}
             </Text>
             <TextInput
-              style={[styles.modalInput, isDark && styles.modalInputDark]}
+              style={[
+                styles.modalInput,
+                isDark && styles.modalInputDark,
+                {
+                  paddingHorizontal: 16 * density.padding,
+                  paddingVertical: 14 * density.padding,
+                  fontSize: 15 * density.font,
+                },
+              ]}
               placeholder={
                 serverHome ? `${serverHome}/...` : "/path/to/project"
               }
@@ -523,28 +576,49 @@ export function NewSessionModal({
               autoCorrect={false}
             />
             {serverHome && (
-              <View style={styles.pathChips}>
+              <View
+                style={[
+                  styles.pathChips,
+                  { gap: 8 * density.gap, marginTop: 8 * density.padding },
+                ]}
+              >
                 <TouchableOpacity
-                  style={[styles.pathChip, isDark && styles.pathChipDark]}
+                  style={[
+                    styles.pathChip,
+                    isDark && styles.pathChipDark,
+                    {
+                      paddingHorizontal: 12 * density.padding,
+                      paddingVertical: 6 * density.padding,
+                    },
+                  ]}
                   onPress={() => onCustomDirChange(serverHome)}
                 >
                   <Text
                     style={[
                       styles.pathChipText,
                       isDark && styles.pathChipTextDark,
+                      { fontSize: 13 * density.font },
                     ]}
                   >
                     ~
                   </Text>
                 </TouchableOpacity>
                 <TouchableOpacity
-                  style={[styles.pathChip, isDark && styles.pathChipDark]}
+                  style={[
+                    styles.pathChip,
+                    isDark && styles.pathChipDark,
+                    {
+                      paddingHorizontal: 12 * density.padding,
+                      paddingVertical: 6 * density.padding,
+                    },
+                  ]}
                   onPress={() => onCustomDirChange(serverHome + "/")}
                 >
                   <Text
                     style={[
                       styles.pathChipText,
                       isDark && styles.pathChipTextDark,
+                      { fontSize: 13 * density.font },
                     ]}
                   >
                     ~/
@@ -555,8 +629,19 @@ export function NewSessionModal({
           </ScrollView>
 
           {templates.length > 0 && (
-            <View style={[styles.modalSection, { marginTop: 16 }]}>
-              <Text style={[styles.modalLabel, isDark && styles.metaDark]}>
+            <View
+              style={[styles.modalSection, { marginTop: 16 * density.padding }]}
+            >
+              <Text
+                style={[
+                  styles.modalLabel,
+                  isDark && styles.metaDark,
+                  {
+                    fontSize: 13 * density.font,
+                    marginBottom: 8 * density.padding,
+                  },
+                ]}
+              >
                 {t("sessionsList.newSessionModal.templatesLabel")}
               </Text>
               {templates.map((tmpl) => (
@@ -566,6 +651,11 @@ export function NewSessionModal({
                     styles.templateRow,
                     isDark && styles.projectRowDark,
                     selectedTemplateID === tmpl.id && styles.projectRowActive,
+                    {
+                      gap: 12 * density.gap,
+                      paddingVertical: 12 * density.padding,
+                      paddingHorizontal: 16 * density.padding,
+                    },
                   ]}
                   onPress={() => {
                     onSelectTemplateID(
@@ -575,13 +665,21 @@ export function NewSessionModal({
                 >
                   <View style={styles.templateRowContent}>
                     <Text
-                      style={[styles.templateName, isDark && styles.textDark]}
+                      style={[
+                        styles.templateName,
+                        isDark && styles.textDark,
+                        { fontSize: 14 * density.font },
+                      ]}
                       numberOfLines={1}
                     >
                       {tmpl.name}
                     </Text>
                     <Text
-                      style={[styles.templatePrompt, isDark && styles.metaDark]}
+                      style={[
+                        styles.templatePrompt,
+                        isDark && styles.metaDark,
+                        { fontSize: 12 * density.font },
+                      ]}
                       numberOfLines={2}
                     >
                       {tmpl.prompt}
@@ -605,9 +703,19 @@ export function NewSessionModal({
             </View>
           )}
 
-          <View style={[styles.modalSection, { marginTop: 8 }]}>
+          <View
+            style={[styles.modalSection, { marginTop: 8 * density.padding }]}
+          >
             <TextInput
-              style={[styles.modalInput, isDark && styles.modalInputDark]}
+              style={[
+                styles.modalInput,
+                isDark && styles.modalInputDark,
+                {
+                  paddingHorizontal: 16 * density.padding,
+                  paddingVertical: 14 * density.padding,
+                  fontSize: 15 * density.font,
+                },
+              ]}
               placeholder={t(
                 "sessionsList.newSessionModal.templateNamePlaceholder",
               )}
@@ -618,7 +726,7 @@ export function NewSessionModal({
             />
           </View>
 
-          <View style={styles.modalActions}>
+          <View style={[styles.modalActions, { gap: 12 * density.gap }]}>
             {customDir.trim() ? (
               <TouchableOpacity
                 style={[
@@ -626,6 +734,7 @@ export function NewSessionModal({
                   styles.modalButtonPrimary,
                   isDark && styles.modalButtonPrimaryDark,
                   styles.modalButtonFull,
+                  { padding: 16 * density.padding, gap: 8 * density.gap },
                 ]}
                 onPress={() => onCreate(customDir)}
                 disabled={isCreating}
@@ -640,6 +749,7 @@ export function NewSessionModal({
                     style={[
                       styles.modalButtonTextPrimary,
                       isDark && styles.modalButtonTextPrimaryDark,
+                      { fontSize: 15 * density.font },
                     ]}
                   >
                     {t("sessionsList.newSessionModal.createInButton", {
@@ -656,6 +766,7 @@ export function NewSessionModal({
                   styles.modalButtonPrimary,
                   isDark && styles.modalButtonPrimaryDark,
                   styles.modalButtonFull,
+                  { padding: 16 * density.padding, gap: 8 * density.gap },
                 ]}
                 onPress={() => onCreate()}
                 disabled={isCreating}
@@ -670,6 +781,7 @@ export function NewSessionModal({
                     style={[
                       styles.modalButtonTextPrimary,
                       isDark && styles.modalButtonTextPrimaryDark,
+                      { fontSize: 15 * density.font },
                     ]}
                   >
                     {t("sessionsList.newSessionModal.createSessionButton")}
@@ -685,6 +797,7 @@ export function NewSessionModal({
               styles.modalButtonSecondary,
               isDark && styles.modalButtonSecondaryDark,
               styles.modalButtonFull,
+              { padding: 16 * density.padding, gap: 8 * density.gap },
             ]}
             onPress={handleSaveTemplate}
           >
@@ -692,6 +805,7 @@ export function NewSessionModal({
               style={[
                 styles.modalButtonTextSecondary,
                 isDark && styles.modalButtonTextSecondaryDark,
+                { fontSize: 15 * density.font },
               ]}
             >
               {selectedTemplateID

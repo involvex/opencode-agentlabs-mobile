@@ -2,6 +2,7 @@ import { useState, useCallback } from "react";
 import { View, Text, TouchableOpacity, StyleSheet } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { useTranslation } from "react-i18next";
+import { useDensity } from "../../lib/density";
 import type { Part } from "../../lib/sdk";
 
 function duration(start?: number, end?: number): string | null {
@@ -13,6 +14,7 @@ function duration(start?: number, end?: number): string | null {
 
 export function RetryBanner({ part, isDark }: { part: Part; isDark: boolean }) {
   const { t } = useTranslation();
+  const density = useDensity();
   const [expanded, setExpanded] = useState(false);
 
   const reason =
@@ -39,22 +41,46 @@ export function RetryBanner({ part, isDark }: { part: Part; isDark: boolean }) {
 
   return (
     <TouchableOpacity
-      style={[s.banner, isDark && s.bannerDark]}
+      style={[
+        s.banner,
+        isDark && s.bannerDark,
+        { padding: 8 * density.padding, marginTop: 8 * density.padding },
+      ]}
       onPress={toggle}
       activeOpacity={hasDetail ? 0.7 : 1}
     >
-      <View style={s.header}>
+      <View style={[s.header, { gap: 6 * density.gap }]}>
         <Ionicons name="refresh-outline" size={14} color="#8b5cf6" />
-        <Text style={[s.label, isDark && s.labelDark]}>
+        <Text
+          style={[
+            s.label,
+            isDark && s.labelDark,
+            { fontSize: 11 * density.font },
+          ]}
+        >
           {t("chat.retryBanner.label", "Retry")}
         </Text>
         {typeof attempt === "string" && (
-          <Text style={[s.attempt, isDark && s.attemptDark]}>
+          <Text
+            style={[
+              s.attempt,
+              isDark && s.attemptDark,
+              { fontSize: 11 * density.font },
+            ]}
+          >
             {t("chat.retryBanner.attempt", "Attempt {{n}}", { n: attempt })}
           </Text>
         )}
         {elapsed && (
-          <Text style={[s.elapsed, isDark && s.elapsedDark]}>{elapsed}</Text>
+          <Text
+            style={[
+              s.elapsed,
+              isDark && s.elapsedDark,
+              { fontSize: 10 * density.font },
+            ]}
+          >
+            {elapsed}
+          </Text>
         )}
         {hasDetail && (
           <Ionicons
@@ -66,16 +92,41 @@ export function RetryBanner({ part, isDark }: { part: Part; isDark: boolean }) {
       </View>
 
       {expanded && hasDetail && (
-        <View style={s.expandedContent}>
+        <View
+          style={[
+            s.expandedContent,
+            { marginTop: 6 * density.padding, gap: 6 * density.gap },
+          ]}
+        >
           {reason && (
-            <Text style={[s.reason, isDark && s.reasonDark]} selectable>
+            <Text
+              style={[
+                s.reason,
+                isDark && s.reasonDark,
+                { fontSize: 12 * density.font, lineHeight: 18 * density.font },
+              ]}
+              selectable
+            >
               {reason}
             </Text>
           )}
           {error && (
-            <View style={[s.errorBanner, isDark && s.errorBannerDark]}>
+            <View
+              style={[
+                s.errorBanner,
+                isDark && s.errorBannerDark,
+                { gap: 6 * density.gap, padding: 6 * density.padding },
+              ]}
+            >
               <Ionicons name="alert-circle" size={12} color="#ef4444" />
-              <Text style={[s.errorText, isDark && s.errorTextDark]} selectable>
+              <Text
+                style={[
+                  s.errorText,
+                  isDark && s.errorTextDark,
+                  { fontSize: 11 * density.font },
+                ]}
+                selectable
+              >
                 {error}
               </Text>
             </View>

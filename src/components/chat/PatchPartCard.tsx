@@ -10,6 +10,7 @@ import {
 import { Ionicons } from "@expo/vector-icons";
 import { useTranslation } from "react-i18next";
 import { DiffView } from "./DiffView";
+import { useDensity } from "../../lib/density";
 import type { Part } from "../../lib/sdk";
 
 const mono = Platform.OS === "ios" ? "Menlo" : "monospace";
@@ -29,6 +30,7 @@ export function PatchPartCard({
   isDark: boolean;
 }) {
   const { t } = useTranslation();
+  const density = useDensity();
   const [expanded, setExpanded] = useState(false);
 
   const status = part.state?.status || "pending";
@@ -81,21 +83,37 @@ export function PatchPartCard({
         isDark && s.cardDark,
         status === "error" && s.cardError,
         status === "error" && isDark && s.cardErrorDark,
+        { padding: 10 * density.padding, marginTop: 8 * density.padding },
       ]}
       onPress={toggle}
       activeOpacity={hasDetail ? 0.7 : 1}
     >
       <View style={s.header}>
-        <View style={s.headerLeft}>
+        <View style={[s.headerLeft, { gap: 8 * density.gap }]}>
           <Ionicons name="git-merge-outline" size={16} color="#8b5cf6" />
-          <Text style={[s.name, isDark && s.nameDark]} numberOfLines={1}>
+          <Text
+            style={[
+              s.name,
+              isDark && s.nameDark,
+              { fontSize: 13 * density.font },
+            ]}
+            numberOfLines={1}
+          >
             {title}
           </Text>
           {elapsed && (
-            <Text style={[s.elapsed, isDark && s.elapsedDark]}>{elapsed}</Text>
+            <Text
+              style={[
+                s.elapsed,
+                isDark && s.elapsedDark,
+                { fontSize: 11 * density.font },
+              ]}
+            >
+              {elapsed}
+            </Text>
           )}
         </View>
-        <View style={s.headerRight}>
+        <View style={[s.headerRight, { gap: 6 * density.gap }]}>
           {status === "running" && (
             <ActivityIndicator size="small" color="#8b5cf6" />
           )}
@@ -116,10 +134,24 @@ export function PatchPartCard({
       </View>
 
       {error && !expanded && (
-        <View style={[s.errorBannerInline, isDark && s.errorBannerDark]}>
+        <View
+          style={[
+            s.errorBannerInline,
+            isDark && s.errorBannerDark,
+            {
+              gap: 6 * density.gap,
+              marginTop: 6 * density.padding,
+              padding: 8 * density.padding,
+            },
+          ]}
+        >
           <Ionicons name="alert-circle" size={12} color="#ef4444" />
           <Text
-            style={[s.errorText, isDark && s.errorTextDark]}
+            style={[
+              s.errorText,
+              isDark && s.errorTextDark,
+              { fontSize: 12 * density.font },
+            ]}
             numberOfLines={2}
             selectable
           >
@@ -129,9 +161,20 @@ export function PatchPartCard({
       )}
 
       {expanded && (
-        <View style={s.expandedContent}>
+        <View
+          style={[
+            s.expandedContent,
+            { marginTop: 8 * density.padding, gap: 8 * density.gap },
+          ]}
+        >
           {hasNoDetail && (
-            <Text style={[s.emptyHint, isDark && s.emptyHintDark]}>
+            <Text
+              style={[
+                s.emptyHint,
+                isDark && s.emptyHintDark,
+                { fontSize: 11 * density.font },
+              ]}
+            >
               {t("chat.patchPartCard.noDetails", "No patch details available")}
             </Text>
           )}
@@ -139,9 +182,19 @@ export function PatchPartCard({
             <DiffView before={before} after={after} isDark={isDark} />
           )}
           {rawState && (
-            <View style={[s.codeBlock, isDark && s.codeBlockDark]}>
+            <View
+              style={[
+                s.codeBlock,
+                isDark && s.codeBlockDark,
+                { padding: 10 * density.padding },
+              ]}
+            >
               <Text
-                style={[s.codePre, isDark && s.codePteDark]}
+                style={[
+                  s.codePre,
+                  isDark && s.codePteDark,
+                  { fontSize: 12 * density.font },
+                ]}
                 selectable
                 numberOfLines={30}
               >
@@ -150,9 +203,26 @@ export function PatchPartCard({
             </View>
           )}
           {error && (
-            <View style={[s.errorBanner, isDark && s.errorBannerDark]}>
+            <View
+              style={[
+                s.errorBanner,
+                isDark && s.errorBannerDark,
+                {
+                  gap: 6 * density.gap,
+                  marginTop: 6 * density.padding,
+                  padding: 8 * density.padding,
+                },
+              ]}
+            >
               <Ionicons name="alert-circle" size={14} color="#ef4444" />
-              <Text style={[s.errorText, isDark && s.errorTextDark]} selectable>
+              <Text
+                style={[
+                  s.errorText,
+                  isDark && s.errorTextDark,
+                  { fontSize: 12 * density.font },
+                ]}
+                selectable
+              >
                 {error}
               </Text>
             </View>

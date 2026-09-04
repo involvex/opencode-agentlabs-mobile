@@ -8,6 +8,7 @@ import {
   KeyboardAvoidingView,
   Platform,
 } from "react-native";
+import { useDensity } from "../../lib/density";
 
 export interface RenameModalProps {
   visible: boolean;
@@ -103,6 +104,8 @@ export function RenameModal({
   isDark,
   t,
 }: RenameModalProps) {
+  const density = useDensity();
+
   const submit = useCallback(() => {
     onSubmit();
   }, [onSubmit]);
@@ -118,12 +121,36 @@ export function RenameModal({
           activeOpacity={1}
           onPress={onClose}
         />
-        <View style={[styles.renameCard, isDark && styles.renameCardDark]}>
-          <Text style={[styles.renameTitle, isDark && styles.textDark]}>
+        <View
+          style={[
+            styles.renameCard,
+            isDark && styles.renameCardDark,
+            {
+              padding: 20 * density.padding,
+              marginHorizontal: 32 * density.padding,
+              gap: 16 * density.gap,
+            },
+          ]}
+        >
+          <Text
+            style={[
+              styles.renameTitle,
+              isDark && styles.textDark,
+              { fontSize: 17 * density.font },
+            ]}
+          >
             {t("sessionsList.renameModal.title")}
           </Text>
           <TextInput
-            style={[styles.modalInput, isDark && styles.modalInputDark]}
+            style={[
+              styles.modalInput,
+              isDark && styles.modalInputDark,
+              {
+                paddingHorizontal: 16 * density.padding,
+                paddingVertical: 14 * density.padding,
+                fontSize: 15 * density.font,
+              },
+            ]}
             value={renameText}
             onChangeText={onChangeText}
             onSubmitEditing={submit}
@@ -133,9 +160,23 @@ export function RenameModal({
             autoCapitalize="sentences"
             autoCorrect={false}
           />
-          <View style={styles.renameActions}>
-            <TouchableOpacity style={styles.renameBtn} onPress={onClose}>
-              <Text style={styles.renameBtnCancelText}>
+          <View style={[styles.renameActions, { gap: 12 * density.gap }]}>
+            <TouchableOpacity
+              style={[
+                styles.renameBtn,
+                {
+                  paddingHorizontal: 20 * density.padding,
+                  paddingVertical: 10 * density.padding,
+                },
+              ]}
+              onPress={onClose}
+            >
+              <Text
+                style={[
+                  styles.renameBtnCancelText,
+                  { fontSize: 15 * density.font },
+                ]}
+              >
                 {t("common.cancel")}
               </Text>
             </TouchableOpacity>
@@ -144,6 +185,10 @@ export function RenameModal({
                 styles.renameBtn,
                 styles.modalButtonPrimary,
                 isDark && styles.modalButtonPrimaryDark,
+                {
+                  paddingHorizontal: 20 * density.padding,
+                  paddingVertical: 10 * density.padding,
+                },
               ]}
               onPress={submit}
               disabled={disabled}
@@ -152,6 +197,7 @@ export function RenameModal({
                 style={[
                   styles.modalButtonTextPrimary,
                   isDark && styles.modalButtonTextPrimaryDark,
+                  { fontSize: 15 * density.font },
                 ]}
               >
                 {t("common.save")}
