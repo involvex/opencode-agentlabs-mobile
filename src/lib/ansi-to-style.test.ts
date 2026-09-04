@@ -139,3 +139,62 @@ test("unknown CSI sequence is stripped", () => {
   assert.equal(segs.length, 1);
   assert.equal(segs[0].text, "test");
 });
+
+test("SGR 38;5;14 (256-color foreground) produces colored segment", () => {
+  const segs = ansiToSegments("\x1b[38;5;14mtext\x1b[0m", false);
+  assert.equal(segs.length, 1);
+  assert.equal(segs[0].text, "text");
+  assert.ok(segs[0].style.color, "expected a color to be set");
+  assert.notEqual(segs[0].style.color, "#1a1a1a");
+});
+
+test("SGR 48;5;21 (256-color background) produces bg-colored segment", () => {
+  const segs = ansiToSegments("\x1b[48;5;21mbg\x1b[0m", false);
+  assert.equal(segs.length, 1);
+  assert.equal(segs[0].text, "bg");
+  assert.ok(segs[0].style.backgroundColor, "expected a background color");
+});
+
+test("SGR 38;2;255;128;64 (true-color foreground) produces colored segment", () => {
+  const segs = ansiToSegments("\x1b[38;2;255;128;64mtrue\x1b[0m", false);
+  assert.equal(segs.length, 1);
+  assert.equal(segs[0].text, "true");
+  assert.equal(segs[0].style.color, "#ff8040");
+});
+
+test("incomplete 256-color SGR at end of chunk does not leak as literal text", () => {
+  const segs = ansiToSegments("\x1b[38;5;14", false);
+  assert.ok(!segs[0].text.includes("[38"));
+  assert.ok(!segs[0].text.includes("38;5;14"));
+});
+
+test("fragment SGR without ESC prefix (chunk split) does not leak", () => {
+  const segs = ansiToSegments("[38;5;14mhello", false);
+  assert.equal(segs.length, 1);
+  assert.ok(!segs[0].text.includes("[38"));
+  assert.ok(!segs[0].text.includes("38;5;14"));
+});
+
+test("fragment [m without ESC prefix does not leak", () => {
+  const segs = ansiToSegments("[mhello", false);
+  assert.equal(segs.length, 1);
+  assert.equal(segs[0].text, "hello");
+});
+
+test("fragment [m at end of string does not leak", () => {
+  const segs = ansiToSegments("[m", false);
+  assert.equal(segs.length, 1);
+  assert.equal(segs[0].text, "");
+});
+
+test("fragment [38;5;14 in middle of text does not leak", () => {
+  const segs = ansiToSegments("prefix[38;5;14msuffix", false);
+  assert.equal(segs.length, 1);
+  assert.equal(segs[0].text, "prefixsuffix");
+});
+
+test("fragment [31 in middle of text does not leak", () => {
+  const segs = ansiToSegments("a[31mb", false);
+  assert.equal(segs.length, 1);
+  assert.equal(segs[0].text, "ab");
+});
