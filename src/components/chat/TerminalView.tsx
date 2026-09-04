@@ -43,6 +43,46 @@ const lineStyles = StyleSheet.create({
   lineDark: { color: "#e5e5e5" },
 });
 
+const SPECIAL_KEYS = [
+  { label: "↑", sequence: "\x1b[A" },
+  { label: "↓", sequence: "\x1b[B" },
+  { label: "←", sequence: "\x1b[D" },
+  { label: "→", sequence: "\x1b[C" },
+  { label: "Tab", sequence: "\t" },
+  { label: "Esc", sequence: "\x1b" },
+] as const;
+
+function TerminalKeyButton({
+  label,
+  onPress,
+  isDark,
+  disabled,
+}: {
+  label: string;
+  onPress: () => void;
+  isDark: boolean;
+  disabled?: boolean;
+}) {
+  return (
+    <TouchableOpacity
+      onPress={onPress}
+      disabled={disabled}
+      style={[
+        styles.keyButton,
+        isDark && styles.keyButtonDark,
+        disabled && styles.keyButtonDisabled,
+      ]}
+      hitSlop={6}
+      accessibilityRole="button"
+      accessibilityLabel={label}
+    >
+      <Text style={[styles.keyButtonText, isDark && styles.keyButtonTextDark]}>
+        {label}
+      </Text>
+    </TouchableOpacity>
+  );
+}
+
 interface TerminalLine {
   id: string;
   text: string;
@@ -106,6 +146,7 @@ function TerminalSocket({
   const [wsState, setWsState] = useState<WsState>("connecting");
   const wsRef = useRef<PtyWebSocket | null>(null);
   const scrollRef = useRef<ScrollView>(null);
+  const pendingRef = useRef<string>("");
 
   useEffect(() => {
     const ws = new PtyWebSocket();
@@ -117,7 +158,11 @@ function TerminalSocket({
         setWsState("connected");
         setOutput((prev) => {
           const next = [...prev];
-          const lines = normalizeTerminalChunk(chunk);
+          const { lines, pending } = normalizeTerminalChunk(
+            chunk,
+            pendingRef.current,
+          );
+          pendingRef.current = pending;
           if (lines.length === 1) {
             if (next.length > 0) {
               next[next.length - 1] = {
@@ -161,6 +206,7 @@ function TerminalSocket({
     return () => {
       ws.close();
       wsRef.current = null;
+      pendingRef.current = "";
     };
   }, [wsUrl, onWsError, authorization]);
 
@@ -235,13 +281,19 @@ function TerminalSocket({
         )}
       </ScrollView>
 
-      <View
-        style={[
-          styles.inputBar,
-          { paddingBottom: Math.max(12, 0) },
-          isDark && styles.inputBarDark,
-        ]}
-      >
+      <View style={styles.keyButtonRow}>
+        {SPECIAL_KEYS.map((k) => (
+          <TerminalKeyButton
+            key={k.label}
+            label={k.label}
+            onPress={() => wsRef.current?.send(k.sequence)}
+            isDark={isDark}
+            disabled={wsState !== "connected"}
+          />
+        ))}
+      </View>
+
+      <View style={[styles.inputBar, isDark && styles.inputBarDark]}>
         <Text
           style={[
             styles.prompt,
@@ -397,13 +449,23 @@ function LocalTerminalView({
         ))}
       </ScrollView>
 
-      <View
-        style={[
-          styles.inputBar,
-          { paddingBottom: Math.max(12, 0) },
-          isDark && styles.inputBarDark,
-        ]}
-      >
+      <View style={styles.keyButtonRow}>
+        {SPECIAL_KEYS.map((k) => (
+          <TerminalKeyButton
+            key={k.label}
+            label={k.label}
+            onPress={() => {
+              if (k.label === "Tab" || k.label === "Esc") {
+                setInput((prev) => prev + k.sequence);
+              }
+            }}
+            isDark={isDark}
+            disabled={executing}
+          />
+        ))}
+      </View>
+
+      <View style={[styles.inputBar, isDark && styles.inputBarDark]}>
         <Text
           style={[
             styles.prompt,
@@ -767,5 +829,32 @@ const styles = StyleSheet.create({
     color: "#ffffff",
     fontSize: 12,
     fontWeight: "600",
+  },
+  keyButtonRow: {
+    flexDirection: "row",
+    gap: 6,
+    paddingHorizontal: 12,
+    alignItems: "center",
+    paddingBottom: 4,
+  },
+  keyButton: {
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    backgroundColor: "#e5e5e5",
+    borderRadius: 6,
+  },
+  keyButtonDark: {
+    backgroundColor: "#2a2a2a",
+  },
+  keyButtonDisabled: {
+    opacity: 0.4,
+  },
+  keyButtonText: {
+    fontSize: 13,
+    color: "#333333",
+    fontFamily: "Menlo, monospace",
+  },
+  keyButtonTextDark: {
+    color: "#e5e5e5",
   },
 });
