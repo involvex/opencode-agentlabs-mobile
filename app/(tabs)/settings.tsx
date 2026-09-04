@@ -16,6 +16,7 @@ import { router } from "expo-router";
 import { useAuth } from "../../src/stores/auth";
 import { useSettings } from "../../src/stores/settings";
 import { useTheme, PRESET_ACCENT_COLORS } from "../../src/lib/theme";
+import { useDensity } from "../../src/lib/density";
 import { useEvents } from "../../src/stores/events";
 import { useSessions } from "../../src/stores/sessions";
 import { useConnections } from "../../src/stores/connections";
@@ -52,9 +53,25 @@ function SettingRow({
   right?: React.ReactNode;
   onPress?: () => void;
 }) {
+  const density = useDensity();
   const content = (
-    <View style={[styles.settingRow, isDark && styles.settingRowDark]}>
-      <View style={[styles.settingIcon, isDark && styles.settingIconDark]}>
+    <View
+      style={[
+        styles.settingRow,
+        isDark && styles.settingRowDark,
+        {
+          paddingVertical: 12 * density.padding,
+          paddingHorizontal: 16 * density.padding,
+        },
+      ]}
+    >
+      <View
+        style={[
+          styles.settingIcon,
+          isDark && styles.settingIconDark,
+          { marginRight: 12 * density.padding },
+        ]}
+      >
         <Ionicons
           name={icon}
           size={22}
@@ -62,11 +79,23 @@ function SettingRow({
         />
       </View>
       <View style={styles.settingContent}>
-        <Text style={[styles.settingLabel, isDark && styles.textDark]}>
+        <Text
+          style={[
+            styles.settingLabel,
+            isDark && styles.textDark,
+            { fontSize: 16 * density.font },
+          ]}
+        >
           {label}
         </Text>
         {description && (
-          <Text style={[styles.settingDescription, isDark && styles.metaDark]}>
+          <Text
+            style={[
+              styles.settingDescription,
+              isDark && styles.metaDark,
+              { fontSize: 13 * density.font },
+            ]}
+          >
             {description}
           </Text>
         )}
@@ -91,9 +120,20 @@ function SettingSection({
   children: React.ReactNode;
   isDark: boolean;
 }) {
+  const density = useDensity();
   return (
-    <View style={styles.section}>
-      <Text style={[styles.sectionTitle, isDark && styles.sectionTitleDark]}>
+    <View style={[styles.section, { marginTop: 24 * density.padding }]}>
+      <Text
+        style={[
+          styles.sectionTitle,
+          isDark && styles.sectionTitleDark,
+          {
+            fontSize: 13 * density.font,
+            marginHorizontal: 16 * density.padding,
+            marginBottom: 8 * density.padding,
+          },
+        ]}
+      >
         {title}
       </Text>
       <View
@@ -107,6 +147,7 @@ function SettingSection({
 
 export default function SettingsScreen() {
   const isDark = useTheme();
+  const densityScale = useDensity();
   const { t } = useTranslation();
 
   const { settings, hasBiometrics, updateSettings, lock } = useAuth();
@@ -850,11 +891,23 @@ export default function SettingsScreen() {
         )}
       </SettingSection>
 
-      <View style={styles.footer}>
-        <Text style={[styles.footerText, isDark && styles.metaDark]}>
+      <View style={[styles.footer, { padding: 32 * densityScale.padding }]}>
+        <Text
+          style={[
+            styles.footerText,
+            isDark && styles.metaDark,
+            { fontSize: 13 * densityScale.font },
+          ]}
+        >
           {t("settings.footer.appName")}
         </Text>
-        <Text style={[styles.footerText, isDark && styles.metaDark]}>
+        <Text
+          style={[
+            styles.footerText,
+            isDark && styles.metaDark,
+            { fontSize: 13 * densityScale.font },
+          ]}
+        >
           {t("settings.footer.tagline")}
         </Text>
       </View>

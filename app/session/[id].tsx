@@ -1388,14 +1388,37 @@ export default function SessionScreen() {
           />
 
           {/* Agent/model toolbar */}
-          <View style={[s.toolbar, isDark && s.toolbarDark]}>
+          <View
+            style={[
+              s.toolbar,
+              isDark && s.toolbarDark,
+              {
+                gap: 8 * density.gap,
+                paddingHorizontal: 12 * density.padding,
+                paddingVertical: 6 * density.padding,
+              },
+            ]}
+          >
             <TouchableOpacity
-              style={[s.agentChip, { borderColor: agentColor }]}
+              style={[
+                s.agentChip,
+                {
+                  borderColor: agentColor,
+                  paddingHorizontal: 10 * density.padding,
+                  paddingVertical: 4 * density.padding,
+                },
+              ]}
               onPress={() => handleCycleAgent(1)}
               onLongPress={() => handleCycleAgent(-1)}
             >
               <View style={[s.agentDot, { backgroundColor: agentColor }]} />
-              <Text style={[s.agentLabel, isDark && s.textWhite]}>
+              <Text
+                style={[
+                  s.agentLabel,
+                  isDark && s.textWhite,
+                  { fontSize: 12 * density.font },
+                ]}
+              >
                 {agent || "build"}
               </Text>
               <Ionicons
@@ -1406,7 +1429,15 @@ export default function SessionScreen() {
             </TouchableOpacity>
 
             <TouchableOpacity
-              style={[s.modelChip, isDark && s.modelChipDark]}
+              style={[
+                s.modelChip,
+                isDark && s.modelChipDark,
+                {
+                  gap: 4 * density.gap,
+                  paddingHorizontal: 10 * density.padding,
+                  paddingVertical: 4 * density.padding,
+                },
+              ]}
               onPress={() => modelSheetRef.current?.expand()}
               testID="model-chip"
             >
@@ -1416,7 +1447,11 @@ export default function SessionScreen() {
                 color={isDark ? "#888888" : "#666666"}
               />
               <Text
-                style={[s.modelLabel, isDark && s.metaDark]}
+                style={[
+                  s.modelLabel,
+                  isDark && s.metaDark,
+                  { fontSize: 12 * density.font },
+                ]}
                 numberOfLines={1}
               >
                 {modelLabel}
@@ -1430,6 +1465,11 @@ export default function SessionScreen() {
                     s.variantChip,
                     isDark && s.variantChipDark,
                     variant && s.variantChipActive,
+                    {
+                      gap: 4 * density.gap,
+                      paddingHorizontal: 10 * density.padding,
+                      paddingVertical: 4 * density.padding,
+                    },
                   ]}
                   onPress={() => variantSheetRef.current?.expand()}
                   testID="variant-chip"
@@ -1444,6 +1484,7 @@ export default function SessionScreen() {
                       s.variantLabel,
                       isDark && s.metaDark,
                       variant && s.variantLabelActive,
+                      { fontSize: 12 * density.font },
                     ]}
                     numberOfLines={1}
                   >

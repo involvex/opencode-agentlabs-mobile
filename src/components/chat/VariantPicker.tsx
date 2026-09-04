@@ -11,6 +11,7 @@ import BottomSheet, {
   BottomSheetView,
 } from "@gorhom/bottom-sheet";
 import { useTranslation } from "react-i18next";
+import { useDensity } from "../../lib/density";
 
 interface VariantOption {
   id: string | null;
@@ -34,6 +35,7 @@ export function VariantPicker({
   sheetRef,
 }: Props) {
   const { t } = useTranslation();
+  const density = useDensity();
 
   const effortDescriptions: Record<string, string> = {
     low: t("chat.variantPicker.effort.low"),
@@ -81,8 +83,22 @@ export function VariantPicker({
       )}
     >
       <BottomSheetView>
-        <View style={s.header}>
-          <Text style={[s.title, isDark && s.textWhite]}>
+        <View
+          style={[
+            s.header,
+            {
+              paddingHorizontal: 16 * density.padding,
+              paddingBottom: 12 * density.padding,
+            },
+          ]}
+        >
+          <Text
+            style={[
+              s.title,
+              isDark && s.textWhite,
+              { fontSize: 18 * density.font },
+            ]}
+          >
             {t("chat.variantPicker.title")}
           </Text>
         </View>
@@ -98,16 +114,32 @@ export function VariantPicker({
                   s.row,
                   isDark && s.rowDark,
                   active && (isDark ? s.rowSelectedDark : s.rowSelected),
+                  {
+                    paddingHorizontal: 16 * density.padding,
+                    paddingVertical: 14 * density.padding,
+                  },
                 ]}
                 onPress={() => handleSelect(item.id)}
                 testID={`variant-option-${item.id ?? "auto"}`}
                 activeOpacity={0.7}
               >
                 <View style={s.rowText}>
-                  <Text style={[s.rowName, isDark && s.textWhite]}>
+                  <Text
+                    style={[
+                      s.rowName,
+                      isDark && s.textWhite,
+                      { fontSize: 15 * density.font },
+                    ]}
+                  >
                     {item.label}
                   </Text>
-                  <Text style={[s.rowDesc, isDark && s.metaDark]}>
+                  <Text
+                    style={[
+                      s.rowDesc,
+                      isDark && s.metaDark,
+                      { fontSize: 12 * density.font },
+                    ]}
+                  >
                     {item.description}
                   </Text>
                 </View>

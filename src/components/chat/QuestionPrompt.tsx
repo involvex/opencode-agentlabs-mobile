@@ -8,6 +8,7 @@ import {
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { useTranslation } from "react-i18next";
+import { useDensity } from "../../lib/density";
 
 interface QuestionOption {
   label: string;
@@ -34,6 +35,7 @@ interface Props {
 
 export function QuestionPrompt({ request, isDark, onReply, onReject }: Props) {
   const { t } = useTranslation();
+  const density = useDensity();
   const [answers, setAnswers] = useState<string[][]>(
     request.questions.map(() => []),
   );
@@ -91,20 +93,45 @@ export function QuestionPrompt({ request, isDark, onReply, onReject }: Props) {
   };
 
   return (
-    <View style={[s.card, isDark && s.cardDark]}>
-      <View style={s.header}>
+    <View
+      style={[
+        s.card,
+        isDark && s.cardDark,
+        { margin: 12 * density.padding, padding: 16 * density.padding },
+      ]}
+    >
+      <View
+        style={[
+          s.header,
+          { gap: 8 * density.gap, marginBottom: 8 * density.padding },
+        ]}
+      >
         <Ionicons
           name="chatbubble-ellipses-outline"
           size={18}
           color="#8b5cf6"
         />
-        <Text style={[s.title, isDark && s.textWhite]}>
+        <Text
+          style={[
+            s.title,
+            isDark && s.textWhite,
+            { fontSize: 15 * density.font },
+          ]}
+        >
           {q.header || t("chat.questionPrompt.headerFallback")}
         </Text>
       </View>
-      <Text style={[s.question, isDark && s.textWhite]}>{q.question}</Text>
+      <Text
+        style={[
+          s.question,
+          isDark && s.textWhite,
+          { fontSize: 14 * density.font, marginBottom: 12 * density.padding },
+        ]}
+      >
+        {q.question}
+      </Text>
 
-      <View style={s.options}>
+      <View style={[s.options, { gap: 8 * density.gap }]}>
         {q.options.map((opt) => {
           const selected = (answers[current] || []).includes(opt.label);
           return (
@@ -115,6 +142,7 @@ export function QuestionPrompt({ request, isDark, onReply, onReject }: Props) {
                 isDark && s.optionDark,
                 selected && s.optionSelected,
                 selected && isDark && s.optionSelectedDark,
+                { padding: 12 * density.padding },
               ]}
               onPress={() => toggleOption(opt.label)}
             >
@@ -123,12 +151,19 @@ export function QuestionPrompt({ request, isDark, onReply, onReject }: Props) {
                   s.optionLabel,
                   isDark && s.textWhite,
                   selected && s.optionLabelSelected,
+                  { fontSize: 14 * density.font },
                 ]}
               >
                 {opt.label}
               </Text>
               {opt.description ? (
-                <Text style={[s.optionDesc, isDark && s.metaDark]}>
+                <Text
+                  style={[
+                    s.optionDesc,
+                    isDark && s.metaDark,
+                    { fontSize: 12 * density.font },
+                  ]}
+                >
                   {opt.description}
                 </Text>
               ) : null}
@@ -138,9 +173,17 @@ export function QuestionPrompt({ request, isDark, onReply, onReject }: Props) {
 
         {q.custom !== false &&
           (showCustom ? (
-            <View style={s.customRow}>
+            <View style={[s.customRow, { gap: 8 * density.gap }]}>
               <TextInput
-                style={[s.customInput, isDark && s.customInputDark]}
+                style={[
+                  s.customInput,
+                  isDark && s.customInputDark,
+                  {
+                    paddingHorizontal: 12 * density.padding,
+                    paddingVertical: 10 * density.padding,
+                    fontSize: 14 * density.font,
+                  },
+                ]}
                 placeholder={t("chat.questionPrompt.answerPlaceholder")}
                 placeholderTextColor={isDark ? "#666666" : "#999999"}
                 value={custom}
@@ -148,31 +191,56 @@ export function QuestionPrompt({ request, isDark, onReply, onReject }: Props) {
                 onSubmitEditing={submitCustom}
                 autoFocus
               />
-              <TouchableOpacity onPress={submitCustom} style={s.customSubmit}>
+              <TouchableOpacity
+                onPress={submitCustom}
+                style={[s.customSubmit, { padding: 8 * density.padding }]}
+              >
                 <Ionicons name="send" size={18} color="#8b5cf6" />
               </TouchableOpacity>
             </View>
           ) : (
             <TouchableOpacity
-              style={[s.option, isDark && s.optionDark]}
+              style={[
+                s.option,
+                isDark && s.optionDark,
+                { padding: 12 * density.padding },
+              ]}
               onPress={() => setShowCustom(true)}
             >
-              <Text style={[s.optionLabel, { color: "#8b5cf6" }]}>
+              <Text
+                style={[
+                  s.optionLabel,
+                  { color: "#8b5cf6", fontSize: 14 * density.font },
+                ]}
+              >
                 {t("chat.questionPrompt.customAnswerLabel")}
               </Text>
             </TouchableOpacity>
           ))}
       </View>
 
-      <View style={s.footer}>
+      <View style={[s.footer, { marginTop: 12 * density.padding }]}>
         <TouchableOpacity onPress={reject}>
-          <Text style={[s.dismiss, isDark && s.metaDark]}>
+          <Text
+            style={[
+              s.dismiss,
+              isDark && s.metaDark,
+              { fontSize: 14 * density.font },
+            ]}
+          >
             {t("chat.questionPrompt.dismiss")}
           </Text>
         </TouchableOpacity>
         {(request.questions.length > 1 || q.multiple) && (
           <TouchableOpacity
-            style={[s.submitBtn, isDark && s.submitBtnDark]}
+            style={[
+              s.submitBtn,
+              isDark && s.submitBtnDark,
+              {
+                paddingHorizontal: 20 * density.padding,
+                paddingVertical: 10 * density.padding,
+              },
+            ]}
             onPress={() => {
               if (current < request.questions.length - 1) {
                 setCurrent(current + 1);
@@ -181,7 +249,7 @@ export function QuestionPrompt({ request, isDark, onReply, onReject }: Props) {
               }
             }}
           >
-            <Text style={s.submitText}>
+            <Text style={[s.submitText, { fontSize: 14 * density.font }]}>
               {current < request.questions.length - 1
                 ? t("chat.questionPrompt.next")
                 : t("chat.questionPrompt.submit")}

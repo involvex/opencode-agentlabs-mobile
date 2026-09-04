@@ -13,6 +13,7 @@ import BottomSheet, {
   BottomSheetView,
 } from "@gorhom/bottom-sheet";
 import { useTranslation } from "react-i18next";
+import { useDensity } from "../../lib/density";
 
 interface ModelItem {
   providerID: string;
@@ -43,6 +44,7 @@ export function ModelPicker({
   sheetRef,
 }: Props) {
   const { t } = useTranslation();
+  const density = useDensity();
   const [search, setSearch] = useState("");
 
   const sections = useMemo(() => {
@@ -134,12 +136,35 @@ export function ModelPicker({
       }}
     >
       <BottomSheetView>
-        <View style={s.header}>
-          <Text style={[s.title, isDark && s.textWhite]}>
+        <View
+          style={[
+            s.header,
+            {
+              paddingHorizontal: 16 * density.padding,
+              paddingBottom: 12 * density.padding,
+              gap: 10 * density.gap,
+            },
+          ]}
+        >
+          <Text
+            style={[
+              s.title,
+              isDark && s.textWhite,
+              { fontSize: 18 * density.font },
+            ]}
+          >
             {t("chat.modelPicker.title")}
           </Text>
           <BottomSheetTextInput
-            style={[s.search, isDark && s.searchDark]}
+            style={[
+              s.search,
+              isDark && s.searchDark,
+              {
+                paddingHorizontal: 14 * density.padding,
+                paddingVertical: 10 * density.padding,
+                fontSize: 15 * density.font,
+              },
+            ]}
             placeholder={t("chat.modelPicker.searchPlaceholder")}
             placeholderTextColor={isDark ? "#666666" : "#999999"}
             value={search}
@@ -159,8 +184,23 @@ export function ModelPicker({
           }: {
             section: { title: string };
           }) => (
-            <View style={[s.sectionHeader, isDark && s.sectionHeaderDark]}>
-              <Text style={[s.sectionTitle, isDark && s.metaDark]}>
+            <View
+              style={[
+                s.sectionHeader,
+                isDark && s.sectionHeaderDark,
+                {
+                  paddingHorizontal: 16 * density.padding,
+                  paddingVertical: 8 * density.padding,
+                },
+              ]}
+            >
+              <Text
+                style={[
+                  s.sectionTitle,
+                  isDark && s.metaDark,
+                  { fontSize: 12 * density.font },
+                ]}
+              >
                 {section.title}
               </Text>
             </View>
@@ -175,6 +215,10 @@ export function ModelPicker({
                   s.row,
                   isDark && s.rowDark,
                   active && (isDark ? s.rowSelectedDark : s.rowSelected),
+                  {
+                    paddingHorizontal: 16 * density.padding,
+                    paddingVertical: 12 * density.padding,
+                  },
                 ]}
                 onPress={() => handleSelect(item.providerID, item.modelID)}
                 testID={`model-option-${item.providerID}-${item.modelID}`}
@@ -182,12 +226,22 @@ export function ModelPicker({
               >
                 <View style={s.rowText}>
                   <Text
-                    style={[s.rowName, isDark && s.textWhite]}
+                    style={[
+                      s.rowName,
+                      isDark && s.textWhite,
+                      { fontSize: 15 * density.font },
+                    ]}
                     numberOfLines={1}
                   >
                     {item.modelName || item.modelID}
                   </Text>
-                  <Text style={[s.rowProvider, isDark && s.metaDark]}>
+                  <Text
+                    style={[
+                      s.rowProvider,
+                      isDark && s.metaDark,
+                      { fontSize: 12 * density.font },
+                    ]}
+                  >
                     {item.providerName || item.providerID}
                   </Text>
                 </View>
