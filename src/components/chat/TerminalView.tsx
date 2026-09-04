@@ -48,8 +48,12 @@ const SPECIAL_KEYS = [
   { label: "↓", sequence: "\x1b[B" },
   { label: "←", sequence: "\x1b[D" },
   { label: "→", sequence: "\x1b[C" },
+  { label: "Home", sequence: "\x1b[H" },
+  { label: "End", sequence: "\x1b[F" },
   { label: "Tab", sequence: "\t" },
   { label: "Esc", sequence: "\x1b" },
+  { label: "Ctrl+C", sequence: "\x03" },
+  { label: "Ctrl+V", sequence: "\x16" },
 ] as const;
 
 function TerminalKeyButton({

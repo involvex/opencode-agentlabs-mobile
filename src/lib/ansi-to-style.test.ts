@@ -198,3 +198,17 @@ test("fragment [31 in middle of text does not leak", () => {
   assert.equal(segs.length, 1);
   assert.equal(segs[0].text, "ab");
 });
+
+test("incomplete CSI mid-line followed by valid SGR is stripped", () => {
+  // \x1b[38;5;14 is incomplete (no final byte), followed by \x1b[0m (valid reset)
+  const segs = ansiToSegments("\x1b[38;5;14\x1b[0mhello", false);
+  assert.equal(segs.length, 1);
+  assert.equal(segs[0].text, "hello");
+});
+
+test("incomplete CSI mid-line with text after is stripped", () => {
+  // \x1b[38;5;14 followed by non-letter (0xff) — incomplete CSI
+  const segs = ansiToSegments("a\x1b[38;5;14\xffb", false);
+  assert.equal(segs.length, 1);
+  assert.equal(segs[0].text, "aÿb");
+});

@@ -87,9 +87,11 @@ function buildStyle(
 // 4. Incomplete CSI at end of a chunk — no final byte yet (digits/semicolons only),
 //    e.g. \x1b[38;5;14 without the closing 'm'. This is the root cause of visible
 //    artifacts like "[38;5;14" in terminal output.
-// 5. Partial CSI prefix at end of a chunk — \x1b[ with no parameters yet, e.g. \x1b[.
+// 5. Incomplete CSI mid-line — escaped CSI with digits/semicolons but no final byte,
+//    followed by a non-letter (e.g. \x1b[38;5;14\x1b[0m). Without this pattern,
+//    the incomplete prefix leaks as visible text before the next valid escape.
 const NON_SGR_ANSI =
-  /\x1b\][^\x07\x1b]*(?:\x07|\x1b\\)|\x1b\[\?[0-9;]*[A-Za-ln-z]?|\x1b\[[0-9;?]*[A-Za-ln-z]|\x1b\[[0-9;]*$/g;
+  /\x1b\][^\x07\x1b]*(?:\x07|\x1b\\)|\x1b\[\?[0-9;]*[A-Za-ln-z]?|\x1b\[[0-9;?]*[A-Za-ln-z]|\x1b\[[0-9;]*$|\x1b\[[0-9;]+(?=[^\d;A-Za-z])/g;
 
 const ALL_CSI = /\x1b\[[0-9;]*m/g;
 
