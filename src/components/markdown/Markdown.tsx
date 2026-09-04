@@ -179,7 +179,8 @@ function MarkdownContent({
   theme,
   isDark,
 }: MarkdownContentProps) {
-  const elements = useMarkdown(children ?? "", {
+  const safe = typeof children === "string" ? children : "";
+  const elements = useMarkdown(safe, {
     renderer,
     styles: theme,
     colorScheme: isDark ? "dark" : "light",
