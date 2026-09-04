@@ -34,7 +34,8 @@
       }
     },
     "notifications": {
-      "disabledNotice": "通知已在系统层面关闭。请在系统设置中启用通知以接收提醒。"
+      "disabledNotice": "通知已在系统层面关闭。请在系统设置中启用通知以接收提醒。",
+      "quickActionsHint": "启用类别的通知触发时显示的按钮。"
     },
     "privacy": {
       "crashReporting": {

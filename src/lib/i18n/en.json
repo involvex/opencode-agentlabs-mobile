@@ -34,7 +34,8 @@
       }
     },
     "notifications": {
-      "disabledNotice": "Notifications are disabled at the system level. Enable them in Settings to receive alerts."
+      "disabledNotice": "Notifications are disabled at the system level. Enable them in Settings to receive alerts.",
+      "quickActionsHint": "Buttons shown when a notification fires for an enabled category."
     },
     "privacy": {
       "crashReporting": {
