@@ -82,7 +82,7 @@ export function CompactionBanner({
                   </Text>
                   <View style={[s.codeBlock, isDark && s.codeBlockDark]}>
                     <Text
-                      style={[s.codePre, isDark && s.codePteDark]}
+                      style={[s.codePre, isDark && s.codePreDark]}
                       selectable
                       numberOfLines={20}
                     >
@@ -99,7 +99,7 @@ export function CompactionBanner({
                   </Text>
                   <View style={[s.codeBlock, isDark && s.codeBlockDark]}>
                     <Text
-                      style={[s.codePre, isDark && s.codePteDark]}
+                      style={[s.codePre, isDark && s.codePreDark]}
                       selectable
                       numberOfLines={30}
                     >
@@ -201,7 +201,7 @@ const s = StyleSheet.create({
     color: "#0a0a0a",
     lineHeight: 18,
   },
-  codePteDark: { color: "#e5e5e5" },
+  codePreDark: { color: "#e5e5e5" },
 
   errorBanner: {
     flexDirection: "row",
