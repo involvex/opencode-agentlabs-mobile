@@ -284,7 +284,7 @@ export const MessageBubble = memo(
             </Text>
           ) : (
             <View style={s.markdownWrap}>
-              <Markdown>{text}</Markdown>
+              <Markdown>{typeof text === "string" ? text : ""}</Markdown>
             </View>
           ))}
 

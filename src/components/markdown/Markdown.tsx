@@ -208,9 +208,7 @@ class MarkdownErrorBoundary extends Component<
     const { children } = this.props;
 
     if (error) {
-      return (
-        <Text style={{ color: "#ef4444" }}>Failed to render markdown</Text>
-      );
+      return null;
     }
 
     return <>{children}</>;
@@ -237,7 +235,9 @@ export function Markdown({ children }: Props) {
   // eslint-disable-next-line react-hooks/exhaustive-deps -- `children` is intentionally a dep to reset the slugger per unique value
   const renderer = useMemo(() => new CustomRenderer(), [children]);
 
-  if (!children?.trim()) return null;
+  // Defensive: React can pass non-string children at runtime despite TS types.
+  // useMarkdown crashes on non-string input, so bail early.
+  if (typeof children !== "string" || !children.trim()) return null;
 
   return (
     <MarkdownErrorBoundary>

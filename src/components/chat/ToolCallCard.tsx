@@ -11,6 +11,7 @@ import {
 import { Ionicons } from "@expo/vector-icons";
 import { useTranslation } from "react-i18next";
 import type { Part } from "../../lib/sdk";
+import { stripAnsi } from "../../lib/ansi-to-style";
 import { DiffView } from "./DiffView";
 
 const TOOL_ICONS: Record<string, string> = {
@@ -55,12 +56,12 @@ function BashDetail({
     typeof input === "object" && input !== null
       ? (input as Record<string, unknown>).command
       : undefined;
-  const out = typeof output === "string" ? output : undefined;
+  const out = typeof output === "string" ? stripAnsi(output) : undefined;
   return (
     <View style={s.detailSection}>
       {typeof cmd === "string" && (
         <View style={[s.codeBlock, isDark && s.codeBlockDark]}>
-          <Text style={[s.codePre, isDark && s.codePteDark]} selectable>
+          <Text style={[s.codePre, isDark && s.codePreDark]} selectable>
             <Text style={s.codePrompt}>$ </Text>
             {cmd}
           </Text>
@@ -71,7 +72,7 @@ function BashDetail({
           style={[s.codeBlock, isDark && s.codeBlockDark, { marginTop: 6 }]}
         >
           <Text
-            style={[s.codePre, isDark && s.codePteDark]}
+            style={[s.codePre, isDark && s.codePreDark]}
             selectable
             numberOfLines={80}
           >
@@ -138,7 +139,7 @@ function WriteDetail({ input, isDark }: { input: unknown; isDark: boolean }) {
           style={[s.codeBlock, isDark && s.codeBlockDark, { marginTop: 6 }]}
         >
           <Text
-            style={[s.codePre, isDark && s.codePteDark]}
+            style={[s.codePre, isDark && s.codePreDark]}
             selectable
             numberOfLines={40}
           >
@@ -192,7 +193,9 @@ function EditDetail({
 
   // Fallback: show raw output
   const text =
-    typeof output === "string" ? output : JSON.stringify(output, null, 2);
+    typeof output === "string"
+      ? stripAnsi(output)
+      : JSON.stringify(output, null, 2);
   return (
     <View style={s.detailSection}>
       {typeof file === "string" && (
@@ -209,7 +212,7 @@ function EditDetail({
           style={[s.codeBlock, isDark && s.codeBlockDark, { marginTop: 6 }]}
         >
           <Text
-            style={[s.codePre, isDark && s.codePteDark]}
+            style={[s.codePre, isDark && s.codePreDark]}
             selectable
             numberOfLines={40}
           >
@@ -231,7 +234,7 @@ function PatchDetail({ input, isDark }: { input: unknown; isDark: boolean }) {
       {typeof patch === "string" && patch.length > 0 && (
         <View style={[s.codeBlock, isDark && s.codeBlockDark]}>
           <Text
-            style={[s.codePre, isDark && s.codePteDark]}
+            style={[s.codePre, isDark && s.codePreDark]}
             selectable
             numberOfLines={60}
           >
@@ -261,7 +264,7 @@ function GlobGrepDetail({
     typeof input === "object" && input !== null
       ? (input as Record<string, unknown>).path
       : undefined;
-  const results = typeof output === "string" ? output : undefined;
+  const results = typeof output === "string" ? stripAnsi(output) : undefined;
   return (
     <View style={s.detailSection}>
       {typeof pattern === "string" && (
@@ -276,7 +279,7 @@ function GlobGrepDetail({
           style={[s.codeBlock, isDark && s.codeBlockDark, { marginTop: 6 }]}
         >
           <Text
-            style={[s.codePre, isDark && s.codePteDark]}
+            style={[s.codePre, isDark && s.codePreDark]}
             selectable
             numberOfLines={30}
           >
@@ -339,7 +342,7 @@ function TaskDetail({ input, isDark }: { input: unknown; isDark: boolean }) {
           style={[s.codeBlock, isDark && s.codeBlockDark, { marginTop: 6 }]}
         >
           <Text
-            style={[s.codePre, isDark && s.codePteDark]}
+            style={[s.codePre, isDark && s.codePreDark]}
             selectable
             numberOfLines={20}
           >
@@ -393,7 +396,7 @@ function GenericDetail({
 }) {
   const text =
     typeof output === "string"
-      ? output
+      ? stripAnsi(output)
       : output !== undefined && output !== null
         ? JSON.stringify(output, null, 2)
         : typeof input === "object" && input !== null
@@ -404,7 +407,7 @@ function GenericDetail({
     <View style={s.detailSection}>
       <View style={[s.codeBlock, isDark && s.codeBlockDark]}>
         <Text
-          style={[s.codePre, isDark && s.codePteDark]}
+          style={[s.codePre, isDark && s.codePreDark]}
           selectable
           numberOfLines={30}
         >
@@ -628,7 +631,7 @@ const s = StyleSheet.create({
     color: "#0a0a0a",
     lineHeight: 18,
   },
-  codePteDark: { color: "#e5e5e5" },
+  codePreDark: { color: "#e5e5e5" },
   codePrompt: { color: "#8b5cf6", fontWeight: "700" },
 
   // Todo

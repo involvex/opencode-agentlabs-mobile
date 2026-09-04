@@ -43,13 +43,16 @@ const lineStyles = StyleSheet.create({
   lineDark: { color: "#e5e5e5" },
 });
 
-const SPECIAL_KEYS = [
+const SPECIAL_KEYS_NAV = [
   { label: "↑", sequence: "\x1b[A" },
   { label: "↓", sequence: "\x1b[B" },
   { label: "←", sequence: "\x1b[D" },
   { label: "→", sequence: "\x1b[C" },
   { label: "Home", sequence: "\x1b[H" },
   { label: "End", sequence: "\x1b[F" },
+] as const;
+
+const SPECIAL_KEYS_CTRL = [
   { label: "Tab", sequence: "\t" },
   { label: "Esc", sequence: "\x1b" },
   { label: "Ctrl+C", sequence: "\x03" },
@@ -286,7 +289,18 @@ function TerminalSocket({
       </ScrollView>
 
       <View style={styles.keyButtonRow}>
-        {SPECIAL_KEYS.map((k) => (
+        {SPECIAL_KEYS_NAV.map((k) => (
+          <TerminalKeyButton
+            key={k.label}
+            label={k.label}
+            onPress={() => wsRef.current?.send(k.sequence)}
+            isDark={isDark}
+            disabled={wsState !== "connected"}
+          />
+        ))}
+      </View>
+      <View style={styles.keyButtonRow}>
+        {SPECIAL_KEYS_CTRL.map((k) => (
           <TerminalKeyButton
             key={k.label}
             label={k.label}
@@ -454,7 +468,18 @@ function LocalTerminalView({
       </ScrollView>
 
       <View style={styles.keyButtonRow}>
-        {SPECIAL_KEYS.map((k) => (
+        {SPECIAL_KEYS_NAV.map((k) => (
+          <TerminalKeyButton
+            key={k.label}
+            label={k.label}
+            onPress={() => {}}
+            isDark={isDark}
+            disabled
+          />
+        ))}
+      </View>
+      <View style={styles.keyButtonRow}>
+        {SPECIAL_KEYS_CTRL.map((k) => (
           <TerminalKeyButton
             key={k.label}
             label={k.label}

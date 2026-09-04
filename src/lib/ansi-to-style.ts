@@ -111,6 +111,16 @@ function stripStrayEscapes(cleaned: string): string {
     .replace(/(?<!\x1b)\[[0-9;]+(?=[^\d;]|$)/g, "");
 }
 
+const ALL_CSI_STRIP = /\x1b\[[0-9;]*m/g;
+
+/** Strip all ANSI escape sequences from text (for tool cards, etc.) */
+export function stripAnsi(text: string): string {
+  return stripStrayEscapes(text.replace(NON_SGR_ANSI, "")).replace(
+    ALL_CSI_STRIP,
+    "",
+  );
+}
+
 export function ansiToSegments(raw: string, isDark: boolean): AnsiSegment[] {
   const cleaned = stripStrayEscapes(raw.replace(NON_SGR_ANSI, ""));
   const defaultFg = isDark ? DEFAULT_FG_DARK : DEFAULT_FG_LIGHT;
