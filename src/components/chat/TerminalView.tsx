@@ -16,6 +16,7 @@ import { usePtySession } from "../../hooks/use-pty-session";
 import { buildPtyWsUrl, PtyWebSocket } from "../../lib/pty-ws";
 import { ansiToSegments } from "../../lib/ansi-to-style";
 import { useSettings } from "../../stores/settings";
+import { useDensity } from "../../lib/density";
 import {
   executeLocalCommand,
   isLocalTerminalAvailable,
@@ -148,6 +149,7 @@ function TerminalSocket({
   onWsError,
   authorization,
 }: TerminalSocketProps) {
+  const density = useDensity();
   const [output, setOutput] = useState<TerminalLine[]>([]);
   const [input, setInput] = useState("");
   const [wsState, setWsState] = useState<WsState>("connecting");
@@ -288,7 +290,12 @@ function TerminalSocket({
         )}
       </ScrollView>
 
-      <View style={styles.keyButtonRow}>
+      <View
+        style={[
+          styles.keyButtonRow,
+          { gap: 6 * density.gap, paddingBottom: 4 * density.padding },
+        ]}
+      >
         {SPECIAL_KEYS_NAV.map((k) => (
           <TerminalKeyButton
             key={k.label}
@@ -299,7 +306,12 @@ function TerminalSocket({
           />
         ))}
       </View>
-      <View style={styles.keyButtonRow}>
+      <View
+        style={[
+          styles.keyButtonRow,
+          { gap: 6 * density.gap, paddingBottom: 4 * density.padding },
+        ]}
+      >
         {SPECIAL_KEYS_CTRL.map((k) => (
           <TerminalKeyButton
             key={k.label}
@@ -367,6 +379,7 @@ function LocalTerminalView({
   onClose: () => void;
   onSwitchToServer?: () => void;
 }) {
+  const density = useDensity();
   const [output, setOutput] = useState<TerminalLine[]>([
     {
       id: "initial",
@@ -467,7 +480,12 @@ function LocalTerminalView({
         ))}
       </ScrollView>
 
-      <View style={styles.keyButtonRow}>
+      <View
+        style={[
+          styles.keyButtonRow,
+          { gap: 6 * density.gap, paddingBottom: 4 * density.padding },
+        ]}
+      >
         {SPECIAL_KEYS_NAV.map((k) => (
           <TerminalKeyButton
             key={k.label}
@@ -478,7 +496,12 @@ function LocalTerminalView({
           />
         ))}
       </View>
-      <View style={styles.keyButtonRow}>
+      <View
+        style={[
+          styles.keyButtonRow,
+          { gap: 6 * density.gap, paddingBottom: 4 * density.padding },
+        ]}
+      >
         {SPECIAL_KEYS_CTRL.map((k) => (
           <TerminalKeyButton
             key={k.label}

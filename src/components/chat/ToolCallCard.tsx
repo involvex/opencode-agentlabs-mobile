@@ -12,6 +12,7 @@ import { Ionicons } from "@expo/vector-icons";
 import { useTranslation } from "react-i18next";
 import type { Part } from "../../lib/sdk";
 import { stripAnsi } from "../../lib/ansi-to-style";
+import { useDensity } from "../../lib/density";
 import { DiffView } from "./DiffView";
 
 const TOOL_ICONS: Record<string, string> = {
@@ -485,6 +486,7 @@ interface Props {
 
 export function ToolCallCard({ tool, isDark }: Props) {
   const { t } = useTranslation();
+  const density = useDensity();
   const [expanded, setExpanded] = useState(false);
   const icon =
     (tool.tool && TOOL_ICONS[tool.tool]) || "extension-puzzle-outline";
@@ -508,21 +510,37 @@ export function ToolCallCard({ tool, isDark }: Props) {
         isDark && s.cardDark,
         status === "error" && s.cardError,
         status === "error" && isDark && s.cardErrorDark,
+        { padding: 10 * density.padding },
       ]}
       onPress={toggle}
       activeOpacity={hasDetail ? 0.7 : 1}
     >
       {/* Header row */}
       <View style={s.header}>
-        <View style={s.headerLeft}>
+        <View style={[s.headerLeft, { gap: 8 * density.gap }]}>
           <Ionicons name={icon} size={16} color={color} />
-          <Text style={[s.name, isDark && s.nameDark]} numberOfLines={1}>
+          <Text
+            style={[
+              s.name,
+              isDark && s.nameDark,
+              { fontSize: 13 * density.font },
+            ]}
+            numberOfLines={1}
+          >
             {tool.state?.title ||
               tool.tool ||
               t("chat.toolCallCard.fallbackTitle")}
           </Text>
           {elapsed && (
-            <Text style={[s.elapsed, isDark && s.elapsedDark]}>{elapsed}</Text>
+            <Text
+              style={[
+                s.elapsed,
+                isDark && s.elapsedDark,
+                { fontSize: 11 * density.font },
+              ]}
+            >
+              {elapsed}
+            </Text>
           )}
         </View>
         <View style={s.headerRight}>

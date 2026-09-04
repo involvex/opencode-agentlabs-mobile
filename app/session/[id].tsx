@@ -61,6 +61,7 @@ import { usePrompts } from "../../src/stores/prompts";
 import type { PromptSnippet } from "../../src/stores/prompts";
 import { useTheme } from "../../src/lib/theme";
 import { useSettings } from "../../src/stores/settings";
+import { useDensity } from "../../src/lib/density";
 import { useSpeech } from "../../src/lib/speech";
 import { useSpeechOutput, speakText } from "../../src/lib/speech-output";
 import { useKeyboardShortcuts } from "../../src/lib/keyboard-shortcuts";
@@ -111,6 +112,7 @@ export default function SessionScreen() {
     }>();
   const router = useRouter();
   const isDark = useTheme();
+  const density = useDensity();
   const insets = useSafeAreaInsets();
   const { t } = useTranslation();
 
@@ -1465,7 +1467,10 @@ export default function SessionScreen() {
             style={[
               s.inputContainer,
               isDark && s.inputContainerDark,
-              { paddingBottom: Math.max(12, insets.bottom) },
+              {
+                padding: 12 * density.padding,
+                paddingBottom: Math.max(12 * density.padding, insets.bottom),
+              },
             ]}
           >
             <View style={s.inputRow}>
@@ -1539,6 +1544,7 @@ export default function SessionScreen() {
                   s.input,
                   isDark && s.inputDark,
                   speech.listening && s.inputListening,
+                  { fontSize: 16 * density.font },
                 ]}
                 placeholder={
                   speech.listening
