@@ -147,7 +147,7 @@ function SettingSection({
 
 export default function SettingsScreen() {
   const isDark = useTheme();
-  const densityScale = useDensity();
+  const densityValue = useDensity();
   const { t } = useTranslation();
 
   const { settings, hasBiometrics, updateSettings, lock } = useAuth();
@@ -891,12 +891,12 @@ export default function SettingsScreen() {
         )}
       </SettingSection>
 
-      <View style={[styles.footer, { padding: 32 * densityScale.padding }]}>
+      <View style={[styles.footer, { padding: 32 * densityValue.padding }]}>
         <Text
           style={[
             styles.footerText,
             isDark && styles.metaDark,
-            { fontSize: 13 * densityScale.font },
+            { fontSize: 13 * densityValue.font },
           ]}
         >
           {t("settings.footer.appName")}
@@ -905,7 +905,7 @@ export default function SettingsScreen() {
           style={[
             styles.footerText,
             isDark && styles.metaDark,
-            { fontSize: 13 * densityScale.font },
+            { fontSize: 13 * densityValue.font },
           ]}
         >
           {t("settings.footer.tagline")}

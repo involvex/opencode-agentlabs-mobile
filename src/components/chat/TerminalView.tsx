@@ -37,7 +37,7 @@ interface Props {
 type WsState = "connecting" | "connected" | "disconnected" | "error";
 type TerminalMode = "server" | "local";
 
-const generateId = () => Math.random().toString(36).substr(2, 9);
+const generateId = () => Math.random().toString(36).substring(2, 11);
 
 const lineStyles = StyleSheet.create({
   line: { color: "#1a1a1a", lineHeight: 20 },
