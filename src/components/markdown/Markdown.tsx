@@ -312,12 +312,15 @@ export function Markdown({ children }: Props) {
   // streamed token forever. github-slugger never resets, so its heading-slug
   // keys only ever climb — which fed into useMarkdown's memoized parser and
   // made the emitted React keys change on every token, remounting the whole
-  // subtree (resetting code-block scroll position, flashing content). Scoping
-  // the renderer to `children` resets the slugger per parse, so keys are
+  // subtree (resetting code-block scroll position, flashing content). Tying
+  // the instance lifetime to `children` (referenced below so exhaustive-deps
+  // sees the dependency as used) resets the slugger per parse, so keys are
   // deterministic (and stable) for a given value, while re-renders with an
-  // unchanged value stay memoized instead of creating a new renderer.
-  // eslint-disable-next-line react-hooks/exhaustive-deps -- `children` is intentionally a dep to reset the slugger per unique value
-  const renderer = useMemo(() => new CustomRenderer(), [children]);
+  // unchanged value reuse the same renderer.
+  const renderer = useMemo(() => {
+    void children;
+    return new CustomRenderer();
+  }, [children]);
 
   // Defensive: React can pass non-string children at runtime despite TS types.
   // useMarkdown crashes on non-string input, so bail early.
