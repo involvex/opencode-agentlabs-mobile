@@ -1,14 +1,9 @@
 import { useState, useCallback, useMemo, memo } from "react";
-import {
-  View,
-  Text,
-  TouchableOpacity,
-  StyleSheet,
-  SectionList,
-} from "react-native";
+import { View, Text, TouchableOpacity, StyleSheet } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import BottomSheet, {
   BottomSheetBackdrop,
+  BottomSheetSectionList,
   BottomSheetTextInput,
   BottomSheetView,
 } from "@gorhom/bottom-sheet";
@@ -173,89 +168,82 @@ export const ModelPicker = memo(function ModelPicker({
             autoCapitalize="none"
           />
         </View>
-        <SectionList
-          style={{ flex: 1 }}
-          sections={sections}
-          keyExtractor={(item: ModelItem) =>
-            `${item.providerID}/${item.modelID}`
-          }
-          renderSectionHeader={({
-            section,
-          }: {
-            section: { title: string };
-          }) => (
-            <View
+      </BottomSheetView>
+      <BottomSheetSectionList
+        style={{ flex: 1 }}
+        sections={sections}
+        keyExtractor={(item: ModelItem) => `${item.providerID}/${item.modelID}`}
+        renderSectionHeader={({ section }: { section: { title: string } }) => (
+          <View
+            style={[
+              s.sectionHeader,
+              isDark && s.sectionHeaderDark,
+              {
+                paddingHorizontal: 16 * density.padding,
+                paddingVertical: 8 * density.padding,
+              },
+            ]}
+          >
+            <Text
               style={[
-                s.sectionHeader,
-                isDark && s.sectionHeaderDark,
-                {
-                  paddingHorizontal: 16 * density.padding,
-                  paddingVertical: 8 * density.padding,
-                },
+                s.sectionTitle,
+                isDark && s.metaDark,
+                { fontSize: 12 * density.font },
               ]}
             >
-              <Text
-                style={[
-                  s.sectionTitle,
-                  isDark && s.metaDark,
-                  { fontSize: 12 * density.font },
-                ]}
-              >
-                {section.title}
-              </Text>
-            </View>
-          )}
-          renderItem={({ item }: { item: ModelItem }) => {
-            const active =
-              selected?.providerID === item.providerID &&
-              selected?.modelID === item.modelID;
-            return (
-              <TouchableOpacity
-                style={[
-                  s.row,
-                  isDark && s.rowDark,
-                  active && (isDark ? s.rowSelectedDark : s.rowSelected),
-                  {
-                    paddingHorizontal: 16 * density.padding,
-                    paddingVertical: 12 * density.padding,
-                  },
-                ]}
-                onPress={() => handleSelect(item.providerID, item.modelID)}
-                testID={`model-option-${item.providerID}-${item.modelID}`}
-                activeOpacity={0.7}
-              >
-                <View style={s.rowText}>
-                  <Text
-                    style={[
-                      s.rowName,
-                      isDark && s.textWhite,
-                      { fontSize: 15 * density.font },
-                    ]}
-                    numberOfLines={1}
-                  >
-                    {item.modelName || item.modelID}
-                  </Text>
-                  <Text
-                    style={[
-                      s.rowProvider,
-                      isDark && s.metaDark,
-                      { fontSize: 12 * density.font },
-                    ]}
-                  >
-                    {item.providerName || item.providerID}
-                  </Text>
-                </View>
-                {active && (
-                  <Ionicons name="checkmark-circle" size={20} color="#8b5cf6" />
-                )}
-              </TouchableOpacity>
-            );
-          }}
-          contentContainerStyle={s.content}
-          stickySectionHeadersEnabled={false}
-          nestedScrollEnabled
-        />
-      </BottomSheetView>
+              {section.title}
+            </Text>
+          </View>
+        )}
+        renderItem={({ item }: { item: ModelItem }) => {
+          const active =
+            selected?.providerID === item.providerID &&
+            selected?.modelID === item.modelID;
+          return (
+            <TouchableOpacity
+              style={[
+                s.row,
+                isDark && s.rowDark,
+                active && (isDark ? s.rowSelectedDark : s.rowSelected),
+                {
+                  paddingHorizontal: 16 * density.padding,
+                  paddingVertical: 12 * density.padding,
+                },
+              ]}
+              onPress={() => handleSelect(item.providerID, item.modelID)}
+              testID={`model-option-${item.providerID}-${item.modelID}`}
+              activeOpacity={0.7}
+            >
+              <View style={s.rowText}>
+                <Text
+                  style={[
+                    s.rowName,
+                    isDark && s.textWhite,
+                    { fontSize: 15 * density.font },
+                  ]}
+                  numberOfLines={1}
+                >
+                  {item.modelName || item.modelID}
+                </Text>
+                <Text
+                  style={[
+                    s.rowProvider,
+                    isDark && s.metaDark,
+                    { fontSize: 12 * density.font },
+                  ]}
+                >
+                  {item.providerName || item.providerID}
+                </Text>
+              </View>
+              {active && (
+                <Ionicons name="checkmark-circle" size={20} color="#8b5cf6" />
+              )}
+            </TouchableOpacity>
+          );
+        }}
+        contentContainerStyle={s.content}
+        stickySectionHeadersEnabled={false}
+      />
     </BottomSheet>
   );
 });

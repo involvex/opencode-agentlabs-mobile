@@ -9,9 +9,40 @@ import {
   type TextStyle,
 } from "react-native";
 import { useMarkdown, Renderer } from "react-native-marked";
+// NOTE: MarkedTokenizer/Tokens are imported from "marked" directly (and
+// marked is a declared dependency) because react-native-marked@8.0.0's
+// published .d.ts re-export of those two names does not resolve under this
+// repo's bundler moduleResolution (TS2614) — verified with isolated probes.
+import { Tokenizer as MarkedTokenizer, type Tokens } from "marked";
 import { CodeBlock } from "./CodeBlock";
 import { log } from "../../lib/logbuffer";
 import { useDensity, ds } from "../../lib/density";
+
+// react-native-marked's Parser logs "rendering html from markdown is not
+// supported" for every HTML token before delegating to renderer.html().
+// Agent output routinely contains HTML (<details> blocks, <kbd>, inline
+// <br/>, TS generics like Array<string> in prose), so the warning spams dev
+// logs. Remap HTML tokens to `space` (which the Parser drops silently via
+// its default case) at the tokenizer level: this keeps the established
+// render behavior (HTML produces no output, same as our html() override
+// below) without the noise, operates on tokens so fenced code blocks are
+// unaffected, and still lets real autolinks (<https://…>) through — those
+// are matched by marked's autolink rule, not the tag rule.
+class SilentHtmlTokenizer extends MarkedTokenizer {
+  override html(src: string): Tokens.HTML | undefined {
+    const token = super.html(src);
+    if (!token) return undefined;
+    return { type: "space", raw: token.raw } as unknown as Tokens.HTML;
+  }
+
+  override tag(src: string): Tokens.Tag | undefined {
+    const token = super.tag(src);
+    if (!token) return undefined;
+    return { type: "space", raw: token.raw } as unknown as Tokens.Tag;
+  }
+}
+
+const silentTokenizer = new SilentHtmlTokenizer();
 
 // react-native-marked's base Renderer hardcodes `selectable` on every plain
 // text node it produces (text/strong/em/del/heading/codespan). On Android,
@@ -261,6 +292,7 @@ function MarkdownContent({
     renderer,
     styles: dTheme,
     colorScheme: isDark ? "dark" : "light",
+    tokenizer: silentTokenizer,
   });
 
   // Children.toArray assigns fallback keys to any key-less top-level node
