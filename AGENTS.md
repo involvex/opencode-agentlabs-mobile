@@ -37,6 +37,7 @@ React Native / Expo mobile client for opencode. Connects to an opencode server i
 
 **Repo**: `dzianisv/opencode-mobile` (standalone, not part of opencode monorepo)
 **Package name**: `cc.agentlabs.opencode`
+**Fork divergence**: this checkout (`involvex/opencode-agentlabs-mobile`) builds `com.involvex.opencodemobile` v0.4.13/vc40 for local sideloading only — it never publishes, so the Play Console notes below describe upstream, not builds from here.
 
 ## Architecture
 
