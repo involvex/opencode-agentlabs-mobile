@@ -17,7 +17,7 @@ import { useTranslation } from "react-i18next";
 import type { Client, FileEntry } from "../../lib/sdk";
 import { parentOf, nameOf } from "../../lib/path-utils";
 import { normalizeRoots, type FileRoot } from "../../lib/file-roots";
-import { useDensity, ds } from "../../lib/density";
+import { useDensity } from "../../lib/density";
 
 interface Props {
   sheetRef: React.RefObject<BottomSheet | null>;

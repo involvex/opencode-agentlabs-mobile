@@ -159,7 +159,6 @@ export default function ConnectionsScreen() {
     removeConnection,
   } = useConnections();
   const { pageSize, setPageSize } = useSettings();
-  const density = useDensity();
 
   const handleDelete = (connection: ServerConnection) => {
     Alert.alert(

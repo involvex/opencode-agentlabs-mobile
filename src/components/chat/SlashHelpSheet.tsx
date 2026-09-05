@@ -13,7 +13,7 @@ import type {
   SlashCommandCategory,
 } from "../../lib/slash-commands";
 import { COMMAND_CATEGORIES, DEFAULT_BUILTINS } from "../../lib/slash-commands";
-import { useDensity, ds } from "../../lib/density";
+import { useDensity } from "../../lib/density";
 
 const s = StyleSheet.create({
   container: {

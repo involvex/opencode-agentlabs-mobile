@@ -8,7 +8,7 @@ import {
   KeyboardAvoidingView,
   Platform,
 } from "react-native";
-import { useDensity, ds } from "../../lib/density";
+import { useDensity } from "../../lib/density";
 
 export interface RenameModalProps {
   visible: boolean;
