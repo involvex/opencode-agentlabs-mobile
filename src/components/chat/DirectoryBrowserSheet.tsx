@@ -5,11 +5,11 @@ import {
   Text,
   TouchableOpacity,
   View,
-  FlatList,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import BottomSheet, {
   BottomSheetBackdrop,
+  BottomSheetFlatList,
   BottomSheetTextInput,
   BottomSheetView,
 } from "@gorhom/bottom-sheet";
@@ -364,136 +364,136 @@ export function DirectoryBrowserSheet({
             </TouchableOpacity>
           )}
         </View>
+      </BottomSheetView>
 
-        <FlatList
-          style={{ flex: 1 }}
-          data={entries}
-          keyExtractor={(item: FileEntry) => item.absolute}
-          renderItem={({ item }: { item: FileEntry }) => (
-            <TouchableOpacity
-              style={[
-                s.row,
-                isDark && s.rowDark,
-                {
-                  gap: 12 * density.gap,
-                  paddingHorizontal: 14 * density.padding,
-                  paddingVertical: 11 * density.padding,
-                },
-              ]}
-              onPress={() => enter(item.absolute)}
-              testID={`directory-row-${item.name}`}
-              activeOpacity={0.7}
-            >
-              <Ionicons
-                name="folder-outline"
-                size={20}
-                color={
-                  item.ignored
-                    ? isDark
-                      ? "#555555"
-                      : "#bbbbbb"
-                    : isDark
-                      ? "#888888"
-                      : "#666666"
-                }
-              />
-              <Text
-                style={[
-                  s.rowLabel,
-                  isDark && s.white,
-                  item.ignored && s.rowLabelDim,
-                  { fontSize: 14 * density.font },
-                ]}
-                numberOfLines={1}
-              >
-                {item.name}
-              </Text>
-              <Ionicons
-                name="chevron-forward"
-                size={16}
-                color={isDark ? "#555555" : "#cccccc"}
-              />
-            </TouchableOpacity>
-          )}
-          contentContainerStyle={[
-            s.list,
-            {
-              paddingHorizontal: 16 * density.padding,
-              paddingBottom: 8 * density.padding,
-            },
-          ]}
-          ListHeaderComponent={
-            loading ? (
-              <View style={s.centerBox}>
-                <ActivityIndicator color={isDark ? "#ffffff" : "#0a0a0a"} />
-              </View>
-            ) : error ? (
-              <View style={s.centerBox}>
-                <Text style={[s.errorText, { fontSize: 13 * density.font }]}>
-                  {error}
-                </Text>
-              </View>
-            ) : null
-          }
-          ListEmptyComponent={
-            !loading && !error ? (
-              <Text
-                style={[
-                  s.emptyText,
-                  isDark && s.dimDark,
-                  { fontSize: 13 * density.font },
-                ]}
-              >
-                {browseDir
-                  ? t("chat.directoryBrowserSheet.noSubfolders")
-                  : t("chat.directoryBrowserSheet.enterPathHint")}
-              </Text>
-            ) : null
-          }
-        />
-
-        <View
-          style={[
-            s.footer,
-            {
-              paddingHorizontal: 16 * density.padding,
-              paddingVertical: 12 * density.padding,
-            },
-          ]}
-        >
+      <BottomSheetFlatList
+        style={{ flex: 1 }}
+        data={entries}
+        keyExtractor={(item: FileEntry) => item.absolute}
+        renderItem={({ item }: { item: FileEntry }) => (
           <TouchableOpacity
             style={[
-              s.selectBtn,
-              isDark && s.selectBtnDark,
-              !browseDir && s.selectBtnDisabled,
-              { gap: 8 * density.gap },
+              s.row,
+              isDark && s.rowDark,
+              {
+                gap: 12 * density.gap,
+                paddingHorizontal: 14 * density.padding,
+                paddingVertical: 11 * density.padding,
+              },
             ]}
-            onPress={handleUseFolder}
-            disabled={!browseDir}
-            testID="directory-select-button"
+            onPress={() => enter(item.absolute)}
+            testID={`directory-row-${item.name}`}
+            activeOpacity={0.7}
           >
             <Ionicons
-              name="checkmark-circle"
-              size={18}
-              color={isDark ? "#0a0a0a" : "#ffffff"}
+              name="folder-outline"
+              size={20}
+              color={
+                item.ignored
+                  ? isDark
+                    ? "#555555"
+                    : "#bbbbbb"
+                  : isDark
+                    ? "#888888"
+                    : "#666666"
+              }
             />
             <Text
               style={[
-                s.selectBtnText,
-                isDark && s.selectBtnTextDark,
-                { fontSize: 15 * density.font },
+                s.rowLabel,
+                isDark && s.white,
+                item.ignored && s.rowLabelDim,
+                { fontSize: 14 * density.font },
               ]}
               numberOfLines={1}
             >
-              {t("chat.directoryBrowserSheet.useFolderButton", {
-                folder: browseDir
-                  ? nameOf(browseDir)
-                  : t("chat.directoryBrowserSheet.thisFolderFallback"),
-              })}
+              {item.name}
             </Text>
+            <Ionicons
+              name="chevron-forward"
+              size={16}
+              color={isDark ? "#555555" : "#cccccc"}
+            />
           </TouchableOpacity>
-        </View>
-      </BottomSheetView>
+        )}
+        contentContainerStyle={[
+          s.list,
+          {
+            paddingHorizontal: 16 * density.padding,
+            paddingBottom: 8 * density.padding,
+          },
+        ]}
+        ListHeaderComponent={
+          loading ? (
+            <View style={s.centerBox}>
+              <ActivityIndicator color={isDark ? "#ffffff" : "#0a0a0a"} />
+            </View>
+          ) : error ? (
+            <View style={s.centerBox}>
+              <Text style={[s.errorText, { fontSize: 13 * density.font }]}>
+                {error}
+              </Text>
+            </View>
+          ) : null
+        }
+        ListEmptyComponent={
+          !loading && !error ? (
+            <Text
+              style={[
+                s.emptyText,
+                isDark && s.dimDark,
+                { fontSize: 13 * density.font },
+              ]}
+            >
+              {browseDir
+                ? t("chat.directoryBrowserSheet.noSubfolders")
+                : t("chat.directoryBrowserSheet.enterPathHint")}
+            </Text>
+          ) : null
+        }
+      />
+
+      <View
+        style={[
+          s.footer,
+          {
+            paddingHorizontal: 16 * density.padding,
+            paddingVertical: 12 * density.padding,
+          },
+        ]}
+      >
+        <TouchableOpacity
+          style={[
+            s.selectBtn,
+            isDark && s.selectBtnDark,
+            !browseDir && s.selectBtnDisabled,
+            { gap: 8 * density.gap },
+          ]}
+          onPress={handleUseFolder}
+          disabled={!browseDir}
+          testID="directory-select-button"
+        >
+          <Ionicons
+            name="checkmark-circle"
+            size={18}
+            color={isDark ? "#0a0a0a" : "#ffffff"}
+          />
+          <Text
+            style={[
+              s.selectBtnText,
+              isDark && s.selectBtnTextDark,
+              { fontSize: 15 * density.font },
+            ]}
+            numberOfLines={1}
+          >
+            {t("chat.directoryBrowserSheet.useFolderButton", {
+              folder: browseDir
+                ? nameOf(browseDir)
+                : t("chat.directoryBrowserSheet.thisFolderFallback"),
+            })}
+          </Text>
+        </TouchableOpacity>
+      </View>
     </BottomSheet>
   );
 }

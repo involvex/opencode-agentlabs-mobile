@@ -4,13 +4,13 @@ import {
   Text,
   TouchableOpacity,
   StyleSheet,
-  FlatList,
   TextInput,
   Alert,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import BottomSheet, {
   BottomSheetBackdrop,
+  BottomSheetFlatList,
   BottomSheetView,
 } from "@gorhom/bottom-sheet";
 import { useTranslation } from "react-i18next";
@@ -108,7 +108,7 @@ export function PromptLibrarySheet({
         />
       )}
     >
-      <BottomSheetView style={{ flex: 1 }}>
+      <BottomSheetView>
         <View
           style={[
             s.header,
@@ -190,92 +190,93 @@ export function PromptLibrarySheet({
           autoCapitalize="sentences"
           onSubmitEditing={handleSave}
         />
+      </BottomSheetView>
 
-        <FlatList
-          data={activePrompts}
-          keyExtractor={(item) => item.id}
-          keyboardShouldPersistTaps="handled"
-          contentContainerStyle={[
-            s.listContent,
-            activePrompts.length === 0 && s.emptyContent,
-          ]}
-          renderItem={({ item }) => (
-            <TouchableOpacity
-              style={[
-                s.row,
-                isDark && s.rowDark,
-                {
-                  gap: 12 * density.gap,
-                  paddingHorizontal: 16 * density.padding,
-                  paddingVertical: 12 * density.padding,
-                },
-              ]}
-              onPress={() => handleSelect(item)}
-              testID={`prompt-item-${item.id}`}
-            >
-              <View style={s.rowText}>
-                <Text
-                  style={[
-                    s.rowName,
-                    isDark && s.textWhite,
-                    { fontSize: 15 * density.font },
-                  ]}
-                  numberOfLines={1}
-                >
-                  {item.title}
-                </Text>
-                <Text
-                  style={[
-                    s.rowDesc,
-                    isDark && s.metaDark,
-                    { fontSize: 12 * density.font },
-                  ]}
-                  numberOfLines={2}
-                >
-                  {item.body || t("prompts.emptyBody")}
-                </Text>
-              </View>
-              <TouchableOpacity
-                onPress={() => handleDelete(item)}
-                hitSlop={8}
-                testID={`prompt-delete-${item.id}`}
-              >
-                <Ionicons
-                  name="ellipsis-vertical"
-                  size={16}
-                  color={isDark ? "#666666" : "#999999"}
-                />
-              </TouchableOpacity>
-            </TouchableOpacity>
-          )}
-          ListEmptyComponent={() => (
-            <View
-              style={[
-                s.emptyState,
-                {
-                  gap: 12 * density.gap,
-                  paddingHorizontal: 32 * density.padding,
-                },
-              ]}
-            >
-              <Ionicons
-                name="library-outline"
-                size={32}
-                color={isDark ? "#444444" : "#cccccc"}
-              />
+      <BottomSheetFlatList
+        style={{ flex: 1 }}
+        data={activePrompts}
+        keyExtractor={(item) => item.id}
+        keyboardShouldPersistTaps="handled"
+        contentContainerStyle={[
+          s.listContent,
+          activePrompts.length === 0 && s.emptyContent,
+        ]}
+        renderItem={({ item }) => (
+          <TouchableOpacity
+            style={[
+              s.row,
+              isDark && s.rowDark,
+              {
+                gap: 12 * density.gap,
+                paddingHorizontal: 16 * density.padding,
+                paddingVertical: 12 * density.padding,
+              },
+            ]}
+            onPress={() => handleSelect(item)}
+            testID={`prompt-item-${item.id}`}
+          >
+            <View style={s.rowText}>
               <Text
                 style={[
-                  s.emptyText,
+                  s.rowName,
                   isDark && s.textWhite,
-                  { fontSize: 14 * density.font },
+                  { fontSize: 15 * density.font },
                 ]}
+                numberOfLines={1}
               >
-                {t("prompts.emptyState")}
+                {item.title}
+              </Text>
+              <Text
+                style={[
+                  s.rowDesc,
+                  isDark && s.metaDark,
+                  { fontSize: 12 * density.font },
+                ]}
+                numberOfLines={2}
+              >
+                {item.body || t("prompts.emptyBody")}
               </Text>
             </View>
-          )}
-        />
-      </BottomSheetView>
+            <TouchableOpacity
+              onPress={() => handleDelete(item)}
+              hitSlop={8}
+              testID={`prompt-delete-${item.id}`}
+            >
+              <Ionicons
+                name="ellipsis-vertical"
+                size={16}
+                color={isDark ? "#666666" : "#999999"}
+              />
+            </TouchableOpacity>
+          </TouchableOpacity>
+        )}
+        ListEmptyComponent={() => (
+          <View
+            style={[
+              s.emptyState,
+              {
+                gap: 12 * density.gap,
+                paddingHorizontal: 32 * density.padding,
+              },
+            ]}
+          >
+            <Ionicons
+              name="library-outline"
+              size={32}
+              color={isDark ? "#444444" : "#cccccc"}
+            />
+            <Text
+              style={[
+                s.emptyText,
+                isDark && s.textWhite,
+                { fontSize: 14 * density.font },
+              ]}
+            >
+              {t("prompts.emptyState")}
+            </Text>
+          </View>
+        )}
+      />
     </BottomSheet>
   );
 }

@@ -1,13 +1,8 @@
-import {
-  View,
-  Text,
-  TouchableOpacity,
-  StyleSheet,
-  FlatList,
-} from "react-native";
+import { View, Text, TouchableOpacity, StyleSheet } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import BottomSheet, {
   BottomSheetBackdrop,
+  BottomSheetFlatList,
   BottomSheetView,
 } from "@gorhom/bottom-sheet";
 import { useTranslation } from "react-i18next";
@@ -107,56 +102,56 @@ export function VariantPicker({
             {t("chat.variantPicker.title")}
           </Text>
         </View>
-        <FlatList
-          style={{ flex: 1 }}
-          data={options}
-          keyExtractor={(item: VariantOption) => item.id ?? "auto"}
-          renderItem={({ item }: { item: VariantOption }) => {
-            const active = item.id === selected;
-            return (
-              <TouchableOpacity
-                style={[
-                  s.row,
-                  isDark && s.rowDark,
-                  active && (isDark ? s.rowSelectedDark : s.rowSelected),
-                  {
-                    paddingHorizontal: 16 * density.padding,
-                    paddingVertical: 14 * density.padding,
-                  },
-                ]}
-                onPress={() => handleSelect(item.id)}
-                testID={`variant-option-${item.id ?? "auto"}`}
-                activeOpacity={0.7}
-              >
-                <View style={s.rowText}>
-                  <Text
-                    style={[
-                      s.rowName,
-                      isDark && s.textWhite,
-                      { fontSize: 15 * density.font },
-                    ]}
-                  >
-                    {item.label}
-                  </Text>
-                  <Text
-                    style={[
-                      s.rowDesc,
-                      isDark && s.metaDark,
-                      { fontSize: 12 * density.font },
-                    ]}
-                  >
-                    {item.description}
-                  </Text>
-                </View>
-                {active && (
-                  <Ionicons name="checkmark-circle" size={20} color="#8b5cf6" />
-                )}
-              </TouchableOpacity>
-            );
-          }}
-          contentContainerStyle={s.content}
-        />
       </BottomSheetView>
+      <BottomSheetFlatList
+        style={{ flex: 1 }}
+        data={options}
+        keyExtractor={(item: VariantOption) => item.id ?? "auto"}
+        renderItem={({ item }: { item: VariantOption }) => {
+          const active = item.id === selected;
+          return (
+            <TouchableOpacity
+              style={[
+                s.row,
+                isDark && s.rowDark,
+                active && (isDark ? s.rowSelectedDark : s.rowSelected),
+                {
+                  paddingHorizontal: 16 * density.padding,
+                  paddingVertical: 14 * density.padding,
+                },
+              ]}
+              onPress={() => handleSelect(item.id)}
+              testID={`variant-option-${item.id ?? "auto"}`}
+              activeOpacity={0.7}
+            >
+              <View style={s.rowText}>
+                <Text
+                  style={[
+                    s.rowName,
+                    isDark && s.textWhite,
+                    { fontSize: 15 * density.font },
+                  ]}
+                >
+                  {item.label}
+                </Text>
+                <Text
+                  style={[
+                    s.rowDesc,
+                    isDark && s.metaDark,
+                    { fontSize: 12 * density.font },
+                  ]}
+                >
+                  {item.description}
+                </Text>
+              </View>
+              {active && (
+                <Ionicons name="checkmark-circle" size={20} color="#8b5cf6" />
+              )}
+            </TouchableOpacity>
+          );
+        }}
+        contentContainerStyle={s.content}
+      />
     </BottomSheet>
   );
 }

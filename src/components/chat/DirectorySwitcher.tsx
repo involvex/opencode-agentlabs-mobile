@@ -1,14 +1,9 @@
 import { useState, useCallback, useMemo } from "react";
-import {
-  View,
-  Text,
-  TouchableOpacity,
-  StyleSheet,
-  FlatList,
-} from "react-native";
+import { View, Text, TouchableOpacity, StyleSheet } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import BottomSheet, {
   BottomSheetBackdrop,
+  BottomSheetFlatList,
   BottomSheetTextInput,
   BottomSheetView,
 } from "@gorhom/bottom-sheet";
@@ -276,98 +271,97 @@ export function DirectorySwitcher({
         )}
 
         {/* Recent directories */}
-        <FlatList
-          style={{ flex: 1 }}
-          data={items}
-          keyExtractor={(item: (typeof items)[number], i: number) =>
-            item.dir || `default-${i}`
-          }
-          renderItem={({ item }: { item: (typeof items)[number] }) => (
-            <TouchableOpacity
-              style={[
-                s.row,
-                isDark && s.rowDark,
-                item.active && s.rowActive,
-                {
-                  paddingHorizontal: 16 * density.padding,
-                  paddingVertical: 12 * density.padding,
-                  gap: 12 * density.gap,
-                },
-              ]}
-              onPress={() => handleSelect(item.dir)}
-              activeOpacity={0.7}
-            >
-              <View style={s.rowIcon}>
-                <Ionicons
-                  name={item.dir ? "folder-outline" : "server-outline"}
-                  size={20}
-                  color={
-                    item.active ? "#8b5cf6" : isDark ? "#888888" : "#666666"
-                  }
-                />
-              </View>
-              <View style={s.rowContent}>
+      </BottomSheetView>
+
+      <BottomSheetFlatList
+        style={{ flex: 1 }}
+        data={items}
+        keyExtractor={(item: (typeof items)[number], i: number) =>
+          item.dir || `default-${i}`
+        }
+        renderItem={({ item }: { item: (typeof items)[number] }) => (
+          <TouchableOpacity
+            style={[
+              s.row,
+              isDark && s.rowDark,
+              item.active && s.rowActive,
+              {
+                paddingHorizontal: 16 * density.padding,
+                paddingVertical: 12 * density.padding,
+                gap: 12 * density.gap,
+              },
+            ]}
+            onPress={() => handleSelect(item.dir)}
+            activeOpacity={0.7}
+          >
+            <View style={s.rowIcon}>
+              <Ionicons
+                name={item.dir ? "folder-outline" : "server-outline"}
+                size={20}
+                color={item.active ? "#8b5cf6" : isDark ? "#888888" : "#666666"}
+              />
+            </View>
+            <View style={s.rowContent}>
+              <Text
+                style={[
+                  s.rowLabel,
+                  isDark && s.white,
+                  item.active && s.rowLabelActive,
+                  { fontSize: 15 * density.font },
+                ]}
+                numberOfLines={1}
+              >
+                {item.label}
+              </Text>
+              {item.dir && (
                 <Text
                   style={[
-                    s.rowLabel,
-                    isDark && s.white,
-                    item.active && s.rowLabelActive,
-                    { fontSize: 15 * density.font },
+                    s.rowPath,
+                    isDark && s.dimDark,
+                    { fontSize: 12 * density.font },
                   ]}
                   numberOfLines={1}
                 >
-                  {item.label}
+                  {item.dir}
                 </Text>
-                {item.dir && (
-                  <Text
-                    style={[
-                      s.rowPath,
-                      isDark && s.dimDark,
-                      { fontSize: 12 * density.font },
-                    ]}
-                    numberOfLines={1}
-                  >
-                    {item.dir}
-                  </Text>
-                )}
-                {!item.dir && (
-                  <Text
-                    style={[
-                      s.rowPath,
-                      isDark && s.dimDark,
-                      { fontSize: 12 * density.font },
-                    ]}
-                  >
-                    {t("chat.directorySwitcher.usesServerDir")}
-                  </Text>
-                )}
-              </View>
-              {item.active && (
-                <Ionicons name="checkmark-circle" size={20} color="#8b5cf6" />
               )}
-            </TouchableOpacity>
-          )}
-          contentContainerStyle={s.list}
-          ListHeaderComponent={
-            items.length > 1 ? (
-              <Text
-                style={[
-                  s.section,
-                  isDark && s.dimDark,
-                  {
-                    fontSize: 12 * density.font,
-                    paddingHorizontal: 16 * density.padding,
-                    paddingTop: 4 * density.padding,
-                    paddingBottom: 8 * density.padding,
-                  },
-                ]}
-              >
-                {t("chat.directorySwitcher.recentProjectsLabel")}
-              </Text>
-            ) : null
-          }
-        />
-      </BottomSheetView>
+              {!item.dir && (
+                <Text
+                  style={[
+                    s.rowPath,
+                    isDark && s.dimDark,
+                    { fontSize: 12 * density.font },
+                  ]}
+                >
+                  {t("chat.directorySwitcher.usesServerDir")}
+                </Text>
+              )}
+            </View>
+            {item.active && (
+              <Ionicons name="checkmark-circle" size={20} color="#8b5cf6" />
+            )}
+          </TouchableOpacity>
+        )}
+        contentContainerStyle={s.list}
+        ListHeaderComponent={
+          items.length > 1 ? (
+            <Text
+              style={[
+                s.section,
+                isDark && s.dimDark,
+                {
+                  fontSize: 12 * density.font,
+                  paddingHorizontal: 16 * density.padding,
+                  paddingTop: 4 * density.padding,
+                  paddingBottom: 8 * density.padding,
+                },
+              ]}
+            >
+              {t("chat.directorySwitcher.recentProjectsLabel")}
+            </Text>
+          ) : null
+        }
+      />
     </BottomSheet>
   );
 }
