@@ -24,7 +24,8 @@
       <action android:name="android.speech.RecognitionService"/>
     </intent>
   </queries>
-  <application android:name=".MainApplication" android:label="@string/app_name" android:icon="@mipmap/ic_launcher" android:roundIcon="@mipmap/ic_launcher_round" android:allowBackup="true" android:theme="@style/AppTheme" android:supportsRtl="true" android:enableOnBackInvokedCallback="false" android:requestLegacyExternalStorage="true" android:fullBackupContent="@xml/secure_store_backup_rules" android:dataExtractionRules="@xml/secure_store_data_extraction_rules">
+  <!-- usesCleartextTraffic: the app connects to user-configured opencode servers over plain HTTP on LAN/Tailscale (e.g. http://100.108.64.76:4096). Release builds block cleartext by default (debug allows it), which breaks SSE/models/terminal while cached sessions still render. Kept in sync by plugins/with-cleartext-traffic.js on prebuild. -->
+  <application android:name=".MainApplication" android:label="@string/app_name" android:icon="@mipmap/ic_launcher" android:roundIcon="@mipmap/ic_launcher_round" android:allowBackup="true" android:theme="@style/AppTheme" android:supportsRtl="true" android:enableOnBackInvokedCallback="false" android:requestLegacyExternalStorage="true" android:fullBackupContent="@xml/secure_store_backup_rules" android:dataExtractionRules="@xml/secure_store_data_extraction_rules" android:usesCleartextTraffic="true">
     <meta-data android:name="com.google.firebase.messaging.default_notification_color" android:resource="@color/notification_icon_color"/>
     <meta-data android:name="com.google.firebase.messaging.default_notification_icon" android:resource="@drawable/notification_icon"/>
     <meta-data android:name="expo.modules.notifications.default_notification_color" android:resource="@color/notification_icon_color"/>

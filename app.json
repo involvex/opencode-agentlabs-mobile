@@ -49,6 +49,7 @@
       "expo-localization",
       "expo-font",
       "expo-status-bar",
+      "./plugins/with-cleartext-traffic.js",
       [
         "expo-splash-screen",
         {
