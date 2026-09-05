@@ -1,7 +1,7 @@
 import { View, Text, TouchableOpacity, StyleSheet } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { useTranslation } from "react-i18next";
-import { useDensity } from "../../lib/density";
+import { useDensity, ds } from "../../lib/density";
 
 interface Props {
   permission: { id: string; permission: string; patterns: string[] };
@@ -17,21 +17,16 @@ export function PermissionPrompt({ permission, isDark, onReply }: Props) {
       style={[
         s.card,
         isDark && s.cardDark,
-        { margin: 12 * density.padding, padding: 16 * density.padding },
+        { ...ds({ margin: 12, padding: 16 }, density) },
       ]}
     >
-      <View
-        style={[
-          s.header,
-          { gap: 8 * density.gap, marginBottom: 8 * density.padding },
-        ]}
-      >
+      <View style={[s.header, { ...ds({ gap: 8, marginBottom: 8 }, density) }]}>
         <Ionicons name="shield-outline" size={18} color="#f59e0b" />
         <Text
           style={[
             s.title,
             isDark && s.textWhite,
-            { fontSize: 15 * density.font },
+            { ...ds({ fontSize: 15 }, density) },
           ]}
         >
           {t("chat.permissionPrompt.title")}
@@ -41,17 +36,17 @@ export function PermissionPrompt({ permission, isDark, onReply }: Props) {
         style={[
           s.type,
           isDark && s.typeDark,
-          { fontSize: 13 * density.font, marginBottom: 12 * density.padding },
+          { ...ds({ fontSize: 13, marginBottom: 12 }, density) },
         ]}
       >
         {permission.permission}: {permission.patterns.join(", ")}
       </Text>
-      <View style={[s.actions, { gap: 8 * density.gap }]}>
+      <View style={[s.actions, { ...ds({ gap: 8 }, density) }]}>
         <TouchableOpacity
-          style={[s.btn, s.deny, { paddingVertical: 10 * density.padding }]}
+          style={[s.btn, s.deny, { ...ds({ paddingVertical: 10 }, density) }]}
           onPress={() => onReply("reject")}
         >
-          <Text style={[s.denyText, { fontSize: 14 * density.font }]}>
+          <Text style={[s.denyText, { ...ds({ fontSize: 14 }, density) }]}>
             {t("chat.permissionPrompt.deny")}
           </Text>
         </TouchableOpacity>
@@ -60,7 +55,7 @@ export function PermissionPrompt({ permission, isDark, onReply }: Props) {
             s.btn,
             s.always,
             isDark && s.alwaysDark,
-            { paddingVertical: 10 * density.padding },
+            { ...ds({ paddingVertical: 10 }, density) },
           ]}
           onPress={() => onReply("always")}
         >
@@ -68,7 +63,7 @@ export function PermissionPrompt({ permission, isDark, onReply }: Props) {
             style={[
               s.alwaysText,
               isDark && s.textWhite,
-              { fontSize: 14 * density.font },
+              { ...ds({ fontSize: 14 }, density) },
             ]}
           >
             {t("chat.permissionPrompt.always")}
@@ -79,7 +74,7 @@ export function PermissionPrompt({ permission, isDark, onReply }: Props) {
             s.btn,
             s.allow,
             isDark && s.allowDark,
-            { paddingVertical: 10 * density.padding },
+            { ...ds({ paddingVertical: 10 }, density) },
           ]}
           onPress={() => onReply("once")}
         >
@@ -87,7 +82,7 @@ export function PermissionPrompt({ permission, isDark, onReply }: Props) {
             style={[
               s.allowText,
               isDark && s.allowTextDark,
-              { fontSize: 14 * density.font },
+              { ...ds({ fontSize: 14 }, density) },
             ]}
           >
             {t("chat.permissionPrompt.allow")}

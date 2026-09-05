@@ -13,7 +13,7 @@ import BottomSheet, {
   BottomSheetView,
 } from "@gorhom/bottom-sheet";
 import { useTranslation } from "react-i18next";
-import { useDensity } from "../../lib/density";
+import { useDensity, ds } from "../../lib/density";
 
 interface Props {
   sheetRef: React.RefObject<BottomSheet | null>;
@@ -108,9 +108,7 @@ export function DirectorySwitcher({
         style={[
           s.header,
           {
-            paddingHorizontal: 16 * density.padding,
-            paddingBottom: 8 * density.padding,
-            gap: 6 * density.gap,
+            ...ds({ paddingHorizontal: 16, paddingBottom: 8, gap: 6 }, density),
           },
         ]}
       >
@@ -138,9 +136,10 @@ export function DirectorySwitcher({
           style={[
             s.inputWrap,
             {
-              paddingHorizontal: 16 * density.padding,
-              paddingBottom: 8 * density.padding,
-              gap: 8 * density.gap,
+              ...ds(
+                { paddingHorizontal: 16, paddingBottom: 8, gap: 8 },
+                density,
+              ),
             },
           ]}
         >
@@ -149,9 +148,10 @@ export function DirectorySwitcher({
               s.input,
               isDark && s.inputDark,
               {
-                paddingHorizontal: 14 * density.padding,
-                paddingVertical: 10 * density.padding,
-                fontSize: 15 * density.font,
+                ...ds(
+                  { paddingHorizontal: 14, paddingVertical: 10, fontSize: 15 },
+                  density,
+                ),
               },
             ]}
             placeholder={serverHome ? `${serverHome}/...` : "/path/to/project"}

@@ -16,7 +16,7 @@ import { usePtySession } from "../../hooks/use-pty-session";
 import { buildPtyWsUrl, PtyWebSocket } from "../../lib/pty-ws";
 import { ansiToSegments } from "../../lib/ansi-to-style";
 import { useSettings } from "../../stores/settings";
-import { useDensity } from "../../lib/density";
+import { useDensity, ds } from "../../lib/density";
 import {
   executeLocalCommand,
   isLocalTerminalAvailable,
@@ -293,7 +293,7 @@ function TerminalSocket({
       <View
         style={[
           styles.keyButtonRow,
-          { gap: 6 * density.gap, paddingBottom: 4 * density.padding },
+          { ...ds({ gap: 6, paddingBottom: 4 }, density) },
         ]}
       >
         {SPECIAL_KEYS_NAV.map((k) => (
@@ -309,7 +309,7 @@ function TerminalSocket({
       <View
         style={[
           styles.keyButtonRow,
-          { gap: 6 * density.gap, paddingBottom: 4 * density.padding },
+          { ...ds({ gap: 6, paddingBottom: 4 }, density) },
         ]}
       >
         {SPECIAL_KEYS_CTRL.map((k) => (
@@ -483,7 +483,7 @@ function LocalTerminalView({
       <View
         style={[
           styles.keyButtonRow,
-          { gap: 6 * density.gap, paddingBottom: 4 * density.padding },
+          { ...ds({ gap: 6, paddingBottom: 4 }, density) },
         ]}
       >
         {SPECIAL_KEYS_NAV.map((k) => (
@@ -499,7 +499,7 @@ function LocalTerminalView({
       <View
         style={[
           styles.keyButtonRow,
-          { gap: 6 * density.gap, paddingBottom: 4 * density.padding },
+          { ...ds({ gap: 6, paddingBottom: 4 }, density) },
         ]}
       >
         {SPECIAL_KEYS_CTRL.map((k) => (

@@ -11,7 +11,7 @@ import { Stack, useRouter } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
 import { useTranslation } from "react-i18next";
 import { useTheme } from "../src/lib/theme";
-import { useDensity } from "../src/lib/density";
+import { useDensity, ds } from "../src/lib/density";
 import { MessageBubble, PermissionPrompt } from "../src/components/chat";
 import {
   buildDemoScript,
@@ -86,16 +86,13 @@ export default function DemoScreen() {
         <View
           style={[
             s.banner,
-            {
-              paddingHorizontal: 16 * density.padding,
-              paddingVertical: 10 * density.padding,
-            },
+            { ...ds({ paddingHorizontal: 16, paddingVertical: 10 }, density) },
             isDark && s.bannerDark,
           ]}
           testID="demo-banner"
         >
           <Ionicons name="play-circle-outline" size={16} color="#8b5cf6" />
-          <Text style={[s.bannerText, { fontSize: 13 * density.font }]}>
+          <Text style={[s.bannerText, { ...ds({ fontSize: 13 }, density) }]}>
             {t("demo.banner")}
           </Text>
         </View>
@@ -103,7 +100,7 @@ export default function DemoScreen() {
         <ScrollView
           contentContainerStyle={[
             s.scrollContent,
-            { padding: 16 * density.padding },
+            { ...ds({ padding: 16 }, density) },
           ]}
           keyboardShouldPersistTaps="handled"
         >
@@ -137,7 +134,7 @@ export default function DemoScreen() {
           <View
             style={[
               s.ctaCard,
-              { padding: 20 * density.padding },
+              { ...ds({ padding: 20 }, density) },
               isDark && s.ctaCardDark,
             ]}
             testID="demo-cta-card"
@@ -145,7 +142,7 @@ export default function DemoScreen() {
             <Text
               style={[
                 s.ctaTitle,
-                { fontSize: 17 * density.font },
+                { ...ds({ fontSize: 17 }, density) },
                 isDark && s.textWhite,
               ]}
             >
@@ -154,7 +151,7 @@ export default function DemoScreen() {
             <Text
               style={[
                 s.ctaSubtitle,
-                { fontSize: 13 * density.font, marginTop: 6 * density.padding },
+                { ...ds({ fontSize: 13, marginTop: 6 }, density) },
                 isDark && s.metaDark,
               ]}
             >
@@ -164,16 +161,24 @@ export default function DemoScreen() {
               style={[
                 s.connectButton,
                 {
-                  marginTop: 16 * density.padding,
-                  paddingHorizontal: 24 * density.padding,
-                  paddingVertical: 12 * density.padding,
+                  ...ds(
+                    {
+                      marginTop: 16,
+                      paddingHorizontal: 24,
+                      paddingVertical: 12,
+                    },
+                    density,
+                  ),
                 },
               ]}
               onPress={handleConnectPress}
               testID="demo-connect-button"
             >
               <Text
-                style={[s.connectButtonText, { fontSize: 15 * density.font }]}
+                style={[
+                  s.connectButtonText,
+                  { ...ds({ fontSize: 15 }, density) },
+                ]}
               >
                 {t("demo.connectButton")}
               </Text>

@@ -10,7 +10,7 @@ import {
 import { Ionicons } from "@expo/vector-icons";
 import { useTranslation } from "react-i18next";
 import { DiffView } from "./DiffView";
-import { useDensity } from "../../lib/density";
+import { useDensity, ds } from "../../lib/density";
 import type { Part } from "../../lib/sdk";
 
 const mono = Platform.OS === "ios" ? "Menlo" : "monospace";
@@ -83,19 +83,19 @@ export function PatchPartCard({
         isDark && s.cardDark,
         status === "error" && s.cardError,
         status === "error" && isDark && s.cardErrorDark,
-        { padding: 10 * density.padding, marginTop: 8 * density.padding },
+        { ...ds({ padding: 10, marginTop: 8 }, density) },
       ]}
       onPress={toggle}
       activeOpacity={hasDetail ? 0.7 : 1}
     >
       <View style={s.header}>
-        <View style={[s.headerLeft, { gap: 8 * density.gap }]}>
+        <View style={[s.headerLeft, { ...ds({ gap: 8 }, density) }]}>
           <Ionicons name="git-merge-outline" size={16} color="#8b5cf6" />
           <Text
             style={[
               s.name,
               isDark && s.nameDark,
-              { fontSize: 13 * density.font },
+              { ...ds({ fontSize: 13 }, density) },
             ]}
             numberOfLines={1}
           >
@@ -106,14 +106,14 @@ export function PatchPartCard({
               style={[
                 s.elapsed,
                 isDark && s.elapsedDark,
-                { fontSize: 11 * density.font },
+                { ...ds({ fontSize: 11 }, density) },
               ]}
             >
               {elapsed}
             </Text>
           )}
         </View>
-        <View style={[s.headerRight, { gap: 6 * density.gap }]}>
+        <View style={[s.headerRight, { ...ds({ gap: 6 }, density) }]}>
           {status === "running" && (
             <ActivityIndicator size="small" color="#8b5cf6" />
           )}
@@ -139,9 +139,7 @@ export function PatchPartCard({
             s.errorBannerInline,
             isDark && s.errorBannerDark,
             {
-              gap: 6 * density.gap,
-              marginTop: 6 * density.padding,
-              padding: 8 * density.padding,
+              ...ds({ gap: 6, marginTop: 6, padding: 8 }, density),
             },
           ]}
         >
@@ -150,7 +148,7 @@ export function PatchPartCard({
             style={[
               s.errorText,
               isDark && s.errorTextDark,
-              { fontSize: 12 * density.font },
+              { ...ds({ fontSize: 12 }, density) },
             ]}
             numberOfLines={2}
             selectable
@@ -164,7 +162,7 @@ export function PatchPartCard({
         <View
           style={[
             s.expandedContent,
-            { marginTop: 8 * density.padding, gap: 8 * density.gap },
+            { ...ds({ marginTop: 8, gap: 8 }, density) },
           ]}
         >
           {hasNoDetail && (
@@ -172,7 +170,7 @@ export function PatchPartCard({
               style={[
                 s.emptyHint,
                 isDark && s.emptyHintDark,
-                { fontSize: 11 * density.font },
+                { ...ds({ fontSize: 11 }, density) },
               ]}
             >
               {t("chat.patchPartCard.noDetails", "No patch details available")}
@@ -186,14 +184,14 @@ export function PatchPartCard({
               style={[
                 s.codeBlock,
                 isDark && s.codeBlockDark,
-                { padding: 10 * density.padding },
+                { ...ds({ padding: 10 }, density) },
               ]}
             >
               <Text
                 style={[
                   s.codePre,
                   isDark && s.codePteDark,
-                  { fontSize: 12 * density.font },
+                  { ...ds({ fontSize: 12 }, density) },
                 ]}
                 selectable
                 numberOfLines={30}
@@ -208,9 +206,7 @@ export function PatchPartCard({
                 s.errorBanner,
                 isDark && s.errorBannerDark,
                 {
-                  gap: 6 * density.gap,
-                  marginTop: 6 * density.padding,
-                  padding: 8 * density.padding,
+                  ...ds({ gap: 6, marginTop: 6, padding: 8 }, density),
                 },
               ]}
             >
@@ -219,7 +215,7 @@ export function PatchPartCard({
                 style={[
                   s.errorText,
                   isDark && s.errorTextDark,
-                  { fontSize: 12 * density.font },
+                  { ...ds({ fontSize: 12 }, density) },
                 ]}
                 selectable
               >

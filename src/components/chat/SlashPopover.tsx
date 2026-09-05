@@ -17,7 +17,7 @@ import type {
 } from "../../lib/slash-commands";
 import { COMMAND_CATEGORIES, filterCommands } from "../../lib/slash-commands";
 import { useSlashCommands } from "../../stores/slash-commands";
-import { useDensity } from "../../lib/density";
+import { useDensity, ds } from "../../lib/density";
 
 interface Props {
   query: string;
@@ -134,8 +134,13 @@ export function SlashPopover({
           isDark && s.popoverDark,
           {
             maxWidth: MAX_WIDTH,
-            marginHorizontal: 16 * density.padding,
-            marginBottom: 8 * density.padding,
+            ...ds(
+              {
+                marginHorizontal: 16,
+                marginBottom: 8,
+              },
+              density,
+            ),
           },
         ]}
       >
@@ -144,9 +149,14 @@ export function SlashPopover({
             s.empty,
             isDark && s.emptyDark,
             {
-              fontSize: 14 * density.font,
-              paddingVertical: 16 * density.padding,
-              paddingHorizontal: 16 * density.padding,
+              ...ds(
+                {
+                  fontSize: 14,
+                  paddingVertical: 16,
+                  paddingHorizontal: 16,
+                },
+                density,
+              ),
             },
           ]}
         >
@@ -158,8 +168,13 @@ export function SlashPopover({
               s.helpLink,
               isDark && s.helpLinkDark,
               {
-                fontSize: 13 * density.font,
-                paddingBottom: 12 * density.padding,
+                ...ds(
+                  {
+                    fontSize: 13,
+                    paddingBottom: 12,
+                  },
+                  density,
+                ),
               },
             ]}
           >
@@ -185,7 +200,7 @@ export function SlashPopover({
       <ScrollView
         ref={scrollViewRef}
         keyboardShouldPersistTaps="always"
-        style={[s.scroll, { paddingVertical: 8 * density.padding }]}
+        style={[s.scroll, { ...ds({ paddingVertical: 8 }, density) }]}
         nestedScrollEnabled
       >
         {Array.from(grouped.entries()).map(([groupKey, cmds]) => (
@@ -195,10 +210,15 @@ export function SlashPopover({
                 s.groupHeader,
                 isDark && s.groupHeaderDark,
                 {
-                  fontSize: 11 * density.font,
-                  paddingHorizontal: 16 * density.padding,
-                  paddingTop: 8 * density.padding,
-                  paddingBottom: 4 * density.padding,
+                  ...ds(
+                    {
+                      fontSize: 11,
+                      paddingHorizontal: 16,
+                      paddingTop: 8,
+                      paddingBottom: 4,
+                    },
+                    density,
+                  ),
                 },
               ]}
             >
@@ -221,9 +241,14 @@ export function SlashPopover({
                     s.item,
                     isDark && s.itemDark,
                     {
-                      gap: 10 * density.gap,
-                      paddingHorizontal: 16 * density.padding,
-                      paddingVertical: 10 * density.padding,
+                      ...ds(
+                        {
+                          gap: 10,
+                          paddingHorizontal: 16,
+                          paddingVertical: 10,
+                        },
+                        density,
+                      ),
                     },
                   ]}
                   onPress={() => handleSelect(cmd)}
@@ -244,7 +269,7 @@ export function SlashPopover({
                       style={[
                         s.trigger,
                         isDark && s.textWhite,
-                        { fontSize: 14 * density.font },
+                        { ...ds({ fontSize: 14 }, density) },
                       ]}
                     >
                       /{cmd.trigger}
@@ -254,7 +279,7 @@ export function SlashPopover({
                         style={[
                           s.desc,
                           isDark && s.metaDark,
-                          { fontSize: 12 * density.font },
+                          { ...ds({ fontSize: 12 }, density) },
                         ]}
                         numberOfLines={1}
                       >
@@ -279,13 +304,21 @@ export function SlashPopover({
                         s.badge,
                         isDark && s.badgeDark,
                         {
-                          paddingHorizontal: 6 * density.padding,
-                          paddingVertical: 2 * density.padding,
+                          ...ds(
+                            {
+                              paddingHorizontal: 6,
+                              paddingVertical: 2,
+                            },
+                            density,
+                          ),
                         },
                       ]}
                     >
                       <Text
-                        style={[s.badgeText, { fontSize: 10 * density.font }]}
+                        style={[
+                          s.badgeText,
+                          { ...ds({ fontSize: 10 }, density) },
+                        ]}
                       >
                         {t("chat.slashPopover.customBadge")}
                       </Text>

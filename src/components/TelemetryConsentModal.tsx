@@ -21,7 +21,7 @@ import {
 import { Ionicons } from "@expo/vector-icons";
 import { useTranslation } from "react-i18next";
 import { PRIVACY_POLICY_URL } from "../lib/links";
-import { useDensity } from "../lib/density";
+import { useDensity, ds } from "../lib/density";
 
 interface Props {
   visible: boolean;
@@ -47,7 +47,7 @@ export function TelemetryConsentModal({ visible, onAllow, onDecline }: Props) {
         <View
           style={[
             styles.card,
-            { padding: 28 * density.padding },
+            { ...ds({ padding: 28 }, density) },
             isDark && styles.cardDark,
           ]}
           testID="telemetry-consent-card"
@@ -71,10 +71,7 @@ export function TelemetryConsentModal({ visible, onAllow, onDecline }: Props) {
           <Text
             style={[
               styles.title,
-              {
-                fontSize: 22 * density.font,
-                marginBottom: 12 * density.padding,
-              },
+              { ...ds({ fontSize: 22, marginBottom: 12 }, density) },
               isDark && styles.textDark,
             ]}
           >
@@ -85,10 +82,7 @@ export function TelemetryConsentModal({ visible, onAllow, onDecline }: Props) {
           <Text
             style={[
               styles.body,
-              {
-                fontSize: 15 * density.font,
-                marginBottom: 20 * density.padding,
-              },
+              { ...ds({ fontSize: 15, marginBottom: 20 }, density) },
               isDark && styles.bodyDark,
             ]}
           >
@@ -137,14 +131,11 @@ export function TelemetryConsentModal({ visible, onAllow, onDecline }: Props) {
           </TouchableOpacity>
 
           {/* Actions */}
-          <View style={[styles.actions, { gap: 12 * density.gap }]}>
+          <View style={[styles.actions, { ...ds({ gap: 12 }, density) }]}>
             <TouchableOpacity
               style={[
                 styles.btn,
-                {
-                  paddingVertical: 14 * density.padding,
-                  borderRadius: 12 * density.padding,
-                },
+                { ...ds({ paddingVertical: 14 }, density) },
                 styles.btnDecline,
                 isDark && styles.btnDeclineDark,
               ]}
@@ -155,7 +146,7 @@ export function TelemetryConsentModal({ visible, onAllow, onDecline }: Props) {
               <Text
                 style={[
                   styles.btnDeclineText,
-                  { fontSize: 16 * density.font },
+                  { ...ds({ fontSize: 16 }, density) },
                   isDark && styles.btnDeclineTextDark,
                 ]}
               >
@@ -165,10 +156,7 @@ export function TelemetryConsentModal({ visible, onAllow, onDecline }: Props) {
             <TouchableOpacity
               style={[
                 styles.btn,
-                {
-                  paddingVertical: 14 * density.padding,
-                  borderRadius: 12 * density.padding,
-                },
+                { ...ds({ paddingVertical: 14 }, density) },
                 styles.btnAllow,
               ]}
               onPress={onAllow}
@@ -176,7 +164,10 @@ export function TelemetryConsentModal({ visible, onAllow, onDecline }: Props) {
               testID="telemetry-allow-button"
             >
               <Text
-                style={[styles.btnAllowText, { fontSize: 16 * density.font }]}
+                style={[
+                  styles.btnAllowText,
+                  { ...ds({ fontSize: 16 }, density) },
+                ]}
               >
                 {t("telemetryConsent.allowButton")}
               </Text>

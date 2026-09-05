@@ -12,7 +12,7 @@ import { Ionicons } from "@expo/vector-icons";
 import { useTranslation } from "react-i18next";
 import type { Part } from "../../lib/sdk";
 import { stripAnsi } from "../../lib/ansi-to-style";
-import { useDensity } from "../../lib/density";
+import { useDensity, ds } from "../../lib/density";
 import { DiffView } from "./DiffView";
 
 const TOOL_ICONS: Record<string, string> = {
@@ -510,20 +510,20 @@ export function ToolCallCard({ tool, isDark }: Props) {
         isDark && s.cardDark,
         status === "error" && s.cardError,
         status === "error" && isDark && s.cardErrorDark,
-        { padding: 10 * density.padding },
+        { ...ds({ padding: 10 }, density) },
       ]}
       onPress={toggle}
       activeOpacity={hasDetail ? 0.7 : 1}
     >
       {/* Header row */}
       <View style={s.header}>
-        <View style={[s.headerLeft, { gap: 8 * density.gap }]}>
+        <View style={[s.headerLeft, { ...ds({ gap: 8 }, density) }]}>
           <Ionicons name={icon} size={16} color={color} />
           <Text
             style={[
               s.name,
               isDark && s.nameDark,
-              { fontSize: 13 * density.font },
+              { ...ds({ fontSize: 13 }, density) },
             ]}
             numberOfLines={1}
           >
@@ -536,7 +536,7 @@ export function ToolCallCard({ tool, isDark }: Props) {
               style={[
                 s.elapsed,
                 isDark && s.elapsedDark,
-                { fontSize: 11 * density.font },
+                { ...ds({ fontSize: 11 }, density) },
               ]}
             >
               {elapsed}

@@ -13,7 +13,7 @@ import BottomSheet, {
   BottomSheetView,
 } from "@gorhom/bottom-sheet";
 import { useTranslation } from "react-i18next";
-import { useDensity } from "../../lib/density";
+import { useDensity, ds } from "../../lib/density";
 
 interface ModelItem {
   providerID: string;

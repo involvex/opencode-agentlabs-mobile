@@ -3,7 +3,7 @@ import { useTranslation } from "react-i18next";
 import { useEvents } from "../../stores/events";
 import { useSessions } from "../../stores/sessions";
 import { useAccentColor } from "../../lib/theme";
-import { useDensity } from "../../lib/density";
+import { useDensity, ds } from "../../lib/density";
 
 interface Props {
   sessionID: string;
@@ -36,9 +36,14 @@ export function StatusIndicator({ sessionID, isDark }: Props) {
         s.bar,
         isDark && s.barDark,
         {
-          gap: 8 * density.gap,
-          paddingHorizontal: 16 * density.padding,
-          paddingVertical: 8 * density.padding,
+          ...ds(
+            {
+              gap: 8,
+              paddingHorizontal: 16,
+              paddingVertical: 8,
+            },
+            density,
+          ),
         },
       ]}
     >
@@ -47,7 +52,7 @@ export function StatusIndicator({ sessionID, isDark }: Props) {
         style={[
           s.text,
           isDark && s.textDark,
-          { color: accent, fontSize: 13 * density.font },
+          { ...ds({ color: accent, fontSize: 13 }, density) },
         ]}
       >
         {label}

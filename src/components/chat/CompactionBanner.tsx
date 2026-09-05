@@ -10,7 +10,7 @@ import {
 import { Ionicons } from "@expo/vector-icons";
 import { useTranslation } from "react-i18next";
 import { WIDE_CONTENT_SCROLL_CONFIG } from "../../lib/scroll-config";
-import { useDensity } from "../../lib/density";
+import { useDensity, ds } from "../../lib/density";
 import type { Part } from "../../lib/sdk";
 
 const mono = Platform.OS === "ios" ? "Menlo" : "monospace";
@@ -46,23 +46,18 @@ export function CompactionBanner({
       style={[
         s.banner,
         isDark && s.bannerDark,
-        { padding: 10 * density.padding, marginBottom: 8 * density.padding },
+        { ...ds({ padding: 10, marginBottom: 8 }, density) },
       ]}
       onPress={toggle}
       activeOpacity={0.7}
     >
-      <View
-        style={[
-          s.header,
-          { gap: 6 * density.gap, marginBottom: 4 * density.padding },
-        ]}
-      >
+      <View style={[s.header, { ...ds({ gap: 6, marginBottom: 4 }, density) }]}>
         <Ionicons name="archive-outline" size={14} color="#6366f1" />
         <Text
           style={[
             s.label,
             isDark && s.labelDark,
-            { fontSize: 11 * density.font },
+            { ...ds({ fontSize: 11 }, density) },
           ]}
         >
           {t("chat.compactionBanner.label", "Compacted")}
@@ -72,7 +67,7 @@ export function CompactionBanner({
             style={[
               s.elapsed,
               isDark && s.elapsedDark,
-              { fontSize: 10 * density.font },
+              { ...ds({ fontSize: 10 }, density) },
             ]}
           >
             {elapsed}
@@ -88,7 +83,7 @@ export function CompactionBanner({
         style={[
           s.summary,
           isDark && s.summaryDark,
-          { fontSize: 12 * density.font, lineHeight: 18 * density.font },
+          { ...ds({ fontSize: 12, lineHeight: 18 }, density) },
         ]}
         numberOfLines={2}
         selectable
@@ -102,7 +97,7 @@ export function CompactionBanner({
           showsVerticalScrollIndicator={false}
           style={s.expandedScroll}
         >
-          <View style={[s.expandedContent, { gap: 8 * density.gap }]}>
+          <View style={[s.expandedContent, { ...ds({ gap: 8 }, density) }]}>
             {typeof part.state?.input === "string" &&
               part.state.input.length > 0 && (
                 <View style={s.detailGroup}>
@@ -110,7 +105,7 @@ export function CompactionBanner({
                     style={[
                       s.detailLabel,
                       isDark && s.detailLabelDark,
-                      { fontSize: 10 * density.font },
+                      { ...ds({ fontSize: 10 }, density) },
                     ]}
                   >
                     {t("chat.compactionBanner.inputLabel", "Prompt sent")}
@@ -119,14 +114,14 @@ export function CompactionBanner({
                     style={[
                       s.codeBlock,
                       isDark && s.codeBlockDark,
-                      { padding: 8 * density.padding },
+                      { ...ds({ padding: 8 }, density) },
                     ]}
                   >
                     <Text
                       style={[
                         s.codePre,
                         isDark && s.codePreDark,
-                        { fontSize: 12 * density.font },
+                        { ...ds({ fontSize: 12 }, density) },
                       ]}
                       selectable
                       numberOfLines={20}
@@ -143,7 +138,7 @@ export function CompactionBanner({
                     style={[
                       s.detailLabel,
                       isDark && s.detailLabelDark,
-                      { fontSize: 10 * density.font },
+                      { ...ds({ fontSize: 10 }, density) },
                     ]}
                   >
                     {t("chat.compactionBanner.outputLabel", "Response")}
@@ -152,14 +147,14 @@ export function CompactionBanner({
                     style={[
                       s.codeBlock,
                       isDark && s.codeBlockDark,
-                      { padding: 8 * density.padding },
+                      { ...ds({ padding: 8 }, density) },
                     ]}
                   >
                     <Text
                       style={[
                         s.codePre,
                         isDark && s.codePreDark,
-                        { fontSize: 12 * density.font },
+                        { ...ds({ fontSize: 12 }, density) },
                       ]}
                       selectable
                       numberOfLines={30}
@@ -175,7 +170,7 @@ export function CompactionBanner({
                   style={[
                     s.errorBanner,
                     isDark && s.errorBannerDark,
-                    { gap: 6 * density.gap, padding: 8 * density.padding },
+                    { ...ds({ gap: 6, padding: 8 }, density) },
                   ]}
                 >
                   <Ionicons name="alert-circle" size={14} color="#ef4444" />
@@ -183,7 +178,7 @@ export function CompactionBanner({
                     style={[
                       s.errorText,
                       isDark && s.errorTextDark,
-                      { fontSize: 12 * density.font },
+                      { ...ds({ fontSize: 12 }, density) },
                     ]}
                     selectable
                   >
@@ -198,7 +193,7 @@ export function CompactionBanner({
                   style={[
                     s.emptyHint,
                     isDark && s.emptyHintDark,
-                    { fontSize: 11 * density.font },
+                    { ...ds({ fontSize: 11 }, density) },
                   ]}
                 >
                   {t(

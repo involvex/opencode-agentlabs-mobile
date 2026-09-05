@@ -12,7 +12,7 @@ import { useTranslation } from "react-i18next";
 import type { Message, Session } from "../../lib/sdk";
 import type { Provider } from "../../stores/catalog";
 import { useSessions } from "../../stores/sessions";
-import { useDensity } from "../../lib/density";
+import { useDensity, ds } from "../../lib/density";
 
 interface Props {
   session: Session | null;
@@ -132,9 +132,14 @@ export function SessionInfo({
         s.container,
         isDark && s.containerDark,
         {
-          paddingHorizontal: 12 * density.padding,
-          paddingVertical: 8 * density.padding,
-          gap: 8 * density.gap,
+          ...ds(
+            {
+              paddingHorizontal: 12,
+              paddingVertical: 8,
+              gap: 8,
+            },
+            density,
+          ),
         },
       ]}
     >
@@ -151,16 +156,16 @@ export function SessionInfo({
               style={[
                 s.tokens,
                 isDark && s.textDark,
-                { fontSize: 14 * density.font },
+                { ...ds({ fontSize: 14 }, density) },
               ]}
             >
               {stats.total.toLocaleString()}
               {stats.percent > 0 && (
                 <Text
                   style={[
-                    s.percent,
+                    s.cost,
                     isDark && s.dimDark,
-                    { fontSize: 13 * density.font },
+                    { ...ds({ fontSize: 13 }, density) },
                   ]}
                 >{`  ${stats.percent}%`}</Text>
               )}
@@ -171,7 +176,7 @@ export function SessionInfo({
               style={[
                 s.cost,
                 isDark && s.dimDark,
-                { fontSize: 13 * density.font },
+                { ...ds({ fontSize: 13 }, density) },
               ]}
             >
               ({formatCost(stats.cost)})
@@ -182,7 +187,7 @@ export function SessionInfo({
               style={[
                 s.cost,
                 isDark && s.dimDark,
-                { fontSize: 13 * density.font },
+                { ...ds({ fontSize: 13 }, density) },
               ]}
             >
               {t("chat.sessionInfo.noUsageData")}
@@ -217,7 +222,7 @@ export function SessionInfo({
 
       {/* Token breakdown pills */}
       {hasTokens && (
-        <View style={[s.breakdown, { gap: 6 * density.gap }]}>
+        <View style={[s.breakdown, { ...ds({ gap: 6 }, density) }]}>
           <TokenPill
             label={t("chat.sessionInfo.pills.in")}
             value={stats.input}
@@ -263,7 +268,7 @@ export function SessionInfo({
       )}
 
       {/* Session metadata */}
-      <View style={[s.meta, { gap: 12 * density.gap }]}>
+      <View style={[s.meta, { ...ds({ gap: 12 }, density) }]}>
         {created && (
           <MetaItem
             icon="time-outline"
@@ -316,10 +321,7 @@ export function SessionInfo({
           if (tags.length === 0) return null;
           return (
             <View
-              style={[
-                s.tagsRow,
-                { gap: 6 * density.gap, marginTop: 8 * density.padding },
-              ]}
+              style={[s.tagsRow, { ...ds({ gap: 6, marginTop: 8 }, density) }]}
             >
               {tags.map((tag) => (
                 <TouchableOpacity
@@ -327,9 +329,14 @@ export function SessionInfo({
                   style={[
                     s.tagChip,
                     {
-                      gap: 4 * density.gap,
-                      paddingHorizontal: 8 * density.padding,
-                      paddingVertical: 3 * density.padding,
+                      ...ds(
+                        {
+                          gap: 4,
+                          paddingHorizontal: 8,
+                          paddingVertical: 3,
+                        },
+                        density,
+                      ),
                     },
                   ]}
                   onPress={() => {
@@ -352,7 +359,9 @@ export function SessionInfo({
                     );
                   }}
                 >
-                  <Text style={[s.tagText, { fontSize: 12 * density.font }]}>
+                  <Text
+                    style={[s.tagText, { ...ds({ fontSize: 12 }, density) }]}
+                  >
                     {tag}
                   </Text>
                   <Ionicons name="close-circle" size={14} color="#888888" />
@@ -363,16 +372,21 @@ export function SessionInfo({
         })()}
 
       {/* Navigation actions */}
-      <View style={[s.actions, { gap: 8 * density.gap }]}>
+      <View style={[s.actions, { ...ds({ gap: 8 }, density) }]}>
         {hasMore && (
           <TouchableOpacity
             style={[
               s.action,
               isDark && s.actionDark,
               {
-                gap: 5 * density.gap,
-                paddingHorizontal: 10 * density.padding,
-                paddingVertical: 6 * density.padding,
+                ...ds(
+                  {
+                    gap: 5,
+                    paddingHorizontal: 10,
+                    paddingVertical: 6,
+                  },
+                  density,
+                ),
               },
             ]}
             onPress={onLoadAll}
@@ -394,7 +408,7 @@ export function SessionInfo({
               style={[
                 s.actionText,
                 isDark && s.dimDark,
-                { fontSize: 12 * density.font },
+                { ...ds({ fontSize: 12 }, density) },
               ]}
             >
               {loadingAll
@@ -409,9 +423,14 @@ export function SessionInfo({
               s.action,
               isDark && s.actionDark,
               {
-                gap: 5 * density.gap,
-                paddingHorizontal: 10 * density.padding,
-                paddingVertical: 6 * density.padding,
+                ...ds(
+                  {
+                    gap: 5,
+                    paddingHorizontal: 10,
+                    paddingVertical: 6,
+                  },
+                  density,
+                ),
               },
             ]}
             onPress={onExport}
@@ -425,7 +444,7 @@ export function SessionInfo({
               style={[
                 s.actionText,
                 isDark && s.dimDark,
-                { fontSize: 12 * density.font },
+                { ...ds({ fontSize: 12 }, density) },
               ]}
             >
               {t("chat.sessionInfo.exportSession")}
@@ -438,9 +457,14 @@ export function SessionInfo({
               s.action,
               isDark && s.actionDark,
               {
-                gap: 5 * density.gap,
-                paddingHorizontal: 10 * density.padding,
-                paddingVertical: 6 * density.padding,
+                ...ds(
+                  {
+                    gap: 5,
+                    paddingHorizontal: 10,
+                    paddingVertical: 6,
+                  },
+                  density,
+                ),
               },
             ]}
             onPress={onSummarize}
@@ -454,7 +478,7 @@ export function SessionInfo({
               style={[
                 s.actionText,
                 isDark && s.dimDark,
-                { fontSize: 12 * density.font },
+                { ...ds({ fontSize: 12 }, density) },
               ]}
             >
               {t("chat.sessionInfo.summarizeSession")}
@@ -467,9 +491,14 @@ export function SessionInfo({
               s.action,
               isDark && s.actionDark,
               {
-                gap: 5 * density.gap,
-                paddingHorizontal: 10 * density.padding,
-                paddingVertical: 6 * density.padding,
+                ...ds(
+                  {
+                    gap: 5,
+                    paddingHorizontal: 10,
+                    paddingVertical: 6,
+                  },
+                  density,
+                ),
               },
             ]}
             onPress={onScrollToTop}
@@ -483,7 +512,7 @@ export function SessionInfo({
               style={[
                 s.actionText,
                 isDark && s.dimDark,
-                { fontSize: 12 * density.font },
+                { ...ds({ fontSize: 12 }, density) },
               ]}
             >
               {t("chat.sessionInfo.jumpToBeginning")}
@@ -515,7 +544,7 @@ function MetaItem({
         style={[
           s.metaLabel,
           isDark && s.dimDark,
-          { fontSize: 11 * density.font },
+          { ...ds({ fontSize: 11 }, density) },
         ]}
       >
         {label}
@@ -524,7 +553,7 @@ function MetaItem({
         style={[
           s.metaValue,
           isDark && s.metaValueDark,
-          { fontSize: 11 * density.font },
+          { ...ds({ fontSize: 11 }, density) },
         ]}
       >
         {value}
@@ -552,9 +581,14 @@ function TokenPill({
         s.pill,
         {
           borderColor: color + "40",
-          gap: 4 * density.gap,
-          paddingHorizontal: 8 * density.padding,
-          paddingVertical: 3 * density.padding,
+          ...ds(
+            {
+              gap: 4,
+              paddingHorizontal: 8,
+              paddingVertical: 3,
+            },
+            density,
+          ),
         },
         isDark && { backgroundColor: color + "15" },
       ]}
@@ -564,7 +598,7 @@ function TokenPill({
         style={[
           s.pillLabel,
           isDark && s.dimDark,
-          { fontSize: 11 * density.font },
+          { ...ds({ fontSize: 11 }, density) },
         ]}
       >
         {label}
@@ -573,7 +607,7 @@ function TokenPill({
         style={[
           s.pillValue,
           isDark && s.textDark,
-          { fontSize: 11 * density.font },
+          { ...ds({ fontSize: 11 }, density) },
         ]}
       >
         {compact(value)}

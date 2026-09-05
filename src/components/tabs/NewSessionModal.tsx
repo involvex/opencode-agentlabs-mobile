@@ -13,7 +13,7 @@ import {
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import type { Project } from "../../lib/sdk";
-import { useDensity } from "../../lib/density";
+import { useDensity, ds } from "../../lib/density";
 
 export interface NewSessionModalProps {
   visible: boolean;
@@ -300,20 +300,20 @@ export function NewSessionModal({
           style={[
             styles.modalContent,
             isDark && styles.modalContentDark,
-            {
-              padding: 20 * density.padding,
-              paddingBottom: 40 * density.padding,
-            },
+            { ...ds({ padding: 20, paddingBottom: 40 }, density) },
           ]}
         >
           <View
-            style={[styles.modalHeader, { marginBottom: 20 * density.padding }]}
+            style={[
+              styles.modalHeader,
+              { ...ds({ marginBottom: 20 }, density) },
+            ]}
           >
             <Text
               style={[
                 styles.modalTitle,
                 isDark && styles.textDark,
-                { fontSize: 20 * density.font },
+                { ...ds({ fontSize: 20 }, density) },
               ]}
             >
               {t("sessionsList.newSessionModal.title")}
@@ -330,7 +330,7 @@ export function NewSessionModal({
           <ScrollView
             style={[
               styles.modalScrollBody,
-              { marginBottom: 16 * density.padding },
+              { ...ds({ marginBottom: 16 }, density) },
             ]}
             keyboardShouldPersistTaps="handled"
           >
@@ -338,10 +338,7 @@ export function NewSessionModal({
               style={[
                 styles.modalLabel,
                 isDark && styles.metaDark,
-                {
-                  fontSize: 13 * density.font,
-                  marginBottom: 8 * density.padding,
-                },
+                { ...ds({ fontSize: 13, marginBottom: 8 }, density) },
               ]}
             >
               {t("sessionsList.newSessionModal.currentProjectLabel")}
@@ -350,7 +347,7 @@ export function NewSessionModal({
               style={[
                 styles.modalDirBox,
                 isDark && styles.modalDirBoxDark,
-                { gap: 12 * density.gap, padding: 16 * density.padding },
+                { ...ds({ gap: 12, padding: 16 }, density) },
               ]}
               onPress={() => onCreate()}
               disabled={isCreating}
@@ -360,7 +357,7 @@ export function NewSessionModal({
                 style={[
                   styles.modalDirText,
                   isDark && styles.textDark,
-                  { fontSize: 15 * density.font },
+                  { ...ds({ fontSize: 15 }, density) },
                 ]}
                 numberOfLines={2}
               >
@@ -377,7 +374,7 @@ export function NewSessionModal({
                   style={[
                     styles.modalLabel,
                     isDark && styles.metaDark,
-                    { marginTop: 16 * density.padding },
+                    { ...ds({ marginTop: 16 }, density) },
                   ]}
                 >
                   {t("sessionsList.newSessionModal.recentProjectsLabel")}
@@ -396,10 +393,15 @@ export function NewSessionModal({
                         isDark && styles.projectRowDark,
                         isCurrent && styles.projectRowActive,
                         {
-                          gap: 12 * density.gap,
-                          paddingHorizontal: 14 * density.padding,
-                          paddingVertical: 11 * density.padding,
-                          marginBottom: 6 * density.padding,
+                          ...ds(
+                            {
+                              gap: 12,
+                              paddingHorizontal: 14,
+                              paddingVertical: 11,
+                              marginBottom: 6,
+                            },
+                            density,
+                          ),
                         },
                       ]}
                       onPress={() => onCreate(dir)}
@@ -454,7 +456,7 @@ export function NewSessionModal({
                   style={[
                     styles.modalLabel,
                     isDark && styles.metaDark,
-                    { marginTop: 16 * density.padding },
+                    { ...ds({ marginTop: 16 }, density) },
                   ]}
                 >
                   {t("sessionsList.newSessionModal.serverProjectsLabel")}
@@ -515,7 +517,7 @@ export function NewSessionModal({
               style={[
                 styles.projectRow,
                 isDark && styles.projectRowDark,
-                { marginTop: 16 * density.padding },
+                { ...ds({ marginTop: 16 }, density) },
               ]}
               onPress={() =>
                 onBrowse(
@@ -551,7 +553,7 @@ export function NewSessionModal({
               style={[
                 styles.modalLabel,
                 isDark && styles.metaDark,
-                { marginTop: 16 * density.padding },
+                { ...ds({ marginTop: 16 }, density) },
               ]}
             >
               {t("sessionsList.newSessionModal.enterPathLabel")}
@@ -561,9 +563,14 @@ export function NewSessionModal({
                 styles.modalInput,
                 isDark && styles.modalInputDark,
                 {
-                  paddingHorizontal: 16 * density.padding,
-                  paddingVertical: 14 * density.padding,
-                  fontSize: 15 * density.font,
+                  ...ds(
+                    {
+                      paddingHorizontal: 16,
+                      paddingVertical: 14,
+                      fontSize: 15,
+                    },
+                    density,
+                  ),
                 },
               ]}
               placeholder={
@@ -579,7 +586,7 @@ export function NewSessionModal({
               <View
                 style={[
                   styles.pathChips,
-                  { gap: 8 * density.gap, marginTop: 8 * density.padding },
+                  { ...ds({ gap: 8, marginTop: 8 }, density) },
                 ]}
               >
                 <TouchableOpacity

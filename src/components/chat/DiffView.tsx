@@ -1,7 +1,7 @@
 import { View, Text, StyleSheet, Platform, ScrollView } from "react-native";
 import { WIDE_CONTENT_SCROLL_CONFIG } from "../../lib/scroll-config";
 import { computeDiff } from "./diff-compute";
-import { useDensity } from "../../lib/density";
+import { useDensity, ds } from "../../lib/density";
 
 const mono = Platform.OS === "ios" ? "Menlo" : "monospace";
 
@@ -22,7 +22,7 @@ export function DiffView({ before, after, isDark }: Props) {
       style={[
         s.container,
         isDark && s.containerDark,
-        { marginTop: 6 * density.padding },
+        { ...ds({ marginTop: 6 }, density) },
       ]}
     >
       <ScrollView {...WIDE_CONTENT_SCROLL_CONFIG} testID="diff-view-scroll">
@@ -35,8 +35,13 @@ export function DiffView({ before, after, isDark }: Props) {
                 line.type === "add" && (isDark ? s.addDark : s.add),
                 line.type === "remove" && (isDark ? s.removeDark : s.remove),
                 {
-                  paddingHorizontal: 8 * density.padding,
-                  paddingVertical: 1 * density.padding,
+                  ...ds(
+                    {
+                      paddingHorizontal: 8,
+                      paddingVertical: 1,
+                    },
+                    density,
+                  ),
                 },
               ]}
             >
@@ -45,8 +50,13 @@ export function DiffView({ before, after, isDark }: Props) {
                   s.prefix,
                   isDark && s.prefixDark,
                   {
-                    fontSize: 12 * density.font,
-                    lineHeight: 20 * density.font,
+                    ...ds(
+                      {
+                        fontSize: 12,
+                        lineHeight: 20,
+                      },
+                      density,
+                    ),
                   },
                 ]}
               >
@@ -59,8 +69,13 @@ export function DiffView({ before, after, isDark }: Props) {
                   line.type === "add" && s.addText,
                   line.type === "remove" && s.removeText,
                   {
-                    fontSize: 12 * density.font,
-                    lineHeight: 20 * density.font,
+                    ...ds(
+                      {
+                        fontSize: 12,
+                        lineHeight: 20,
+                      },
+                      density,
+                    ),
                   },
                 ]}
                 selectable

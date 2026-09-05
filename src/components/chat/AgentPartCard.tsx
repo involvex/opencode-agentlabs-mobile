@@ -11,7 +11,7 @@ import {
 import { Ionicons } from "@expo/vector-icons";
 import { useTranslation } from "react-i18next";
 import { WIDE_CONTENT_SCROLL_CONFIG } from "../../lib/scroll-config";
-import { useDensity } from "../../lib/density";
+import { useDensity, ds } from "../../lib/density";
 import type { Part } from "../../lib/sdk";
 
 const mono = Platform.OS === "ios" ? "Menlo" : "monospace";
@@ -76,21 +76,14 @@ function AgentDetail({ input, output, error, isDark }: AgentDetailProps) {
 
   return (
     <View
-      style={[
-        s.detailSection,
-        { gap: 8 * density.gap, marginTop: 8 * density.padding },
-      ]}
+      style={[s.detailSection, { ...ds({ gap: 8, marginTop: 8 }, density) }]}
     >
       {typeof error === "string" && error.length > 0 && (
         <View
           style={[
             s.errorBannerInline,
             isDark && s.errorBannerDark,
-            {
-              gap: 6 * density.gap,
-              marginTop: 6 * density.padding,
-              padding: 8 * density.padding,
-            },
+            { ...ds({ gap: 6, marginTop: 6, padding: 8 }, density) },
           ]}
         >
           <Ionicons name="alert-circle" size={14} color="#ef4444" />
@@ -98,7 +91,7 @@ function AgentDetail({ input, output, error, isDark }: AgentDetailProps) {
             style={[
               s.errorText,
               isDark && s.errorTextDark,
-              { fontSize: 12 * density.font },
+              { ...ds({ fontSize: 12 }, density) },
             ]}
             selectable
             numberOfLines={3}
@@ -113,7 +106,7 @@ function AgentDetail({ input, output, error, isDark }: AgentDetailProps) {
             style={[
               s.detailLabel,
               isDark && s.detailLabelDark,
-              { fontSize: 11 * density.font },
+              { ...ds({ fontSize: 11 }, density) },
             ]}
           >
             {t("chat.agentPartCard.inputLabel", "Input")}
@@ -122,14 +115,14 @@ function AgentDetail({ input, output, error, isDark }: AgentDetailProps) {
             style={[
               s.codeBlock,
               isDark && s.codeBlockDark,
-              { padding: 10 * density.padding },
+              { ...ds({ padding: 10 }, density) },
             ]}
           >
             <Text
               style={[
                 s.codePre,
                 isDark && s.codePteDark,
-                { fontSize: 12 * density.font },
+                { ...ds({ fontSize: 12 }, density) },
               ]}
               selectable
               numberOfLines={40}
@@ -147,7 +140,7 @@ function AgentDetail({ input, output, error, isDark }: AgentDetailProps) {
             style={[
               s.detailLabel,
               isDark && s.detailLabelDark,
-              { fontSize: 11 * density.font },
+              { ...ds({ fontSize: 11 }, density) },
             ]}
           >
             {t("chat.agentPartCard.outputLabel", "Output")}
@@ -156,14 +149,14 @@ function AgentDetail({ input, output, error, isDark }: AgentDetailProps) {
             style={[
               s.codeBlock,
               isDark && s.codeBlockDark,
-              { padding: 10 * density.padding },
+              { ...ds({ padding: 10 }, density) },
             ]}
           >
             <Text
               style={[
                 s.codePre,
                 isDark && s.codePteDark,
-                { fontSize: 12 * density.font },
+                { ...ds({ fontSize: 12 }, density) },
               ]}
               selectable
               numberOfLines={40}
@@ -193,7 +186,7 @@ function AgentDetail({ input, output, error, isDark }: AgentDetailProps) {
           style={[
             s.emptyHint,
             isDark && s.emptyHintDark,
-            { fontSize: 12 * density.font },
+            { ...ds({ fontSize: 12 }, density) },
           ]}
         >
           {t("chat.agentPartCard.noDetails", "No details available")}
@@ -309,14 +302,14 @@ export function AgentPartCard({
         isDark && s.cardDark,
         status === "error" && s.cardError,
         status === "error" && isDark && s.cardErrorDark,
-        { padding: 10 * density.padding, marginTop: 8 * density.padding },
+        { ...ds({ padding: 10, marginTop: 8 }, density) },
       ]}
       onPress={toggle}
       activeOpacity={hasDetail ? 0.7 : 1}
     >
       {/* Header row */}
       <View style={s.header}>
-        <View style={[s.headerLeft, { gap: 8 * density.gap }]}>
+        <View style={[s.headerLeft, { ...ds({ gap: 8 }, density) }]}>
           <Ionicons
             name={
               label === t("chat.agentPartCard.subtask")
@@ -331,7 +324,7 @@ export function AgentPartCard({
               style={[
                 s.name,
                 isDark && s.nameDark,
-                { fontSize: 13 * density.font },
+                { ...ds({ fontSize: 13 }, density) },
               ]}
               numberOfLines={1}
             >
@@ -341,7 +334,7 @@ export function AgentPartCard({
               style={[
                 s.label,
                 isDark && s.labelDark,
-                { fontSize: 11 * density.font },
+                { ...ds({ fontSize: 11 }, density) },
               ]}
             >
               {label}
@@ -352,14 +345,14 @@ export function AgentPartCard({
               style={[
                 s.elapsed,
                 isDark && s.elapsedDark,
-                { fontSize: 11 * density.font },
+                { ...ds({ fontSize: 11 }, density) },
               ]}
             >
               {elapsed}
             </Text>
           )}
         </View>
-        <View style={[s.headerRight, { gap: 6 * density.gap }]}>
+        <View style={[s.headerRight, { ...ds({ gap: 6 }, density) }]}>
           {status === "running" && (
             <ActivityIndicator size="small" color={color} />
           )}
@@ -388,11 +381,7 @@ export function AgentPartCard({
           style={[
             s.errorBannerInline,
             isDark && s.errorBannerDark,
-            {
-              gap: 6 * density.gap,
-              marginTop: 6 * density.padding,
-              padding: 8 * density.padding,
-            },
+            { ...ds({ gap: 6, marginTop: 6, padding: 8 }, density) },
           ]}
         >
           <Ionicons name="alert-circle" size={12} color="#ef4444" />
@@ -400,7 +389,7 @@ export function AgentPartCard({
             style={[
               s.errorText,
               isDark && s.errorTextDark,
-              { fontSize: 12 * density.font },
+              { ...ds({ fontSize: 12 }, density) },
             ]}
             numberOfLines={2}
             selectable

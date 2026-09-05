@@ -15,7 +15,7 @@ import BottomSheet, {
 } from "@gorhom/bottom-sheet";
 import { useTranslation } from "react-i18next";
 import type { PromptSnippet } from "../../stores/prompts";
-import { useDensity } from "../../lib/density";
+import { useDensity, ds } from "../../lib/density";
 
 interface Props {
   prompts: PromptSnippet[];

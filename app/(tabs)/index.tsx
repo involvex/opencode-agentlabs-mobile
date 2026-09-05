@@ -20,7 +20,7 @@ import { useEvents } from "../../src/stores/events";
 import { useCatalog } from "../../src/stores/catalog";
 import { useTemplates } from "../../src/stores/templates";
 import { useTheme, useAccentColor } from "../../src/lib/theme";
-import { useDensity } from "../../src/lib/density";
+import { useDensity, ds } from "../../src/lib/density";
 import type BottomSheet from "@gorhom/bottom-sheet";
 import type { Session, Project } from "../../src/lib/sdk";
 import {
@@ -134,31 +134,31 @@ function SessionItem({
       style={[
         styles.sessionItem,
         isDark && styles.sessionItemDark,
-        { padding: 12 * density.padding },
+        { ...ds({ padding: 12 }, density) },
       ]}
       onPress={onPress}
       onLongPress={onLongPress}
       testID={`session-item-${session.id}`}
     >
-      <View style={[styles.sessionContent, { gap: 8 * density.gap }]}>
+      <View style={[styles.sessionContent, { ...ds({ gap: 8 }, density) }]}>
         <View style={styles.sessionHeader}>
           <Text
             style={[
               styles.sessionTitle,
               isDark && styles.textDark,
-              { fontSize: 16 * density.font },
+              { ...ds({ fontSize: 16 }, density) },
             ]}
             numberOfLines={1}
           >
             {session.title || t("sessionsList.untitledSession")}
           </Text>
         </View>
-        <View style={[styles.sessionMetaRow, { gap: 4 * density.gap }]}>
+        <View style={[styles.sessionMetaRow, { ...ds({ gap: 4 }, density) }]}>
           <Text
             style={[
               styles.sessionMeta,
               isDark && styles.metaDark,
-              { fontSize: 12 * density.font },
+              { ...ds({ fontSize: 12 }, density) },
             ]}
           >
             {formatTime(session.time.updated, t)}

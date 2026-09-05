@@ -11,7 +11,7 @@ import BottomSheet, {
   BottomSheetView,
 } from "@gorhom/bottom-sheet";
 import { useTranslation } from "react-i18next";
-import { useDensity } from "../../lib/density";
+import { useDensity, ds } from "../../lib/density";
 
 interface VariantOption {
   id: string | null;
@@ -87,8 +87,13 @@ export function VariantPicker({
           style={[
             s.header,
             {
-              paddingHorizontal: 16 * density.padding,
-              paddingBottom: 12 * density.padding,
+              ...ds(
+                {
+                  paddingHorizontal: 16,
+                  paddingBottom: 12,
+                },
+                density,
+              ),
             },
           ]}
         >
@@ -96,7 +101,7 @@ export function VariantPicker({
             style={[
               s.title,
               isDark && s.textWhite,
-              { fontSize: 18 * density.font },
+              { ...ds({ fontSize: 18 }, density) },
             ]}
           >
             {t("chat.variantPicker.title")}

@@ -9,7 +9,7 @@ import {
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { useTranslation } from "react-i18next";
-import { useDensity } from "../../lib/density";
+import { useDensity, ds } from "../../lib/density";
 import type { Part } from "../../lib/sdk";
 
 const mono = Platform.OS === "ios" ? "Menlo" : "monospace";
@@ -51,12 +51,12 @@ export function SnapshotPartCard({
         isDark && s.cardDark,
         isImage && s.imageCard,
         isImage && isDark && s.imageCardDark,
-        { padding: 10 * density.padding, marginTop: 8 * density.padding },
+        { ...ds({ padding: 10, marginTop: 8 }, density) },
       ]}
       onPress={toggle}
       activeOpacity={hasDetail ? 0.7 : 1}
     >
-      <View style={[s.header, { gap: 8 * density.gap }]}>
+      <View style={[s.header, { ...ds({ gap: 8 }, density) }]}>
         <Ionicons
           name={
             isImage
@@ -73,7 +73,7 @@ export function SnapshotPartCard({
             style={[
               s.filename,
               isDark && s.filenameDark,
-              { fontSize: 13 * density.font },
+              { ...ds({ fontSize: 13 }, density) },
             ]}
             numberOfLines={1}
           >
@@ -84,7 +84,7 @@ export function SnapshotPartCard({
               style={[
                 s.mime,
                 isDark && s.mimeDark,
-                { fontSize: 11 * density.font },
+                { ...ds({ fontSize: 11 }, density) },
               ]}
             >
               {part.mime}
@@ -104,7 +104,7 @@ export function SnapshotPartCard({
         <View
           style={[
             s.expandedContent,
-            { marginTop: 8 * density.padding, gap: 8 * density.gap },
+            { ...ds({ marginTop: 8, gap: 8 }, density) },
           ]}
         >
           {isImage && part.url && (
@@ -119,7 +119,7 @@ export function SnapshotPartCard({
               style={[
                 s.pdfPreview,
                 isDark && s.pdfPreviewDark,
-                { padding: 20 * density.padding },
+                { ...ds({ padding: 20 }, density) },
               ]}
             >
               <Ionicons
@@ -131,10 +131,7 @@ export function SnapshotPartCard({
                 style={[
                   s.pdfHint,
                   isDark && s.pdfHintDark,
-                  {
-                    fontSize: 12 * density.font,
-                    marginTop: 8 * density.padding,
-                  },
+                  { ...ds({ fontSize: 12, marginTop: 8 }, density) },
                 ]}
               >
                 {t(
@@ -149,14 +146,14 @@ export function SnapshotPartCard({
               style={[
                 s.codeBlock,
                 isDark && s.codeBlockDark,
-                { padding: 8 * density.padding },
+                { ...ds({ padding: 8 }, density) },
               ]}
             >
               <Text
                 style={[
                   s.codePre,
                   isDark && s.codePteDark,
-                  { fontSize: 12 * density.font },
+                  { ...ds({ fontSize: 12 }, density) },
                 ]}
                 selectable
                 numberOfLines={40}
@@ -171,7 +168,7 @@ export function SnapshotPartCard({
                 style={[
                   s.detailLabel,
                   isDark && s.detailLabelDark,
-                  { fontSize: 10 * density.font },
+                  { ...ds({ fontSize: 10 }, density) },
                 ]}
               >
                 {t("chat.snapshotPartCard.inputLabel", "Input")}
@@ -180,14 +177,14 @@ export function SnapshotPartCard({
                 style={[
                   s.codeBlock,
                   isDark && s.codeBlockDark,
-                  { padding: 8 * density.padding },
+                  { ...ds({ padding: 8 }, density) },
                 ]}
               >
                 <Text
                   style={[
                     s.codePre,
                     isDark && s.codePteDark,
-                    { fontSize: 12 * density.font },
+                    { ...ds({ fontSize: 12 }, density) },
                   ]}
                   selectable
                   numberOfLines={20}
@@ -205,7 +202,7 @@ export function SnapshotPartCard({
                 style={[
                   s.detailLabel,
                   isDark && s.detailLabelDark,
-                  { fontSize: 10 * density.font },
+                  { ...ds({ fontSize: 10 }, density) },
                 ]}
               >
                 {t("chat.snapshotPartCard.outputLabel", "Output")}
@@ -214,14 +211,14 @@ export function SnapshotPartCard({
                 style={[
                   s.codeBlock,
                   isDark && s.codeBlockDark,
-                  { padding: 8 * density.padding },
+                  { ...ds({ padding: 8 }, density) },
                 ]}
               >
                 <Text
                   style={[
                     s.codePre,
                     isDark && s.codePteDark,
-                    { fontSize: 12 * density.font },
+                    { ...ds({ fontSize: 12 }, density) },
                   ]}
                   selectable
                   numberOfLines={20}
@@ -238,7 +235,7 @@ export function SnapshotPartCard({
               style={[
                 s.errorBanner,
                 isDark && s.errorBannerDark,
-                { gap: 6 * density.gap, padding: 8 * density.padding },
+                { ...ds({ gap: 6, padding: 8 }, density) },
               ]}
             >
               <Ionicons name="alert-circle" size={14} color="#ef4444" />
@@ -246,7 +243,7 @@ export function SnapshotPartCard({
                 style={[
                   s.errorText,
                   isDark && s.errorTextDark,
-                  { fontSize: 12 * density.font },
+                  { ...ds({ fontSize: 12 }, density) },
                 ]}
               >
                 {part.state.error.message}

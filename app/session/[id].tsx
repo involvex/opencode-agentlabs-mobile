@@ -61,7 +61,7 @@ import { usePrompts } from "../../src/stores/prompts";
 import type { PromptSnippet } from "../../src/stores/prompts";
 import { useTheme } from "../../src/lib/theme";
 import { useSettings } from "../../src/stores/settings";
-import { useDensity } from "../../src/lib/density";
+import { useDensity, ds } from "../../src/lib/density";
 import { useSpeech } from "../../src/lib/speech";
 import { useSpeechOutput, speakText } from "../../src/lib/speech-output";
 import { useKeyboardShortcuts } from "../../src/lib/keyboard-shortcuts";
@@ -1393,9 +1393,10 @@ export default function SessionScreen() {
               s.toolbar,
               isDark && s.toolbarDark,
               {
-                gap: 8 * density.gap,
-                paddingHorizontal: 12 * density.padding,
-                paddingVertical: 6 * density.padding,
+                ...ds(
+                  { gap: 8, paddingHorizontal: 12, paddingVertical: 6 },
+                  density,
+                ),
               },
             ]}
           >
@@ -1404,8 +1405,7 @@ export default function SessionScreen() {
                 s.agentChip,
                 {
                   borderColor: agentColor,
-                  paddingHorizontal: 10 * density.padding,
-                  paddingVertical: 4 * density.padding,
+                  ...ds({ paddingHorizontal: 10, paddingVertical: 4 }, density),
                 },
               ]}
               onPress={() => handleCycleAgent(1)}
@@ -1416,7 +1416,7 @@ export default function SessionScreen() {
                 style={[
                   s.agentLabel,
                   isDark && s.textWhite,
-                  { fontSize: 12 * density.font },
+                  { ...ds({ fontSize: 12 }, density) },
                 ]}
               >
                 {agent || "build"}
@@ -1433,9 +1433,10 @@ export default function SessionScreen() {
                 s.modelChip,
                 isDark && s.modelChipDark,
                 {
-                  gap: 4 * density.gap,
-                  paddingHorizontal: 10 * density.padding,
-                  paddingVertical: 4 * density.padding,
+                  ...ds(
+                    { gap: 4, paddingHorizontal: 10, paddingVertical: 4 },
+                    density,
+                  ),
                 },
               ]}
               onPress={() => modelSheetRef.current?.expand()}
@@ -1450,7 +1451,7 @@ export default function SessionScreen() {
                 style={[
                   s.modelLabel,
                   isDark && s.metaDark,
-                  { fontSize: 12 * density.font },
+                  { ...ds({ fontSize: 12 }, density) },
                 ]}
                 numberOfLines={1}
               >
@@ -1466,9 +1467,10 @@ export default function SessionScreen() {
                     isDark && s.variantChipDark,
                     variant && s.variantChipActive,
                     {
-                      gap: 4 * density.gap,
-                      paddingHorizontal: 10 * density.padding,
-                      paddingVertical: 4 * density.padding,
+                      ...ds(
+                        { gap: 4, paddingHorizontal: 10, paddingVertical: 4 },
+                        density,
+                      ),
                     },
                   ]}
                   onPress={() => variantSheetRef.current?.expand()}
@@ -1484,7 +1486,7 @@ export default function SessionScreen() {
                       s.variantLabel,
                       isDark && s.metaDark,
                       variant && s.variantLabelActive,
-                      { fontSize: 12 * density.font },
+                      { ...ds({ fontSize: 12 }, density) },
                     ]}
                     numberOfLines={1}
                   >
@@ -1509,7 +1511,7 @@ export default function SessionScreen() {
               s.inputContainer,
               isDark && s.inputContainerDark,
               {
-                padding: 12 * density.padding,
+                ...ds({ padding: 12 }, density),
                 paddingBottom: Math.max(12 * density.padding, insets.bottom),
               },
             ]}
@@ -1585,7 +1587,7 @@ export default function SessionScreen() {
                   s.input,
                   isDark && s.inputDark,
                   speech.listening && s.inputListening,
-                  { fontSize: 16 * density.font },
+                  { ...ds({ fontSize: 16 }, density) },
                 ]}
                 placeholder={
                   speech.listening

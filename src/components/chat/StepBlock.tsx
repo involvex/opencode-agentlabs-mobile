@@ -9,7 +9,7 @@ import {
 import { Ionicons } from "@expo/vector-icons";
 import { useTranslation } from "react-i18next";
 import { WIDE_CONTENT_SCROLL_CONFIG } from "../../lib/scroll-config";
-import { useDensity } from "../../lib/density";
+import { useDensity, ds } from "../../lib/density";
 import type { Part } from "../../lib/sdk";
 
 const STEP_ICONS: Record<string, string> = {
@@ -95,12 +95,12 @@ export function StepBlock({ parts, isDark }: Props) {
       style={[
         s.block,
         isDark && s.blockDark,
-        { padding: 10 * density.padding, marginBottom: 8 * density.padding },
+        { ...ds({ padding: 10, marginBottom: 8 }, density) },
       ]}
       onPress={() => setExpanded(!expanded)}
       activeOpacity={0.7}
     >
-      <View style={[s.header, { gap: 6 * density.gap }]}>
+      <View style={[s.header, { ...ds({ gap: 6 }, density) }]}>
         <Ionicons
           name={expanded ? "chevron-down" : "chevron-forward"}
           size={16}
@@ -111,11 +111,11 @@ export function StepBlock({ parts, isDark }: Props) {
           style={[
             s.label,
             isDark && s.labelDark,
-            { fontSize: 12 * density.font },
+            { ...ds({ fontSize: 12 }, density) },
           ]}
         >
           {t("chat.stepBlock.title", "Steps")} ·{" "}
-          <Text style={[s.stepCount, { fontSize: 11 * density.font }]}>
+          <Text style={[s.stepCount, { ...ds({ fontSize: 11 }, density) }]}>
             {stepCount}
           </Text>
         </Text>
@@ -123,7 +123,7 @@ export function StepBlock({ parts, isDark }: Props) {
           style={[
             s.summary,
             isDark && s.summaryDark,
-            { fontSize: 12 * density.font, marginTop: 4 * density.padding },
+            { ...ds({ fontSize: 12, marginTop: 4 }, density) },
           ]}
           numberOfLines={expanded ? undefined : 1}
         >
@@ -144,20 +144,20 @@ export function StepBlock({ parts, isDark }: Props) {
           showsVerticalScrollIndicator={false}
           style={s.expandedScroll}
         >
-          <View style={[s.expandedContent, { gap: 6 * density.gap }]}>
+          <View style={[s.expandedContent, { ...ds({ gap: 6 }, density) }]}>
             {parts.map((pair) => (
               <View
                 key={`${pair.index}-${pair.start.id}`}
-                style={[s.stepItem, { gap: 4 * density.gap }]}
+                style={[s.stepItem, { ...ds({ gap: 4 }, density) }]}
               >
-                <View style={[s.stepRow, { gap: 6 * density.gap }]}>
+                <View style={[s.stepRow, { ...ds({ gap: 6 }, density) }]}>
                   <View
                     style={[
                       s.stepDot,
                       {
-                        width: 18 * density.padding,
-                        height: 18 * density.padding,
-                        borderRadius: 9 * density.padding,
+                        width: 18,
+                        height: 18,
+                        borderRadius: 9,
                       },
                       pair.finish
                         ? isDark
@@ -179,8 +179,7 @@ export function StepBlock({ parts, isDark }: Props) {
                       s.stepText,
                       isDark && s.stepTextDark,
                       {
-                        fontSize: 13 * density.font,
-                        lineHeight: 20 * density.font,
+                        ...ds({ fontSize: 13, lineHeight: 20 }, density),
                       },
                     ]}
                     selectable
@@ -195,10 +194,15 @@ export function StepBlock({ parts, isDark }: Props) {
                       s.stepResult,
                       isDark && s.stepResultDark,
                       {
-                        fontSize: 12 * density.font,
-                        lineHeight: 18 * density.font,
-                        marginLeft: 24 * density.padding,
-                        marginTop: 2 * density.padding,
+                        ...ds(
+                          {
+                            fontSize: 12,
+                            lineHeight: 18,
+                            marginLeft: 24,
+                            marginTop: 2,
+                          },
+                          density,
+                        ),
                       },
                     ]}
                     selectable

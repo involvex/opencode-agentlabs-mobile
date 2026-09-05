@@ -20,7 +20,7 @@ import { probeConnection, shareReport } from "../../src/lib/diagnostics";
 import { parseUrl } from "../../src/lib/diagnostics-classify";
 import { buildAuth } from "../../src/lib/auth";
 import * as SecureStore from "expo-secure-store";
-import { useDensity } from "../../src/lib/density";
+import { useDensity, ds } from "../../src/lib/density";
 
 // labelKey (not literal text): this is a module-level constant evaluated
 // before i18next is guaranteed ready, so the label is resolved with t() at
@@ -270,7 +270,7 @@ export default function EditConnectionScreen() {
       style={[styles.container, isDark && styles.containerDark]}
       contentContainerStyle={[
         styles.content,
-        { padding: 16 * density.padding },
+        { ...ds({ padding: 16 }, density) },
       ]}
       keyboardShouldPersistTaps="handled"
     >
@@ -365,7 +365,7 @@ export default function EditConnectionScreen() {
       <Text
         style={[
           styles.sectionTitle,
-          { fontSize: 18 * density.font },
+          { ...ds({ fontSize: 18 }, density) },
           isDark && styles.textDark,
         ]}
       >
@@ -375,7 +375,7 @@ export default function EditConnectionScreen() {
       <Text
         style={[
           styles.label,
-          { fontSize: 14 * density.font },
+          { ...ds({ fontSize: 14 }, density) },
           isDark && styles.labelDark,
         ]}
       >
@@ -394,7 +394,7 @@ export default function EditConnectionScreen() {
       <Text
         style={[
           styles.label,
-          { fontSize: 14 * density.font },
+          { ...ds({ fontSize: 14 }, density) },
           isDark && styles.labelDark,
         ]}
       >
@@ -501,15 +501,12 @@ export default function EditConnectionScreen() {
 
       {/* Actions */}
       <View
-        style={[
-          styles.actions,
-          { marginTop: 32 * density.padding, gap: 12 * density.gap },
-        ]}
+        style={[styles.actions, { ...ds({ marginTop: 32, gap: 12 }, density) }]}
       >
         <TouchableOpacity
           style={[
             styles.testButton,
-            { padding: 16 * density.padding, gap: 8 * density.gap },
+            { ...ds({ padding: 16, gap: 8 }, density) },
             isDark && styles.testButtonDark,
           ]}
           onPress={handleTest}
@@ -530,7 +527,7 @@ export default function EditConnectionScreen() {
               <Text
                 style={[
                   styles.testButtonText,
-                  { fontSize: 16 * density.font },
+                  { ...ds({ fontSize: 16 }, density) },
                   isDark && styles.textDark,
                 ]}
               >
@@ -543,7 +540,7 @@ export default function EditConnectionScreen() {
         <TouchableOpacity
           style={[
             styles.saveButton,
-            { padding: 16 * density.padding },
+            { ...ds({ padding: 16 }, density) },
             isDark && styles.saveButtonDark,
           ]}
           onPress={handleSave}
@@ -558,7 +555,7 @@ export default function EditConnectionScreen() {
             <Text
               style={[
                 styles.saveButtonText,
-                { fontSize: 16 * density.font },
+                { ...ds({ fontSize: 16 }, density) },
                 isDark && styles.saveButtonTextDark,
               ]}
             >
@@ -570,13 +567,16 @@ export default function EditConnectionScreen() {
         <TouchableOpacity
           style={[
             styles.deleteButton,
-            { padding: 16 * density.padding, gap: 8 * density.gap },
+            { ...ds({ padding: 16, gap: 8 }, density) },
           ]}
           onPress={handleDelete}
         >
           <Ionicons name="trash-outline" size={20} color="#ef4444" />
           <Text
-            style={[styles.deleteButtonText, { fontSize: 16 * density.font }]}
+            style={[
+              styles.deleteButtonText,
+              { ...ds({ fontSize: 16 }, density) },
+            ]}
           >
             {t("connection.edit.deleteButton")}
           </Text>

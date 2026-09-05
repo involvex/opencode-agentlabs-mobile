@@ -9,7 +9,7 @@ import {
 import { Ionicons } from "@expo/vector-icons";
 import { useTranslation } from "react-i18next";
 import { useAuth } from "../stores/auth";
-import { useDensity } from "../lib/density";
+import { useDensity, ds } from "../lib/density";
 
 interface Props {
   children: ReactNode;
@@ -60,7 +60,7 @@ export function AuthGate({ children }: Props) {
 
   return (
     <View style={[styles.container, isDark && styles.containerDark]}>
-      <View style={[styles.content, { padding: 32 * density.padding }]}>
+      <View style={[styles.content, { ...ds({ padding: 32 }, density) }]}>
         <Ionicons
           name={iconName}
           size={64}
@@ -69,7 +69,7 @@ export function AuthGate({ children }: Props) {
         <Text
           style={[
             styles.title,
-            { fontSize: 24 * density.font, marginTop: 24 * density.padding },
+            { ...ds({ fontSize: 24, marginTop: 24 }, density) },
             isDark && styles.textDark,
           ]}
         >
@@ -78,7 +78,7 @@ export function AuthGate({ children }: Props) {
         <Text
           style={[
             styles.subtitle,
-            { fontSize: 16 * density.font, marginTop: 8 * density.padding },
+            { ...ds({ fontSize: 16, marginTop: 8 }, density) },
             isDark && styles.subtitleDark,
           ]}
         >
@@ -91,11 +91,15 @@ export function AuthGate({ children }: Props) {
           style={[
             styles.button,
             {
-              paddingHorizontal: 32 * density.padding,
-              paddingVertical: 16 * density.padding,
-              borderRadius: 12 * density.padding,
-              marginTop: 32 * density.padding,
-              gap: 12 * density.gap,
+              ...ds(
+                {
+                  paddingHorizontal: 32,
+                  paddingVertical: 16,
+                  marginTop: 32,
+                  gap: 12,
+                },
+                density,
+              ),
             },
             isDark && styles.buttonDark,
           ]}
@@ -109,7 +113,7 @@ export function AuthGate({ children }: Props) {
           <Text
             style={[
               styles.buttonText,
-              { fontSize: 18 * density.font },
+              { ...ds({ fontSize: 18 }, density) },
               isDark && styles.buttonTextDark,
             ]}
           >

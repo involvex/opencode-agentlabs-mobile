@@ -7,7 +7,7 @@ import {
   ScrollView,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
-import { useDensity } from "../../lib/density";
+import { useDensity, ds } from "../../lib/density";
 
 export interface Attachment {
   uri: string;
@@ -34,15 +34,20 @@ export function ImageAttachments({ attachments, isDark, onRemove }: Props) {
         s.container,
         isDark && s.containerDark,
         {
-          paddingHorizontal: 12 * density.padding,
-          paddingVertical: 8 * density.padding,
+          ...ds(
+            {
+              paddingHorizontal: 12,
+              paddingVertical: 8,
+            },
+            density,
+          ),
         },
       ]}
     >
       <ScrollView
         horizontal
         showsHorizontalScrollIndicator={false}
-        contentContainerStyle={[s.scroll, { gap: 8 * density.gap }]}
+        contentContainerStyle={[s.scroll, { ...ds({ gap: 8 }, density) }]}
       >
         {attachments.map((att, idx) => (
           <View key={`${att.uri}-${idx}`} style={s.thumb}>
@@ -63,8 +68,13 @@ export function ImageAttachments({ attachments, isDark, onRemove }: Props) {
                   s.label,
                   isDark && s.labelDark,
                   {
-                    fontSize: 10 * density.font,
-                    marginTop: 2 * density.padding,
+                    ...ds(
+                      {
+                        fontSize: 10,
+                        marginTop: 2,
+                      },
+                      density,
+                    ),
                   },
                 ]}
                 numberOfLines={1}

@@ -10,7 +10,7 @@ import {
 } from "react-native";
 import * as Clipboard from "expo-clipboard";
 import { WIDE_CONTENT_SCROLL_CONFIG } from "../../lib/scroll-config";
-import { useDensity } from "../../lib/density";
+import { useDensity, ds } from "../../lib/density";
 
 interface Props {
   code: string;
@@ -34,17 +34,14 @@ export function CodeBlock({ code, language }: Props) {
     <View
       style={[
         styles.container,
-        { marginVertical: 8 * density.padding },
+        { ...ds({ marginVertical: 8 }, density) },
         isDark && styles.containerDark,
       ]}
     >
       <View
         style={[
           styles.header,
-          {
-            paddingHorizontal: 12 * density.padding,
-            paddingVertical: 6 * density.padding,
-          },
+          { ...ds({ paddingHorizontal: 12, paddingVertical: 6 }, density) },
           isDark && styles.headerDark,
         ]}
       >
@@ -55,7 +52,7 @@ export function CodeBlock({ code, language }: Props) {
           <Text
             style={[
               styles.copyBtn,
-              { fontSize: 11 * density.font },
+              { ...ds({ fontSize: 11 }, density) },
               isDark && styles.copyBtnDark,
             ]}
           >
@@ -68,13 +65,13 @@ export function CodeBlock({ code, language }: Props) {
         testID="code-block-scroll"
         contentContainerStyle={[
           styles.codeScroll,
-          { padding: 12 * density.padding },
+          { ...ds({ padding: 12 }, density) },
         ]}
       >
         <Text
           style={[
             styles.code,
-            { fontSize: 13 * density.font },
+            { ...ds({ fontSize: 13 }, density) },
             isDark && styles.codeDark,
           ]}
           selectable

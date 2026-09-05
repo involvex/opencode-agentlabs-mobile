@@ -21,7 +21,7 @@ import { CompactionBanner } from "./CompactionBanner";
 import { SnapshotPartCard } from "./SnapshotPartCard";
 import { PatchPartCard } from "./PatchPartCard";
 import { RetryBanner } from "./RetryBanner";
-import { useDensity } from "../../lib/density";
+import { useDensity, ds } from "../../lib/density";
 import { useSettings } from "../../stores/settings";
 import { formatRelativeTime, formatAbsoluteTime } from "../../lib/time-format";
 import { useReactions } from "../../stores/reactions";
@@ -139,12 +139,12 @@ export const MessageBubble = memo(
           isUser ? s.user : s.assistant,
           isUser && isDark && s.userDark,
           !isUser && isDark && s.assistantDark,
-          { padding: 12 * density.padding, marginBottom: 16 * density.padding },
+          { ...ds({ padding: 12, marginBottom: 16 }, density) },
         ]}
         testID={`chat-bubble-${message.role}`}
       >
         {/* Role indicator */}
-        <View style={[s.header, { gap: 6 * density.gap }]}>
+        <View style={[s.header, { ...ds({ gap: 6 }, density) }]}>
           <Ionicons
             name={isUser ? "person" : "sparkles"}
             size={14}
@@ -172,7 +172,7 @@ export const MessageBubble = memo(
                 style={[
                   s.timestamp,
                   isDark && s.timestampDark,
-                  { fontSize: 10 * density.font },
+                  { ...ds({ fontSize: 10 }, density) },
                 ]}
               >
                 {formatRelativeTime(message.time.created)}
@@ -186,7 +186,7 @@ export const MessageBubble = memo(
             style={[
               s.timestamp,
               isDark && s.timestampDark,
-              { fontSize: 10 * density.font, marginTop: 2 * density.gap },
+              { ...ds({ fontSize: 10, marginTop: 2 }, density) },
             ]}
           >
             {formatRelativeTime(message.time.created)}

@@ -2,7 +2,7 @@ import { useState, useCallback } from "react";
 import { View, Text, TouchableOpacity, StyleSheet } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { useTranslation } from "react-i18next";
-import { useDensity } from "../../lib/density";
+import { useDensity, ds } from "../../lib/density";
 import type { Part } from "../../lib/sdk";
 
 function duration(start?: number, end?: number): string | null {
@@ -44,18 +44,18 @@ export function RetryBanner({ part, isDark }: { part: Part; isDark: boolean }) {
       style={[
         s.banner,
         isDark && s.bannerDark,
-        { padding: 8 * density.padding, marginTop: 8 * density.padding },
+        { ...ds({ padding: 8, marginTop: 8 }, density) },
       ]}
       onPress={toggle}
       activeOpacity={hasDetail ? 0.7 : 1}
     >
-      <View style={[s.header, { gap: 6 * density.gap }]}>
+      <View style={[s.header, { ...ds({ gap: 6 }, density) }]}>
         <Ionicons name="refresh-outline" size={14} color="#8b5cf6" />
         <Text
           style={[
             s.label,
             isDark && s.labelDark,
-            { fontSize: 11 * density.font },
+            { ...ds({ fontSize: 11 }, density) },
           ]}
         >
           {t("chat.retryBanner.label", "Retry")}
@@ -65,7 +65,7 @@ export function RetryBanner({ part, isDark }: { part: Part; isDark: boolean }) {
             style={[
               s.attempt,
               isDark && s.attemptDark,
-              { fontSize: 11 * density.font },
+              { ...ds({ fontSize: 11 }, density) },
             ]}
           >
             {t("chat.retryBanner.attempt", "Attempt {{n}}", { n: attempt })}
@@ -76,7 +76,7 @@ export function RetryBanner({ part, isDark }: { part: Part; isDark: boolean }) {
             style={[
               s.elapsed,
               isDark && s.elapsedDark,
-              { fontSize: 10 * density.font },
+              { ...ds({ fontSize: 10 }, density) },
             ]}
           >
             {elapsed}
@@ -95,7 +95,7 @@ export function RetryBanner({ part, isDark }: { part: Part; isDark: boolean }) {
         <View
           style={[
             s.expandedContent,
-            { marginTop: 6 * density.padding, gap: 6 * density.gap },
+            { ...ds({ marginTop: 6, gap: 6 }, density) },
           ]}
         >
           {reason && (
@@ -103,7 +103,7 @@ export function RetryBanner({ part, isDark }: { part: Part; isDark: boolean }) {
               style={[
                 s.reason,
                 isDark && s.reasonDark,
-                { fontSize: 12 * density.font, lineHeight: 18 * density.font },
+                { ...ds({ fontSize: 12, lineHeight: 18 }, density) },
               ]}
               selectable
             >
@@ -115,7 +115,7 @@ export function RetryBanner({ part, isDark }: { part: Part; isDark: boolean }) {
               style={[
                 s.errorBanner,
                 isDark && s.errorBannerDark,
-                { gap: 6 * density.gap, padding: 6 * density.padding },
+                { ...ds({ gap: 6, padding: 6 }, density) },
               ]}
             >
               <Ionicons name="alert-circle" size={12} color="#ef4444" />
@@ -123,7 +123,7 @@ export function RetryBanner({ part, isDark }: { part: Part; isDark: boolean }) {
                 style={[
                   s.errorText,
                   isDark && s.errorTextDark,
-                  { fontSize: 11 * density.font },
+                  { ...ds({ fontSize: 11 }, density) },
                 ]}
                 selectable
               >

@@ -9,7 +9,7 @@ import { Ionicons } from "@expo/vector-icons";
 import { useEvents } from "../../src/stores/events";
 import { useTheme } from "../../src/lib/theme";
 import type { SSEEvent } from "../../src/stores/events";
-import { useDensity } from "../../src/lib/density";
+import { useDensity, ds } from "../../src/lib/density";
 
 export default function SSEInspectorScreen() {
   const isDark = useTheme();
@@ -26,20 +26,16 @@ export default function SSEInspectorScreen() {
     <View
       style={[
         styles.eventItem,
-        {
-          paddingHorizontal: 16 * density.padding,
-          paddingVertical: 10 * density.padding,
-        },
-        isDark && styles.eventItemDark,
+        { ...ds({ paddingHorizontal: 16, paddingVertical: 10 }, density) },
       ]}
     >
-      <Text style={[styles.eventType, { fontSize: 15 * density.font }]}>
+      <Text style={[styles.eventType, { ...ds({ fontSize: 15 }, density) }]}>
         {item.type}
       </Text>
       <Text
         style={[
           styles.eventTime,
-          { fontSize: 12 * density.font },
+          { ...ds({ fontSize: 12 }, density) },
           isDark && styles.eventTimeDark,
         ]}
       >
@@ -57,7 +53,7 @@ export default function SSEInspectorScreen() {
     <View
       style={[
         styles.container,
-        { padding: 16 * density.padding },
+        { ...ds({ padding: 16 }, density) },
         isDark && styles.containerDark,
       ]}
     >
@@ -65,17 +61,17 @@ export default function SSEInspectorScreen() {
         <Text
           style={[
             styles.title,
-            { fontSize: 18 * density.font },
+            { ...ds({ fontSize: 18 }, density) },
             isDark && styles.titleDark,
           ]}
         >
           SSE Event Inspector
         </Text>
-        <View style={[styles.headerActions, { gap: 12 * density.gap }]}>
+        <View style={[styles.headerActions, { ...ds({ gap: 12 }, density) }]}>
           <Text
             style={[
               styles.connectionStatus,
-              { fontSize: 13 * density.font },
+              { ...ds({ fontSize: 13 }, density) },
               isDark && styles.connectionStatusDark,
             ]}
           >

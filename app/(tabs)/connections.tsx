@@ -15,7 +15,7 @@ import { useConnections } from "../../src/stores/connections";
 import { useSettings } from "../../src/stores/settings";
 import { useTheme, useAccentColor } from "../../src/lib/theme";
 import type { ServerConnection } from "../../src/lib/types";
-import { useDensity } from "../../src/lib/density";
+import { useDensity, ds } from "../../src/lib/density";
 
 const PAGE_SIZE_OPTIONS = [10, 25, 50, 100, 200] as const;
 
@@ -57,7 +57,7 @@ function ConnectionItem({
     <TouchableOpacity
       style={[
         styles.connectionItem,
-        { padding: 16 * density.padding },
+        { ...ds({ padding: 16 }, density) },
         isDark && styles.connectionItemDark,
         isActive && styles.connectionItemActive,
         isActive && isDark && styles.connectionItemActiveDark,
@@ -86,7 +86,7 @@ function ConnectionItem({
           <Text
             style={[
               styles.connectionName,
-              { fontSize: 16 * density.font },
+              { ...ds({ fontSize: 16 }, density) },
               isDark && styles.textDark,
               isActive && styles.connectionNameActive,
               isActive && isDark && styles.connectionNameActiveDark,
@@ -112,7 +112,7 @@ function ConnectionItem({
         <Text
           style={[
             styles.connectionUrl,
-            { fontSize: 13 * density.font },
+            { ...ds({ fontSize: 13 }, density) },
             isDark && styles.metaDark,
             isActive && styles.connectionUrlActive,
           ]}

@@ -16,7 +16,7 @@ import { router } from "expo-router";
 import { useAuth } from "../../src/stores/auth";
 import { useSettings } from "../../src/stores/settings";
 import { useTheme, PRESET_ACCENT_COLORS } from "../../src/lib/theme";
-import { useDensity } from "../../src/lib/density";
+import { useDensity, ds } from "../../src/lib/density";
 import { useEvents } from "../../src/stores/events";
 import { useSessions } from "../../src/stores/sessions";
 import { useConnections } from "../../src/stores/connections";
@@ -59,17 +59,14 @@ function SettingRow({
       style={[
         styles.settingRow,
         isDark && styles.settingRowDark,
-        {
-          paddingVertical: 12 * density.padding,
-          paddingHorizontal: 16 * density.padding,
-        },
+        { ...ds({ paddingVertical: 12, paddingHorizontal: 16 }, density) },
       ]}
     >
       <View
         style={[
           styles.settingIcon,
           isDark && styles.settingIconDark,
-          { marginRight: 12 * density.padding },
+          { ...ds({ marginRight: 12 }, density) },
         ]}
       >
         <Ionicons
@@ -83,7 +80,7 @@ function SettingRow({
           style={[
             styles.settingLabel,
             isDark && styles.textDark,
-            { fontSize: 16 * density.font },
+            { ...ds({ fontSize: 16 }, density) },
           ]}
         >
           {label}
@@ -93,7 +90,7 @@ function SettingRow({
             style={[
               styles.settingDescription,
               isDark && styles.metaDark,
-              { fontSize: 13 * density.font },
+              { ...ds({ fontSize: 13 }, density) },
             ]}
           >
             {description}
@@ -122,15 +119,16 @@ function SettingSection({
 }) {
   const density = useDensity();
   return (
-    <View style={[styles.section, { marginTop: 24 * density.padding }]}>
+    <View style={[styles.section, { ...ds({ marginTop: 24 }, density) }]}>
       <Text
         style={[
           styles.sectionTitle,
           isDark && styles.sectionTitleDark,
           {
-            fontSize: 13 * density.font,
-            marginHorizontal: 16 * density.padding,
-            marginBottom: 8 * density.padding,
+            ...ds(
+              { fontSize: 13, marginHorizontal: 16, marginBottom: 8 },
+              density,
+            ),
           },
         ]}
       >
@@ -891,12 +889,12 @@ export default function SettingsScreen() {
         )}
       </SettingSection>
 
-      <View style={[styles.footer, { padding: 32 * densityValue.padding }]}>
+      <View style={[styles.footer, { ...ds({ padding: 32 }, densityValue) }]}>
         <Text
           style={[
             styles.footerText,
             isDark && styles.metaDark,
-            { fontSize: 13 * densityValue.font },
+            { ...ds({ fontSize: 13 }, densityValue) },
           ]}
         >
           {t("settings.footer.appName")}
@@ -905,7 +903,7 @@ export default function SettingsScreen() {
           style={[
             styles.footerText,
             isDark && styles.metaDark,
-            { fontSize: 13 * densityValue.font },
+            { ...ds({ fontSize: 13 }, densityValue) },
           ]}
         >
           {t("settings.footer.tagline")}

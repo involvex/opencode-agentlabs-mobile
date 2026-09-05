@@ -19,7 +19,7 @@ import { probeConnection, shareReport } from "../../src/lib/diagnostics";
 import { parseUrl } from "../../src/lib/diagnostics-classify";
 import { buildAuth } from "../../src/lib/auth";
 import { AnalyticsEvent, track } from "../../src/lib/analytics";
-import { useDensity } from "../../src/lib/density";
+import { useDensity, ds } from "../../src/lib/density";
 
 export default function AddConnectionScreen() {
   const isDark = useTheme();
@@ -228,7 +228,7 @@ export default function AddConnectionScreen() {
         <View
           style={[
             styles.quickHeader,
-            { paddingVertical: 24 * density.padding },
+            { ...ds({ paddingVertical: 24 }, density) },
           ]}
         >
           <Ionicons
@@ -239,7 +239,7 @@ export default function AddConnectionScreen() {
           <Text
             style={[
               styles.quickTitle,
-              { fontSize: 24 * density.font },
+              { ...ds({ fontSize: 24 }, density) },
               isDark && styles.textDark,
             ]}
           >
@@ -248,7 +248,7 @@ export default function AddConnectionScreen() {
           <Text
             style={[
               styles.quickSubtitle,
-              { fontSize: 15 * density.font },
+              { ...ds({ fontSize: 15 }, density) },
               isDark && styles.hintDark,
             ]}
           >
@@ -349,11 +349,7 @@ export default function AddConnectionScreen() {
         <TouchableOpacity
           style={[
             styles.connectButton,
-            {
-              padding: 16 * density.padding,
-              gap: 8 * density.gap,
-              marginTop: 24 * density.padding,
-            },
+            { ...ds({ padding: 16, gap: 8, marginTop: 24 }, density) },
             isDark && styles.connectButtonDark,
           ]}
           onPress={handleQuickConnect}
@@ -375,7 +371,7 @@ export default function AddConnectionScreen() {
               <Text
                 style={[
                   styles.connectButtonText,
-                  { fontSize: 18 * density.font },
+                  { ...ds({ fontSize: 18 }, density) },
                   isDark && styles.connectButtonTextDark,
                 ]}
               >
@@ -458,7 +454,7 @@ export default function AddConnectionScreen() {
       style={[styles.container, isDark && styles.containerDark]}
       contentContainerStyle={[
         styles.content,
-        { padding: 16 * density.padding },
+        { ...ds({ padding: 16 }, density) },
       ]}
       keyboardShouldPersistTaps="handled"
     >

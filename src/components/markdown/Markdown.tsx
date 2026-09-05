@@ -11,7 +11,7 @@ import {
 import { useMarkdown, Renderer } from "react-native-marked";
 import { CodeBlock } from "./CodeBlock";
 import { log } from "../../lib/logbuffer";
-import { useDensity } from "../../lib/density";
+import { useDensity, ds } from "../../lib/density";
 
 // react-native-marked's base Renderer hardcodes `selectable` on every plain
 // text node it produces (text/strong/em/del/heading/codespan). On Android,
@@ -185,28 +185,30 @@ function MarkdownContent({
   const dTheme = useMemo(
     () => ({
       ...theme,
-      text: {
-        ...theme.text,
-        fontSize: 15 * density.font,
-        lineHeight: 22 * density.font,
-      },
-      h1: { ...theme.h1, fontSize: 22 * density.font },
-      h2: { ...theme.h2, fontSize: 19 * density.font },
-      h3: { ...theme.h3, fontSize: 16 * density.font },
-      blockquote: { ...theme.blockquote, paddingLeft: 12 * density.padding },
-      code: {
-        ...theme.code,
-        fontSize: 13 * density.font,
-        paddingHorizontal: 5 * density.padding,
-        paddingVertical: 2 * density.padding,
-      },
-      codespan: {
-        ...theme.codespan,
-        fontSize: 13 * density.font,
-        paddingHorizontal: 4 * density.padding,
-        paddingVertical: 1 * density.padding,
-      },
-      hr: { ...theme.hr, marginVertical: 12 * density.padding },
+      text: ds({ fontSize: 15, lineHeight: 22 }, density),
+      h1: ds({ ...theme.h1, fontSize: 22 }, density),
+      h2: ds({ ...theme.h2, fontSize: 19 }, density),
+      h3: ds({ ...theme.h3, fontSize: 16 }, density),
+      blockquote: ds({ ...theme.blockquote, paddingLeft: 12 }, density),
+      code: ds(
+        {
+          ...theme.code,
+          fontSize: 13,
+          paddingHorizontal: 5,
+          paddingVertical: 2,
+        },
+        density,
+      ),
+      codespan: ds(
+        {
+          ...theme.codespan,
+          fontSize: 13,
+          paddingHorizontal: 4,
+          paddingVertical: 1,
+        },
+        density,
+      ),
+      hr: ds({ ...theme.hr, marginVertical: 12 }, density),
     }),
     [theme, density],
   );
