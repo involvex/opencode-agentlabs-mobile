@@ -1,4 +1,4 @@
-import { useMemo, type ReactNode, Component, ErrorInfo } from "react";
+import { useMemo, type ReactNode, Component, ErrorInfo, Children } from "react";
 import {
   View,
   Text,
@@ -78,6 +78,50 @@ class CustomRenderer extends Renderer {
 
   html(_text: string | ReactNode[], _styles?: TextStyle): ReactNode {
     return null;
+  }
+
+  // Base Renderer.table() returns <MDTable> WITHOUT a key (upstream bug),
+  // and MDTable itself renders its header TableWrapper without a key — both
+  // trigger "Each child in a list should have a unique key" warnings from the
+  // View that hosts useMarkdown's top-level array. Render tables ourselves
+  // with deterministic keys instead of delegating to MDTable.
+  table(
+    header: ReactNode[][],
+    rows: ReactNode[][][],
+    tableStyle?: ViewStyle,
+    rowStyle?: ViewStyle,
+    cellStyle?: ViewStyle,
+  ): ReactNode {
+    const key = this.getKey();
+    return (
+      <View key={key} style={tableStyle}>
+        <View key={`${key}-header`} style={rowStyle}>
+          {header.map((col) => {
+            const ck = this.getKey();
+            return (
+              <View key={ck} style={cellStyle}>
+                {col as ReactNode}
+              </View>
+            );
+          })}
+        </View>
+        {rows.map((row) => {
+          const rk = this.getKey();
+          return (
+            <View key={rk} style={rowStyle}>
+              {row.map((cell) => {
+                const ck = this.getKey();
+                return (
+                  <View key={ck} style={cellStyle}>
+                    {cell as ReactNode}
+                  </View>
+                );
+              })}
+            </View>
+          );
+        })}
+      </View>
+    );
   }
 }
 
@@ -219,7 +263,14 @@ function MarkdownContent({
     colorScheme: isDark ? "dark" : "light",
   });
 
-  return <View style={{ backgroundColor: "transparent" }}>{elements}</View>;
+  // Children.toArray assigns fallback keys to any key-less top-level node
+  // (e.g. upstream renderers that forget getKey()), silencing the "unique
+  // key" warning from the hosting View while preserving existing keys.
+  return (
+    <View style={{ backgroundColor: "transparent" }}>
+      {Children.toArray(elements)}
+    </View>
+  );
 }
 
 class MarkdownErrorBoundary extends Component<
