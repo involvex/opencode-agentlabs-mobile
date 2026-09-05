@@ -1,5 +1,3 @@
-"use no memo";
-
 import { useMemo, useCallback, useRef } from "react";
 import {
   View,
@@ -41,63 +39,40 @@ export function SlashPopover({
   const { recent, favorites, addRecent, toggleFavorite } = useSlashCommands();
   const density = useDensity();
   const scrollViewRef = useRef<ScrollView>(null);
-  const itemRefs = useRef<Map<string, View>>(new Map());
 
   const filtered = useMemo(() => {
-    if (!query || query.trim() === "") {
-      const favSet = new Set(favorites.map((f) => f.toLowerCase()));
-      const recentSet = new Set(recent);
-      const favs = commands.filter((c) => favSet.has(c.trigger.toLowerCase()));
-      const recents = commands.filter(
-        (c) =>
-          !favSet.has(c.trigger.toLowerCase()) &&
-          recentSet.has(c.trigger.toLowerCase()),
-      );
-      const rest = commands.filter(
-        (c) =>
-          !favSet.has(c.trigger.toLowerCase()) &&
-          !recentSet.has(c.trigger.toLowerCase()),
-      );
-      return [...favs, ...recents, ...rest];
-    }
-    return filterCommands(query, commands);
-  }, [query, commands, favorites, recent]);
+    const raw = filterCommands(query, commands);
+    const seen = new Set<string>();
+    return raw.filter((c) => {
+      const t = c.trigger.toLowerCase();
+      if (seen.has(t)) return false;
+      seen.add(t);
+      return true;
+    });
+  }, [query, commands]);
 
   const grouped = useMemo(() => {
     const groups = new Map<
       SlashCommandCategory | "favorites" | "recent",
       SlashCommand[]
     >();
-    if (!query || query.trim() === "") {
-      const favSet = new Set(favorites.map((f) => f.toLowerCase()));
-      const recentSet = new Set(recent);
-      const favs = filtered.filter((c) => favSet.has(c.trigger.toLowerCase()));
-      const recents = filtered.filter(
-        (c) =>
-          !favSet.has(c.trigger.toLowerCase()) &&
-          recentSet.has(c.trigger.toLowerCase()),
-      );
-      const rest = filtered.filter(
-        (c) =>
-          !favSet.has(c.trigger.toLowerCase()) &&
-          !recentSet.has(c.trigger.toLowerCase()),
-      );
-      if (favs.length > 0) groups.set("favorites", favs);
-      if (recents.length > 0) groups.set("recent", recents);
-      const byCategory = new Map<SlashCommandCategory, SlashCommand[]>();
-      for (const cmd of rest) {
-        const cat = cmd.category ?? "navigation";
-        const arr = byCategory.get(cat) ?? [];
-        arr.push(cmd);
-        byCategory.set(cat, arr);
-      }
-      for (const [cat, cmds] of byCategory) {
-        groups.set(cat, cmds);
-      }
-      return groups;
-    }
+    const favSet = new Set(favorites.map((f) => f.toLowerCase()));
+    const recentSet = new Set(recent);
+    const favs = filtered.filter((c) => favSet.has(c.trigger.toLowerCase()));
+    const recents = filtered.filter(
+      (c) =>
+        !favSet.has(c.trigger.toLowerCase()) &&
+        recentSet.has(c.trigger.toLowerCase()),
+    );
+    const rest = filtered.filter(
+      (c) =>
+        !favSet.has(c.trigger.toLowerCase()) &&
+        !recentSet.has(c.trigger.toLowerCase()),
+    );
+    if (favs.length > 0) groups.set("favorites", favs);
+    if (recents.length > 0) groups.set("recent", recents);
     const byCategory = new Map<SlashCommandCategory, SlashCommand[]>();
-    for (const cmd of filtered) {
+    for (const cmd of rest) {
       const cat = cmd.category ?? "navigation";
       const arr = byCategory.get(cat) ?? [];
       arr.push(cmd);
@@ -107,7 +82,7 @@ export function SlashPopover({
       groups.set(cat, cmds);
     }
     return groups;
-  }, [filtered, query, favorites, recent]);
+  }, [filtered, favorites, recent]);
 
   const handleSelect = useCallback(
     (cmd: SlashCommand) => {
@@ -232,11 +207,8 @@ export function SlashPopover({
             {cmds.map((cmd) => {
               const isFav = useSlashCommands.getState().isFavorite(cmd.trigger);
               return (
-                <TouchableOpacity
+                <View
                   key={cmd.trigger}
-                  ref={(ref) => {
-                    if (ref) itemRefs.current.set(cmd.trigger, ref);
-                  }}
                   style={[
                     s.item,
                     isDark && s.itemDark,
@@ -251,42 +223,48 @@ export function SlashPopover({
                       ),
                     },
                   ]}
-                  onPress={() => handleSelect(cmd)}
                 >
-                  <Ionicons
-                    name={cmd.icon ?? "code-slash-outline"}
-                    size={18}
-                    color={
-                      cmd.type === "custom"
-                        ? "#8b5cf6"
-                        : isDark
-                          ? "#888888"
-                          : "#666666"
-                    }
-                  />
-                  <View style={s.textCol}>
-                    <Text
-                      style={[
-                        s.trigger,
-                        isDark && s.textWhite,
-                        { ...ds({ fontSize: 14 }, density) },
-                      ]}
-                    >
-                      /{cmd.trigger}
-                    </Text>
-                    {cmd.description && (
+                  <TouchableOpacity
+                    style={s.rowTouch}
+                    onPress={() => handleSelect(cmd)}
+                    activeOpacity={0.7}
+                  >
+                    <Ionicons
+                      name={cmd.icon ?? "code-slash-outline"}
+                      size={18}
+                      color={
+                        cmd.type === "custom"
+                          ? "#8b5cf6"
+                          : isDark
+                            ? "#888888"
+                            : "#666666"
+                      }
+                    />
+                    <View style={s.textCol}>
                       <Text
                         style={[
-                          s.desc,
-                          isDark && s.metaDark,
-                          { ...ds({ fontSize: 12 }, density) },
+                          s.trigger,
+                          isDark && s.textWhite,
+                          { ...ds({ fontSize: 14 }, density) },
                         ]}
                         numberOfLines={1}
                       >
-                        {cmd.description}
+                        /{cmd.trigger}
                       </Text>
-                    )}
-                  </View>
+                      {cmd.description && (
+                        <Text
+                          style={[
+                            s.desc,
+                            isDark && s.metaDark,
+                            { ...ds({ fontSize: 12 }, density) },
+                          ]}
+                          numberOfLines={1}
+                        >
+                          {cmd.description}
+                        </Text>
+                      )}
+                    </View>
+                  </TouchableOpacity>
                   <TouchableOpacity
                     style={s.favButton}
                     onPress={() => handleToggleFav(cmd)}
@@ -324,7 +302,7 @@ export function SlashPopover({
                       </Text>
                     </View>
                   )}
-                </TouchableOpacity>
+                </View>
               );
             })}
           </View>
@@ -371,6 +349,7 @@ const s = StyleSheet.create({
     paddingVertical: 10,
   },
   itemDark: {},
+  rowTouch: { flex: 1, flexDirection: "row", alignItems: "center" },
   textCol: { flex: 1 },
   trigger: { fontSize: 14, fontWeight: "600", color: "#0a0a0a" },
   textWhite: { color: "#ffffff" },

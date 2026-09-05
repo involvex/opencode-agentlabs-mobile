@@ -1,4 +1,4 @@
-import { useState, useCallback, useMemo } from "react";
+import { useState, useCallback, useMemo, memo } from "react";
 import {
   View,
   Text,
@@ -36,7 +36,7 @@ interface Props {
   sheetRef: React.RefObject<BottomSheet | null>;
 }
 
-export function ModelPicker({
+export const ModelPicker = memo(function ModelPicker({
   providers,
   selected,
   isDark,
@@ -253,11 +253,12 @@ export function ModelPicker({
           }}
           contentContainerStyle={s.content}
           stickySectionHeadersEnabled={false}
+          nestedScrollEnabled
         />
       </BottomSheetView>
     </BottomSheet>
   );
-}
+});
 
 const s = StyleSheet.create({
   sheet: { backgroundColor: "#ffffff" },
