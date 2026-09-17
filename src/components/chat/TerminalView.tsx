@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   ActivityIndicator,
+  KeyboardAvoidingView,
   ScrollView,
   StyleSheet,
   Text,
@@ -264,104 +265,111 @@ function TerminalSocket({
         <View style={[styles.statusDot, { backgroundColor: statusColor }]} />
       </View>
 
-      <ScrollView
-        ref={scrollRef}
-        style={[styles.output, isDark && styles.outputDark]}
-        contentContainerStyle={styles.outputContent}
+      <KeyboardAvoidingView
+        behavior="padding"
+        keyboardVerticalOffset={56}
+        style={{ flex: 1 }}
       >
-        {output.map((line) => (
-          <AnsiLine
-            key={line.id}
-            text={line.text}
-            isDark={isDark}
-            fontSize={terminalFontSize}
-          />
-        ))}
-        {wsState !== "connected" && (
+        <ScrollView
+          ref={scrollRef}
+          style={[styles.output, isDark && styles.outputDark]}
+          contentContainerStyle={styles.outputContent}
+          keyboardShouldPersistTaps="handled"
+        >
+          {output.map((line) => (
+            <AnsiLine
+              key={line.id}
+              text={line.text}
+              isDark={isDark}
+              fontSize={terminalFontSize}
+            />
+          ))}
+          {wsState !== "connected" && (
+            <Text
+              style={[
+                styles.statusInline,
+                isDark && styles.statusInlineDark,
+                { color: statusColor },
+              ]}
+            >
+              {statusLabel}
+            </Text>
+          )}
+        </ScrollView>
+
+        <View
+          style={[
+            styles.keyButtonRow,
+            { ...ds({ gap: 6, paddingBottom: 4 }, density) },
+          ]}
+        >
+          {SPECIAL_KEYS_NAV.map((k) => (
+            <TerminalKeyButton
+              key={k.label}
+              label={k.label}
+              onPress={() => wsRef.current?.send(k.sequence)}
+              isDark={isDark}
+              disabled={wsState !== "connected"}
+            />
+          ))}
+        </View>
+        <View
+          style={[
+            styles.keyButtonRow,
+            { ...ds({ gap: 6, paddingBottom: 4 }, density) },
+          ]}
+        >
+          {SPECIAL_KEYS_CTRL.map((k) => (
+            <TerminalKeyButton
+              key={k.label}
+              label={k.label}
+              onPress={() => wsRef.current?.send(k.sequence)}
+              isDark={isDark}
+              disabled={wsState !== "connected"}
+            />
+          ))}
+        </View>
+
+        <View style={[styles.inputBar, isDark && styles.inputBarDark]}>
           <Text
             style={[
-              styles.statusInline,
-              isDark && styles.statusInlineDark,
-              { color: statusColor },
+              styles.prompt,
+              isDark && styles.promptDark,
+              { fontSize: terminalFontSize },
             ]}
           >
-            {statusLabel}
+            {"$ "}
           </Text>
-        )}
-      </ScrollView>
-
-      <View
-        style={[
-          styles.keyButtonRow,
-          { ...ds({ gap: 6, paddingBottom: 4 }, density) },
-        ]}
-      >
-        {SPECIAL_KEYS_NAV.map((k) => (
-          <TerminalKeyButton
-            key={k.label}
-            label={k.label}
-            onPress={() => wsRef.current?.send(k.sequence)}
-            isDark={isDark}
-            disabled={wsState !== "connected"}
+          <TextInput
+            style={[
+              styles.input,
+              isDark && styles.inputDark,
+              { fontSize: terminalFontSize },
+            ]}
+            value={input}
+            onChangeText={setInput}
+            onSubmitEditing={handleSend}
+            returnKeyType="send"
+            autoFocus
+            placeholder="Type a command..."
+            placeholderTextColor={isDark ? "#666666" : "#999999"}
+            autoCapitalize="none"
+            autoCorrect={false}
+            spellCheck={false}
+            testID="terminal-input"
           />
-        ))}
-      </View>
-      <View
-        style={[
-          styles.keyButtonRow,
-          { ...ds({ gap: 6, paddingBottom: 4 }, density) },
-        ]}
-      >
-        {SPECIAL_KEYS_CTRL.map((k) => (
-          <TerminalKeyButton
-            key={k.label}
-            label={k.label}
-            onPress={() => wsRef.current?.send(k.sequence)}
-            isDark={isDark}
-            disabled={wsState !== "connected"}
-          />
-        ))}
-      </View>
-
-      <View style={[styles.inputBar, isDark && styles.inputBarDark]}>
-        <Text
-          style={[
-            styles.prompt,
-            isDark && styles.promptDark,
-            { fontSize: terminalFontSize },
-          ]}
-        >
-          {"$ "}
-        </Text>
-        <TextInput
-          style={[
-            styles.input,
-            isDark && styles.inputDark,
-            { fontSize: terminalFontSize },
-          ]}
-          value={input}
-          onChangeText={setInput}
-          onSubmitEditing={handleSend}
-          returnKeyType="send"
-          autoFocus
-          placeholder="Type a command..."
-          placeholderTextColor={isDark ? "#666666" : "#999999"}
-          autoCapitalize="none"
-          autoCorrect={false}
-          spellCheck={false}
-          testID="terminal-input"
-        />
-        <TouchableOpacity
-          onPress={handleSend}
-          disabled={!input.trim()}
-          style={[
-            styles.sendButton,
-            !input.trim() && styles.sendButtonDisabled,
-          ]}
-        >
-          <Ionicons name="send" size={18} color="#ffffff" />
-        </TouchableOpacity>
-      </View>
+          <TouchableOpacity
+            onPress={handleSend}
+            disabled={!input.trim()}
+            style={[
+              styles.sendButton,
+              !input.trim() && styles.sendButtonDisabled,
+            ]}
+          >
+            <Ionicons name="send" size={18} color="#ffffff" />
+          </TouchableOpacity>
+        </View>
+      </KeyboardAvoidingView>
     </View>
   );
 }
@@ -465,98 +473,105 @@ function LocalTerminalView({
         <View style={[styles.statusDot, { backgroundColor: "#22c55e" }]} />
       </View>
 
-      <ScrollView
-        ref={scrollRef}
-        style={[styles.output, isDark && styles.outputDark]}
-        contentContainerStyle={styles.outputContent}
+      <KeyboardAvoidingView
+        behavior="padding"
+        keyboardVerticalOffset={56}
+        style={{ flex: 1 }}
       >
-        {output.map((line) => (
-          <AnsiLine
-            key={line.id}
-            text={line.text}
-            isDark={isDark}
-            fontSize={terminalFontSize}
-          />
-        ))}
-      </ScrollView>
+        <ScrollView
+          ref={scrollRef}
+          style={[styles.output, isDark && styles.outputDark]}
+          contentContainerStyle={styles.outputContent}
+          keyboardShouldPersistTaps="handled"
+        >
+          {output.map((line) => (
+            <AnsiLine
+              key={line.id}
+              text={line.text}
+              isDark={isDark}
+              fontSize={terminalFontSize}
+            />
+          ))}
+        </ScrollView>
 
-      <View
-        style={[
-          styles.keyButtonRow,
-          { ...ds({ gap: 6, paddingBottom: 4 }, density) },
-        ]}
-      >
-        {SPECIAL_KEYS_NAV.map((k) => (
-          <TerminalKeyButton
-            key={k.label}
-            label={k.label}
-            onPress={() => {}}
-            isDark={isDark}
-            disabled
-          />
-        ))}
-      </View>
-      <View
-        style={[
-          styles.keyButtonRow,
-          { ...ds({ gap: 6, paddingBottom: 4 }, density) },
-        ]}
-      >
-        {SPECIAL_KEYS_CTRL.map((k) => (
-          <TerminalKeyButton
-            key={k.label}
-            label={k.label}
-            onPress={() => {
-              if (k.label === "Tab" || k.label === "Esc") {
-                setInput((prev) => prev + k.sequence);
-              }
-            }}
-            isDark={isDark}
-            disabled={executing}
-          />
-        ))}
-      </View>
-
-      <View style={[styles.inputBar, isDark && styles.inputBarDark]}>
-        <Text
+        <View
           style={[
-            styles.prompt,
-            isDark && styles.promptDark,
-            { fontSize: terminalFontSize },
+            styles.keyButtonRow,
+            { ...ds({ gap: 6, paddingBottom: 4 }, density) },
           ]}
         >
-          {"$ "}
-        </Text>
-        <TextInput
+          {SPECIAL_KEYS_NAV.map((k) => (
+            <TerminalKeyButton
+              key={k.label}
+              label={k.label}
+              onPress={() => {}}
+              isDark={isDark}
+              disabled
+            />
+          ))}
+        </View>
+        <View
           style={[
-            styles.input,
-            isDark && styles.inputDark,
-            { fontSize: terminalFontSize },
-          ]}
-          value={input}
-          onChangeText={setInput}
-          onSubmitEditing={handleSend}
-          returnKeyType="send"
-          autoFocus
-          placeholder="Type a command..."
-          placeholderTextColor={isDark ? "#666666" : "#999999"}
-          autoCapitalize="none"
-          autoCorrect={false}
-          spellCheck={false}
-          testID="local-terminal-input"
-          editable={!executing}
-        />
-        <TouchableOpacity
-          onPress={handleSend}
-          disabled={!input.trim() || executing}
-          style={[
-            styles.sendButton,
-            (!input.trim() || executing) && styles.sendButtonDisabled,
+            styles.keyButtonRow,
+            { ...ds({ gap: 6, paddingBottom: 4 }, density) },
           ]}
         >
-          <Ionicons name="send" size={18} color="#ffffff" />
-        </TouchableOpacity>
-      </View>
+          {SPECIAL_KEYS_CTRL.map((k) => (
+            <TerminalKeyButton
+              key={k.label}
+              label={k.label}
+              onPress={() => {
+                if (k.label === "Tab" || k.label === "Esc") {
+                  setInput((prev) => prev + k.sequence);
+                }
+              }}
+              isDark={isDark}
+              disabled={executing}
+            />
+          ))}
+        </View>
+
+        <View style={[styles.inputBar, isDark && styles.inputBarDark]}>
+          <Text
+            style={[
+              styles.prompt,
+              isDark && styles.promptDark,
+              { fontSize: terminalFontSize },
+            ]}
+          >
+            {"$ "}
+          </Text>
+          <TextInput
+            style={[
+              styles.input,
+              isDark && styles.inputDark,
+              { fontSize: terminalFontSize },
+            ]}
+            value={input}
+            onChangeText={setInput}
+            onSubmitEditing={handleSend}
+            returnKeyType="send"
+            autoFocus
+            placeholder="Type a command..."
+            placeholderTextColor={isDark ? "#666666" : "#999999"}
+            autoCapitalize="none"
+            autoCorrect={false}
+            spellCheck={false}
+            testID="local-terminal-input"
+            editable={!executing}
+          />
+          <TouchableOpacity
+            onPress={handleSend}
+            disabled={!input.trim() || executing}
+            style={[
+              styles.sendButton,
+              (!input.trim() || executing) && styles.sendButtonDisabled,
+            ]}
+          >
+            <Ionicons name="send" size={18} color="#ffffff" />
+          </TouchableOpacity>
+        </View>
+      </KeyboardAvoidingView>
     </View>
   );
 }

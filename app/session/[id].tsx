@@ -18,7 +18,6 @@ import {
   useFocusEffect,
 } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
-import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useTranslation } from "react-i18next";
 import * as ImagePicker from "expo-image-picker";
 import * as ImageManipulator from "expo-image-manipulator";
@@ -113,7 +112,6 @@ export default function SessionScreen() {
   const router = useRouter();
   const isDark = useTheme();
   const density = useDensity();
-  const insets = useSafeAreaInsets();
   const { t } = useTranslation();
 
   const flatListRef = useRef<FlatList>(null);
@@ -1155,7 +1153,7 @@ export default function SessionScreen() {
         <KeyboardAvoidingView
           style={[s.container, isDark && s.containerDark]}
           behavior="padding"
-          keyboardVerticalOffset={Platform.OS === "ios" ? 90 : 0}
+          keyboardVerticalOffset={Platform.OS === "ios" ? 90 : 100}
         >
           {/* Session info pulldown */}
           <SessionInfo
@@ -1512,7 +1510,6 @@ export default function SessionScreen() {
               isDark && s.inputContainerDark,
               {
                 ...ds({ padding: 12 }, density),
-                paddingBottom: Math.max(12 * density.padding, insets.bottom),
               },
             ]}
           >

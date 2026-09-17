@@ -1,4 +1,4 @@
-import { memo, useCallback, useMemo } from "react";
+import { memo, useCallback, useMemo, useState } from "react";
 import {
   View,
   Text,
@@ -8,6 +8,8 @@ import {
   TouchableOpacity,
   Dimensions,
   Alert,
+  Modal,
+  Platform,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import * as Clipboard from "expo-clipboard";
@@ -107,254 +109,312 @@ export const MessageBubble = memo(
       [message.id],
     );
 
-    const showReactionPicker = useCallback(() => {
-      const buttons = EMOJI_PICKER.map((emoji) => ({
-        text: emoji,
-        onPress: () => handleReactionPress(emoji),
-      }));
-      const actions = [
-        ...buttons,
-        {
-          text: t("chat.message.reply"),
-          onPress: () => onReply?.(message.id, message.role, text),
-        },
-        { text: t("common.cancel"), style: "cancel" as const },
-      ];
-      Alert.alert(t("chat.message.addReaction"), undefined, actions);
-    }, [t, handleReactionPress, onReply, message.id, message.role, text]);
+    const [showReactionPicker, setShowReactionPicker] = useState(false);
+
+    const handleReactionSelect = useCallback(
+      (emoji: string) => {
+        handleReactionPress(emoji);
+        setShowReactionPicker(false);
+      },
+      [handleReactionPress],
+    );
+
+    const handleReplyPress = useCallback(() => {
+      onReply?.(message.id, message.role, text);
+      setShowReactionPicker(false);
+    }, [onReply, message.id, message.role, text]);
 
     const messageReactions = useReactions((s) => s.reactions[message.id]);
 
     return (
-      <TouchableOpacity
-        activeOpacity={isUser && onLongPress ? 0.7 : 1}
-        onLongPress={
-          isUser && onLongPress
-            ? () => onLongPress(message.id)
-            : showReactionPicker
-        }
-        disabled={!isUser && !onLongPress}
-        style={[
-          s.bubble,
-          isUser ? s.user : s.assistant,
-          isUser && isDark && s.userDark,
-          !isUser && isDark && s.assistantDark,
-          { ...ds({ padding: 12, marginBottom: 16 }, density) },
-        ]}
-        testID={`chat-bubble-${message.role}`}
-      >
-        {/* Role indicator */}
-        <View style={[s.header, { ...ds({ gap: 6 }, density) }]}>
-          <Ionicons
-            name={isUser ? "person" : "sparkles"}
-            size={14}
-            color={isUser ? (isDark ? "#ffffff" : "#0a0a0a") : "#8b5cf6"}
-          />
-          <Text style={[s.role, isUser && s.roleUser, isDark && s.textWhite]}>
-            {isUser ? "You" : "Assistant"}
-          </Text>
-          {message.model && (
-            <Text style={[s.modelTag, isDark && s.modelTagDark]}>
-              {message.model.modelID}
+      <>
+        <TouchableOpacity
+          activeOpacity={isUser && onLongPress ? 0.7 : 1}
+          onLongPress={
+            isUser && onLongPress
+              ? () => onLongPress(message.id)
+              : () => setShowReactionPicker(true)
+          }
+          disabled={!isUser && !onLongPress}
+          style={[
+            s.bubble,
+            isUser ? s.user : s.assistant,
+            isUser && isDark && s.userDark,
+            !isUser && isDark && s.assistantDark,
+            { ...ds({ padding: 12, marginBottom: 16 }, density) },
+          ]}
+          testID={`chat-bubble-${message.role}`}
+        >
+          {/* Role indicator */}
+          <View style={[s.header, { ...ds({ gap: 6 }, density) }]}>
+            <Ionicons
+              name={isUser ? "person" : "sparkles"}
+              size={14}
+              color={isUser ? (isDark ? "#ffffff" : "#0a0a0a") : "#8b5cf6"}
+            />
+            <Text style={[s.role, isUser && s.roleUser, isDark && s.textWhite]}>
+              {isUser ? "You" : "Assistant"}
             </Text>
-          )}
-          {!isUser && message.modelID && (
-            <Text style={[s.modelTag, isDark && s.modelTagDark]}>
-              {message.modelID}
-            </Text>
-          )}
-          {!isUser && (
-            <TouchableOpacity
-              onPress={handleTimestampPress}
-              style={s.timePressable}
-            >
-              <Text
-                style={[
-                  s.timestamp,
-                  isDark && s.timestampDark,
-                  { ...ds({ fontSize: 10 }, density) },
-                ]}
-              >
-                {formatRelativeTime(message.time.created)}
+            {message.model && (
+              <Text style={[s.modelTag, isDark && s.modelTagDark]}>
+                {message.model.modelID}
               </Text>
-            </TouchableOpacity>
-          )}
-        </View>
+            )}
+            {!isUser && message.modelID && (
+              <Text style={[s.modelTag, isDark && s.modelTagDark]}>
+                {message.modelID}
+              </Text>
+            )}
+            {!isUser && (
+              <TouchableOpacity
+                onPress={handleTimestampPress}
+                style={s.timePressable}
+              >
+                <Text
+                  style={[
+                    s.timestamp,
+                    isDark && s.timestampDark,
+                    { ...ds({ fontSize: 10 }, density) },
+                  ]}
+                >
+                  {formatRelativeTime(message.time.created)}
+                </Text>
+              </TouchableOpacity>
+            )}
+          </View>
 
-        {isUser && (
-          <Text
-            style={[
-              s.timestamp,
-              isDark && s.timestampDark,
-              { ...ds({ fontSize: 10, marginTop: 2 }, density) },
-            ]}
-          >
-            {formatRelativeTime(message.time.created)}
-          </Text>
-        )}
-
-        {/* Image attachments */}
-        {fileParts.length > 0 && (
-          <ScrollView
-            horizontal
-            showsHorizontalScrollIndicator={false}
-            contentContainerStyle={s.imageRow}
-            style={s.imageScroll}
-          >
-            {fileParts.map((fp) => {
-              const handleImageLongPress = () => {
-                if (!onImageAction) return;
-                Alert.alert(
-                  t("chat.message.imageActions.title", "Image actions"),
-                  undefined,
-                  [
-                    {
-                      text: t(
-                        "chat.message.imageActions.describe",
-                        "Describe image",
-                      ),
-                      onPress: () => onImageAction("describe", fp),
-                    },
-                    {
-                      text: t(
-                        "chat.message.imageActions.ocr",
-                        "Extract text (OCR)",
-                      ),
-                      onPress: () => onImageAction("ocr", fp),
-                    },
-                    {
-                      text: t(
-                        "chat.message.imageActions.save",
-                        "Save to gallery",
-                      ),
-                      onPress: () => onImageAction("save", fp),
-                    },
-                    { text: t("common.cancel"), style: "cancel" },
-                  ],
-                );
-              };
-              return (
-                <View key={fp.id} style={s.imageWrap}>
-                  <TouchableOpacity
-                    onLongPress={handleImageLongPress}
-                    delayLongPress={400}
-                  >
-                    <Image
-                      source={{ uri: fp.url }}
-                      style={s.attachedImage}
-                      resizeMode="cover"
-                    />
-                  </TouchableOpacity>
-                  {fp.filename && (
-                    <Text
-                      style={[s.imageLabel, isDark && s.imageLabelDark]}
-                      numberOfLines={1}
-                    >
-                      {fp.filename}
-                    </Text>
-                  )}
-                </View>
-              );
-            })}
-          </ScrollView>
-        )}
-
-        {/* Reasoning (collapsible) */}
-        {reasoning.length > 0 && (
-          <ReasoningBlock text={reasoning} isDark={isDark} />
-        )}
-
-        {/* Steps (step-start/step-finish pairs) */}
-        {stepPairs.length > 0 && (
-          <StepBlock parts={stepPairs} isDark={isDark} />
-        )}
-
-        {/* Message text */}
-        {text.length > 0 &&
-          (isUser ? (
+          {isUser && (
             <Text
               style={[
-                s.messageText,
-                isDark && s.textWhite,
-                { fontSize: chatFontSize },
+                s.timestamp,
+                isDark && s.timestampDark,
+                { ...ds({ fontSize: 10, marginTop: 2 }, density) },
               ]}
-              selectable
             >
-              {text}
+              {formatRelativeTime(message.time.created)}
             </Text>
-          ) : (
-            <View style={s.markdownWrap}>
-              <Markdown>{typeof text === "string" ? text : ""}</Markdown>
-            </View>
+          )}
+
+          {/* Image attachments */}
+          {fileParts.length > 0 && (
+            <ScrollView
+              horizontal
+              showsHorizontalScrollIndicator={false}
+              contentContainerStyle={s.imageRow}
+              style={s.imageScroll}
+            >
+              {fileParts.map((fp) => {
+                const handleImageLongPress = () => {
+                  if (!onImageAction) return;
+                  Alert.alert(
+                    t("chat.message.imageActions.title", "Image actions"),
+                    undefined,
+                    [
+                      {
+                        text: t(
+                          "chat.message.imageActions.describe",
+                          "Describe image",
+                        ),
+                        onPress: () => onImageAction("describe", fp),
+                      },
+                      {
+                        text: t(
+                          "chat.message.imageActions.ocr",
+                          "Extract text (OCR)",
+                        ),
+                        onPress: () => onImageAction("ocr", fp),
+                      },
+                      {
+                        text: t(
+                          "chat.message.imageActions.save",
+                          "Save to gallery",
+                        ),
+                        onPress: () => onImageAction("save", fp),
+                      },
+                      { text: t("common.cancel"), style: "cancel" },
+                    ],
+                  );
+                };
+                return (
+                  <View key={fp.id} style={s.imageWrap}>
+                    <TouchableOpacity
+                      onLongPress={handleImageLongPress}
+                      delayLongPress={400}
+                    >
+                      <Image
+                        source={{ uri: fp.url }}
+                        style={s.attachedImage}
+                        resizeMode="cover"
+                      />
+                    </TouchableOpacity>
+                    {fp.filename && (
+                      <Text
+                        style={[s.imageLabel, isDark && s.imageLabelDark]}
+                        numberOfLines={1}
+                      >
+                        {fp.filename}
+                      </Text>
+                    )}
+                  </View>
+                );
+              })}
+            </ScrollView>
+          )}
+
+          {/* Reasoning (collapsible) */}
+          {reasoning.length > 0 && (
+            <ReasoningBlock text={reasoning} isDark={isDark} />
+          )}
+
+          {/* Steps (step-start/step-finish pairs) */}
+          {stepPairs.length > 0 && (
+            <StepBlock parts={stepPairs} isDark={isDark} />
+          )}
+
+          {/* Message text */}
+          {text.length > 0 &&
+            (isUser ? (
+              <Text
+                style={[
+                  s.messageText,
+                  isDark && s.textWhite,
+                  { fontSize: chatFontSize },
+                ]}
+                selectable
+              >
+                {text}
+              </Text>
+            ) : (
+              <View style={s.markdownWrap}>
+                <Markdown>{typeof text === "string" ? text : ""}</Markdown>
+              </View>
+            ))}
+
+          {/* Agent/subtask invocations (collapsible) */}
+          {agentParts.map((agent) => (
+            <AgentPartCard key={agent.id} tool={agent} isDark={isDark} />
           ))}
 
-        {/* Agent/subtask invocations (collapsible) */}
-        {agentParts.map((agent) => (
-          <AgentPartCard key={agent.id} tool={agent} isDark={isDark} />
-        ))}
+          {/* Tool calls */}
+          {toolParts.map((tool) => (
+            <ToolCallCard key={tool.id} tool={tool} isDark={isDark} />
+          ))}
 
-        {/* Tool calls */}
-        {toolParts.map((tool) => (
-          <ToolCallCard key={tool.id} tool={tool} isDark={isDark} />
-        ))}
+          {/* Patch parts */}
+          {patchParts.map((patch) => (
+            <PatchPartCard key={patch.id} part={patch} isDark={isDark} />
+          ))}
 
-        {/* Patch parts */}
-        {patchParts.map((patch) => (
-          <PatchPartCard key={patch.id} part={patch} isDark={isDark} />
-        ))}
+          {/* Snapshot parts */}
+          {snapshotParts.map((snapshot) => (
+            <SnapshotPartCard
+              key={snapshot.id}
+              part={snapshot}
+              isDark={isDark}
+            />
+          ))}
 
-        {/* Snapshot parts */}
-        {snapshotParts.map((snapshot) => (
-          <SnapshotPartCard key={snapshot.id} part={snapshot} isDark={isDark} />
-        ))}
+          {/* Compaction banners */}
+          {compactionParts.map((compaction) => (
+            <CompactionBanner
+              key={compaction.id}
+              part={compaction}
+              isDark={isDark}
+            />
+          ))}
 
-        {/* Compaction banners */}
-        {compactionParts.map((compaction) => (
-          <CompactionBanner
-            key={compaction.id}
-            part={compaction}
-            isDark={isDark}
-          />
-        ))}
+          {/* Retry banners */}
+          {retryParts.map((retry) => (
+            <RetryBanner key={retry.id} part={retry} isDark={isDark} />
+          ))}
 
-        {/* Retry banners */}
-        {retryParts.map((retry) => (
-          <RetryBanner key={retry.id} part={retry} isDark={isDark} />
-        ))}
+          {/* Tokens/cost for assistant messages */}
+          {!isUser && message.tokens && (
+            <Text style={[s.tokens, isDark && s.tokensDark]}>
+              {message.tokens.input + message.tokens.output} tokens
+              {message.cost ? ` · $${message.cost.toFixed(4)}` : ""}
+            </Text>
+          )}
 
-        {/* Tokens/cost for assistant messages */}
-        {!isUser && message.tokens && (
-          <Text style={[s.tokens, isDark && s.tokensDark]}>
-            {message.tokens.input + message.tokens.output} tokens
-            {message.cost ? ` · $${message.cost.toFixed(4)}` : ""}
-          </Text>
-        )}
+          {/* Reactions */}
+          {messageReactions && messageReactions.length > 0 && (
+            <View style={s.reactionsRow}>
+              {messageReactions.map((emoji) => {
+                const count = messageReactions.filter(
+                  (e) => e === emoji,
+                ).length;
+                return (
+                  <TouchableOpacity
+                    key={`${emoji}-${count}`}
+                    style={[s.reactionChip, isDark && s.reactionChipDark]}
+                    onPress={() => handleReactionPress(emoji)}
+                  >
+                    <Text style={s.reactionEmoji}>{emoji}</Text>
+                    {count > 1 && (
+                      <Text
+                        style={[s.reactionCount, isDark && s.reactionCountDark]}
+                      >
+                        {count}
+                      </Text>
+                    )}
+                  </TouchableOpacity>
+                );
+              })}
+            </View>
+          )}
+        </TouchableOpacity>
 
-        {/* Reactions */}
-        {messageReactions && messageReactions.length > 0 && (
-          <View style={s.reactionsRow}>
-            {messageReactions.map((emoji) => {
-              const count = messageReactions.filter((e) => e === emoji).length;
-              return (
-                <TouchableOpacity
-                  key={`${emoji}-${count}`}
-                  style={[s.reactionChip, isDark && s.reactionChipDark]}
-                  onPress={() => handleReactionPress(emoji)}
-                >
-                  <Text style={s.reactionEmoji}>{emoji}</Text>
-                  {count > 1 && (
-                    <Text
-                      style={[s.reactionCount, isDark && s.reactionCountDark]}
-                    >
-                      {count}
-                    </Text>
-                  )}
-                </TouchableOpacity>
-              );
-            })}
-          </View>
-        )}
-      </TouchableOpacity>
+        {/* Reaction picker modal */}
+        <Modal
+          visible={showReactionPicker}
+          transparent
+          animationType="fade"
+          onRequestClose={() => setShowReactionPicker(false)}
+        >
+          <TouchableOpacity
+            style={s.reactionOverlay}
+            activeOpacity={1}
+            onPress={() => setShowReactionPicker(false)}
+          >
+            <TouchableOpacity
+              style={s.reactionSheet}
+              activeOpacity={0.95}
+              onPress={() => {}}
+            >
+              <Text style={s.reactionSheetTitle}>
+                {t("chat.message.addReaction")}
+              </Text>
+              <View style={s.reactionSheetGrid}>
+                {EMOJI_PICKER.map((emoji) => (
+                  <TouchableOpacity
+                    key={emoji}
+                    style={s.reactionSheetEmoji}
+                    onPress={() => handleReactionSelect(emoji)}
+                  >
+                    <Text style={s.reactionSheetEmojiText}>{emoji}</Text>
+                  </TouchableOpacity>
+                ))}
+              </View>
+              <TouchableOpacity
+                style={s.reactionSheetButton}
+                onPress={handleReplyPress}
+              >
+                <Text style={s.reactionSheetButtonText}>
+                  {t("session.message.reply")}
+                </Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={s.reactionSheetCancel}
+                onPress={() => setShowReactionPicker(false)}
+              >
+                <Text style={s.reactionSheetCancelText}>
+                  {t("common.cancel")}
+                </Text>
+              </TouchableOpacity>
+            </TouchableOpacity>
+          </TouchableOpacity>
+        </Modal>
+      </>
     );
   },
   (prev, next) => {
@@ -464,4 +524,68 @@ const s = StyleSheet.create({
   reactionCountDark: {
     color: "#888888",
   },
+
+  reactionOverlay: {
+    flex: 1,
+    backgroundColor: "rgba(0,0,0,0.5)",
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  reactionSheet: {
+    backgroundColor: "#ffffff",
+    borderRadius: 16,
+    padding: 16,
+    width: "80%",
+    maxWidth: 320,
+    alignItems: "center",
+    ...Platform.select({
+      ios: {
+        shadowColor: "#000",
+        shadowOpacity: 0.2,
+        shadowRadius: 8,
+        elevation: 5,
+      },
+    }),
+  },
+  reactionSheetTitle: {
+    fontSize: 16,
+    fontWeight: "600",
+    marginBottom: 12,
+    color: "#0a0a0a",
+  },
+  reactionSheetGrid: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    justifyContent: "center",
+    gap: 8,
+    marginBottom: 12,
+  },
+  reactionSheetEmoji: {
+    width: 44,
+    height: 44,
+    borderRadius: 12,
+    backgroundColor: "#f5f5f5",
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  reactionSheetEmojiText: { fontSize: 22 },
+  reactionSheetButton: {
+    width: "100%",
+    paddingVertical: 10,
+    borderRadius: 8,
+    backgroundColor: "#f5f5f5",
+    alignItems: "center",
+    marginBottom: 8,
+  },
+  reactionSheetButtonText: {
+    color: "#0a0a0a",
+    fontSize: 15,
+    fontWeight: "600",
+  },
+  reactionSheetCancel: {
+    width: "100%",
+    paddingVertical: 10,
+    alignItems: "center",
+  },
+  reactionSheetCancelText: { color: "#999999", fontSize: 15 },
 });
