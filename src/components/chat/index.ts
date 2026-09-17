@@ -15,6 +15,8 @@ export { DirectorySwitcher } from "./DirectorySwitcher";
 export { DirectoryBrowserSheet } from "./DirectoryBrowserSheet";
 export { SessionInfo } from "./SessionInfo";
 export { default as TerminalView } from "./TerminalView";
+export { default as TerminalWebView } from "./TerminalWebView";
+export type { TerminalWebViewHandle } from "./TerminalWebView";
 export { PromptLibrarySheet } from "./PromptLibrarySheet";
 export { AgentPartCard } from "./AgentPartCard";
 export { StepBlock, type StepPair, pairStepParts } from "./StepBlock";

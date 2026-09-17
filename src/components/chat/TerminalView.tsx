@@ -22,7 +22,7 @@ import {
   executeLocalCommand,
   isLocalTerminalAvailable,
 } from "../../lib/local-terminal";
-import { normalizeTerminalChunk } from "../../lib/terminal-lines";
+import TerminalWebView, { type TerminalWebViewHandle } from "./TerminalWebView";
 import type { Client } from "../../lib/sdk";
 
 interface Props {
@@ -151,12 +151,9 @@ function TerminalSocket({
   authorization,
 }: TerminalSocketProps) {
   const density = useDensity();
-  const [output, setOutput] = useState<TerminalLine[]>([]);
-  const [input, setInput] = useState("");
   const [wsState, setWsState] = useState<WsState>("connecting");
   const wsRef = useRef<PtyWebSocket | null>(null);
-  const scrollRef = useRef<ScrollView>(null);
-  const pendingRef = useRef<string>("");
+  const termHandleRef = useRef<TerminalWebViewHandle | null>(null);
 
   useEffect(() => {
     const ws = new PtyWebSocket();
@@ -166,42 +163,7 @@ function TerminalSocket({
       wsUrl,
       (chunk: string) => {
         setWsState("connected");
-        setOutput((prev) => {
-          const next = [...prev];
-          const { lines, pending } = normalizeTerminalChunk(
-            chunk,
-            pendingRef.current,
-          );
-          pendingRef.current = pending;
-          if (lines.length === 1) {
-            if (next.length > 0) {
-              next[next.length - 1] = {
-                ...next[next.length - 1],
-                text: next[next.length - 1].text + lines[0],
-              };
-            } else {
-              next.push({ id: generateId(), text: lines[0] });
-            }
-          } else {
-            if (next.length > 0) {
-              next[next.length - 1] = {
-                ...next[next.length - 1],
-                text: next[next.length - 1].text + lines[0],
-              };
-            } else {
-              next.push({ id: generateId(), text: lines[0] });
-            }
-            for (let i = 1; i < lines.length; i++) {
-              next.push({ id: generateId(), text: lines[i] });
-            }
-          }
-          const MAX_LINES = 2000;
-          if (next.length > MAX_LINES) {
-            return next.slice(next.length - MAX_LINES);
-          }
-          return next;
-        });
-        scrollRef.current?.scrollToEnd({ animated: true });
+        termHandleRef.current?.write(chunk);
       },
       () => {
         setWsState("disconnected");
@@ -216,22 +178,25 @@ function TerminalSocket({
     return () => {
       ws.close();
       wsRef.current = null;
-      pendingRef.current = "";
     };
   }, [wsUrl, onWsError, authorization]);
-
-  const handleSend = useCallback(() => {
-    const trimmed = input.trim();
-    if (!trimmed || !wsRef.current) return;
-    wsRef.current.send(trimmed + "\r");
-    setInput("");
-  }, [input]);
 
   const handleClose = useCallback(() => {
     wsRef.current?.close();
     wsRef.current = null;
     onClose();
   }, [onClose]);
+
+  const handleTermInput = useCallback((data: string) => {
+    wsRef.current?.send(data);
+  }, []);
+
+  const handleTermHandle = useCallback(
+    (handle: TerminalWebViewHandle | null) => {
+      termHandleRef.current = handle;
+    },
+    [],
+  );
 
   const statusLabel =
     wsState === "connected"
@@ -270,20 +235,14 @@ function TerminalSocket({
         keyboardVerticalOffset={56}
         style={{ flex: 1 }}
       >
-        <ScrollView
-          ref={scrollRef}
-          style={[styles.output, isDark && styles.outputDark]}
-          contentContainerStyle={styles.outputContent}
-          keyboardShouldPersistTaps="handled"
-        >
-          {output.map((line) => (
-            <AnsiLine
-              key={line.id}
-              text={line.text}
-              isDark={isDark}
-              fontSize={terminalFontSize}
-            />
-          ))}
+        <View style={[styles.output, isDark && styles.outputDark]}>
+          <TerminalWebView
+            isDark={isDark}
+            fontSize={terminalFontSize}
+            onInput={handleTermInput}
+            handleRef={handleTermHandle}
+            testID="terminal-webview"
+          />
           {wsState !== "connected" && (
             <Text
               style={[
@@ -295,7 +254,7 @@ function TerminalSocket({
               {statusLabel}
             </Text>
           )}
-        </ScrollView>
+        </View>
 
         <View
           style={[
@@ -328,46 +287,6 @@ function TerminalSocket({
               disabled={wsState !== "connected"}
             />
           ))}
-        </View>
-
-        <View style={[styles.inputBar, isDark && styles.inputBarDark]}>
-          <Text
-            style={[
-              styles.prompt,
-              isDark && styles.promptDark,
-              { fontSize: terminalFontSize },
-            ]}
-          >
-            {"$ "}
-          </Text>
-          <TextInput
-            style={[
-              styles.input,
-              isDark && styles.inputDark,
-              { fontSize: terminalFontSize },
-            ]}
-            value={input}
-            onChangeText={setInput}
-            onSubmitEditing={handleSend}
-            returnKeyType="send"
-            autoFocus
-            placeholder="Type a command..."
-            placeholderTextColor={isDark ? "#666666" : "#999999"}
-            autoCapitalize="none"
-            autoCorrect={false}
-            spellCheck={false}
-            testID="terminal-input"
-          />
-          <TouchableOpacity
-            onPress={handleSend}
-            disabled={!input.trim()}
-            style={[
-              styles.sendButton,
-              !input.trim() && styles.sendButtonDisabled,
-            ]}
-          >
-            <Ionicons name="send" size={18} color="#ffffff" />
-          </TouchableOpacity>
         </View>
       </KeyboardAvoidingView>
     </View>

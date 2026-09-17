@@ -91,6 +91,35 @@ Never repeat the same uid target more than 3 times.
 
 ---
 
+## 2026-09-17: Terminal input via xterm.js WebView
+
+**Problem**: Server terminal used a plain `TextInput` (send on Enter), so remote shell tab-completion and line editing couldn't work.
+
+**Mistake 1 — Test slice math**: `";true;".length` is 6, not 7 — the injected-JS suffix is `");true;"`. Test failed on `JSON.parse` with "non-whitespace character after JSON". Count suffixes explicitly (`const suffix = ");true;"`) instead of hand-counting inline.
+
+**Correct patterns**:
+- Unit tests run under `node --test` with ESM resolution: test imports need the explicit `.ts` extension (`from "./x.test.ts"`), matching existing tests.
+- The `react-hooks/refs` ESLint rule (error, not warning) forbids ref writes during render — sync callback props into refs inside `useEffect`, not inline.
+- `react-native-webview` needs no `app.json` plugin entry (autolinked, works in Expo Go); `StyleSheet.absoluteFill` (not `absoluteFillObject`) is the RN API.
+
+**Time cost**: ~15 min on the three issues above; jsDelivr data API confirmed exact UMD paths (`@xterm/xterm@5.5.0/lib/xterm.js`, `@xterm/addon-fit@0.10.0/lib/addon-fit.js`) up front, avoiding CDN guesswork.
+
+---
+
+## 2026-09-17: Bundle xterm.js locally (offline terminal)
+
+**Problem**: Terminal WebView loaded xterm.js from jsDelivr CDN — dead on offline LAN.
+
+**Correct patterns**:
+- Metro has no raw-text imports: vendor web libs as `assets/terminal/*.js.txt` + `metro.config.js` `assetExts.push("txt")`, load at runtime via `expo-asset` (`Asset.fromModule` + `downloadAsync`) and `expo-file-system` v57's `new File(uri).arrayBuffer()` + `TextDecoder` (no `readAsStringAsync` in the new API).
+- Inline vendor JS into `<script>` only with `</script` → `<\\/script` escaping, and assert open/close tag balance in tests.
+- `expo install` auto-adds the `expo-asset` config plugin to `app.json` — keep it.
+- `react-hooks/exhaustive-deps` fires as error on unused deps: make intentional re-trigger keys meaningful (retry-attempt token that actually selects rebuild-vs-keep) instead of disabling the rule — repo has zero `eslint-disable` comments.
+
+**Time cost**: ~10 min verifying Metro's default `assetExts` lacks `txt` and the expo-file-system v57 API shape via `node_modules/*.d.ts` before writing code.
+
+---
+
 ## Template for future entries
 
 ```
