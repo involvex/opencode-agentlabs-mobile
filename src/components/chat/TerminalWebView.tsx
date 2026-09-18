@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import {
   ActivityIndicator,
+  Platform,
   StyleSheet,
   Text,
   TouchableOpacity,
@@ -87,6 +88,11 @@ export default function TerminalWebView({
 
   useEffect(() => {
     const attempt = loadKey;
+    const fontFamily = Platform.select({
+      ios: "Menlo, monospace",
+      android: "monospace",
+      default: "monospace",
+    })!;
     let cancelled = false;
     loadTerminalVendor()
       .then((vendor) => {
@@ -98,16 +104,13 @@ export default function TerminalWebView({
             fontSize,
             scrollback: SCROLLBACK,
             vendor,
+            fontFamily,
           });
         });
       })
       .catch((caught) => {
         if (cancelled) return;
-        setFailed(
-          caught instanceof Error
-            ? caught.message
-            : "Terminal engine failed to load.",
-        );
+        setFailed("Terminal engine failed to load. Tap Retry to reload.");
       });
     return () => {
       cancelled = true;
@@ -208,8 +211,9 @@ export default function TerminalWebView({
           key={reloadKey}
           ref={webRef}
           testID={testID}
-          originWhitelist={["*"]}
+          originWhitelist={[]}
           source={{ html }}
+          androidLayerType="hardware"
           javaScriptEnabled
           domStorageEnabled={false}
           mediaPlaybackRequiresUserAction={false}

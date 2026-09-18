@@ -8,6 +8,7 @@
     "start:clear": "expo start --clear",
     "ios": "expo run:ios",
     "check": "bun run format && bun run lint:fix && bun run typecheck && expo install --check && bunx expo-doctor --verbose",
+    "prebuild": "bun run vendor:xterm && expo prebuild --platform android",
     "expo:prebuild": "expo prebuild --platform android",
     "android": "expo run:android",
     "android:install": "expo run:android --variant release",

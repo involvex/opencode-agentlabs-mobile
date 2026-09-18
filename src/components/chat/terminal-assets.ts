@@ -25,8 +25,10 @@ function decode(buffer: ArrayBuffer): string {
 async function readBundledText(module: number): Promise<string> {
   const asset = Asset.fromModule(module);
   await asset.downloadAsync();
-  const uri = asset.localUri ?? asset.uri;
-  return decode(await new File(uri).arrayBuffer());
+  if (!asset.localUri) {
+    throw new Error("Terminal engine asset has no localUri.");
+  }
+  return decode(await new File(asset.localUri).arrayBuffer());
 }
 
 let cached: Promise<TerminalVendor> | null = null;

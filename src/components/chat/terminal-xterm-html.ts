@@ -48,6 +48,7 @@ export interface TerminalHtmlOptions {
   fontSize: number;
   scrollback: number;
   vendor: TerminalVendor;
+  fontFamily: string;
 }
 
 function escapeInlineScript(js: string): string {
@@ -55,7 +56,7 @@ function escapeInlineScript(js: string): string {
 }
 
 export function buildTerminalHtml(opts: TerminalHtmlOptions): string {
-  const { theme, fontSize, scrollback, vendor } = opts;
+  const { theme, fontSize, scrollback, vendor, fontFamily } = opts;
   return `<!DOCTYPE html>
 <html>
 <head>
@@ -103,7 +104,7 @@ html, body { height: 100%; margin: 0; padding: 0; background: ${theme.background
   }
   var term = new Terminal({
     fontSize: ${fontSize},
-    fontFamily: "Menlo, monospace",
+    fontFamily: ${JSON.stringify(fontFamily)},
     cursorBlink: true,
     cursorStyle: "bar",
     scrollback: ${scrollback},
