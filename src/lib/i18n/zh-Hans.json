@@ -220,6 +220,15 @@
       "rejectFailedMessage": "无法发送您的回复。请重试。",
       "imageFailedTitle": "图片未添加",
       "imageFailedMessage": "一张或多张图片无法处理。请尝试其他照片。",
+      "fileFailedTitle": "文件未添加",
+      "fileFailedMessage": "所选文件无法读取。请尝试其他文件。",
+      "fileTooLargeTitle": "文件过大",
+      "fileTooLargeMessage": "超过 {{max}} 的文件已跳过：{{names}}",
+      "attachTitle": "添加附件",
+      "attachPhotos": "照片",
+      "attachCamera": "拍照",
+      "attachFiles": "文件",
+      "attachPaste": "从剪贴板粘贴",
       "speechErrorTitle": "语音输入失败",
       "speechErrorMessage": "无法使用语音输入。请检查麦克风权限后重试。"
     }

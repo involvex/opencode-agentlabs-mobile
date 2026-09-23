@@ -27,6 +27,7 @@ import { useDensity, ds } from "../../lib/density";
 import { useSettings } from "../../stores/settings";
 import { formatRelativeTime, formatAbsoluteTime } from "../../lib/time-format";
 import { useReactions } from "../../stores/reactions";
+import { hapticSelection } from "../../lib/haptics";
 import type { Message, Part } from "../../lib/sdk";
 
 const SCREEN_WIDTH = Dimensions.get("window").width;
@@ -71,6 +72,9 @@ export const MessageBubble = memo(
     const fileParts = parts.filter(
       (p) => p.type === "file" && isImageMime(p.mime),
     );
+    const docParts = parts.filter(
+      (p) => p.type === "file" && !isImageMime(p.mime),
+    );
     const agentParts = parts.filter(
       (p) => p.type === "agent" || p.type === "subtask",
     );
@@ -98,6 +102,7 @@ export const MessageBubble = memo(
 
     const handleReactionPress = useCallback(
       (emoji: string) => {
+        void hapticSelection();
         const msgReactions =
           useReactions.getState().reactions[message.id] || [];
         if (msgReactions.includes(emoji)) {
@@ -259,6 +264,37 @@ export const MessageBubble = memo(
                 );
               })}
             </ScrollView>
+          )}
+
+          {/* Document attachments (non-image files) */}
+          {docParts.length > 0 && (
+            <View style={s.docList}>
+              {docParts.map((fp) => (
+                <View key={fp.id} style={[s.docChip, isDark && s.docChipDark]}>
+                  <Ionicons
+                    name="document-text-outline"
+                    size={20}
+                    color={isDark ? "#bbbbbb" : "#555555"}
+                  />
+                  <View style={s.docMeta}>
+                    <Text
+                      style={[s.docName, isDark && s.imageLabelDark]}
+                      numberOfLines={2}
+                    >
+                      {fp.filename || "file"}
+                    </Text>
+                    {!!fp.mime && (
+                      <Text
+                        style={[s.docMime, isDark && s.imageLabelDark]}
+                        numberOfLines={1}
+                      >
+                        {fp.mime}
+                      </Text>
+                    )}
+                  </View>
+                </View>
+              ))}
+            </View>
           )}
 
           {/* Reasoning (collapsible) */}
@@ -490,6 +526,22 @@ const s = StyleSheet.create({
   },
   imageLabel: { fontSize: 10, color: "#666666", marginTop: 2, maxWidth: 200 },
   imageLabelDark: { color: "#888888" },
+
+  // Document (non-image) file attachments
+  docList: { gap: 6, marginBottom: 8 },
+  docChip: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+    paddingHorizontal: 10,
+    paddingVertical: 8,
+    borderRadius: 10,
+    backgroundColor: "#f5f5f5",
+  },
+  docChipDark: { backgroundColor: "#2a2a2a" },
+  docMeta: { flex: 1, minWidth: 0 },
+  docName: { fontSize: 12, fontWeight: "600", color: "#0a0a0a" },
+  docMime: { fontSize: 10, color: "#666666", marginTop: 2 },
 
   timePressable: {
     marginLeft: "auto",

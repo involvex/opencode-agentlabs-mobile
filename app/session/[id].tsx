@@ -64,6 +64,19 @@ import { useDensity, ds } from "../../src/lib/density";
 import { useSpeech } from "../../src/lib/speech";
 import { useSpeechOutput, speakText } from "../../src/lib/speech-output";
 import { useKeyboardShortcuts } from "../../src/lib/keyboard-shortcuts";
+import {
+  pickDocuments,
+  MAX_DOCUMENT_BYTES,
+  formatFileSize,
+} from "../../src/lib/attachments";
+import {
+  hapticLight,
+  hapticMedium,
+  hapticHeavy,
+  hapticSuccess,
+  hapticError,
+  hapticSelection,
+} from "../../src/lib/haptics";
 
 // --- Slash command registry ---
 
@@ -345,6 +358,7 @@ export default function SessionScreen() {
 
   const handleSend = useCallback(async () => {
     if (!input.trim() && attachments.length === 0) return;
+    void hapticMedium();
     const authenticated = await authenticateForMessage();
     if (!authenticated) {
       Alert.alert(
@@ -397,6 +411,7 @@ export default function SessionScreen() {
       }
     } catch (err) {
       console.error("Send failed:", err);
+      void hapticError();
       setInput((prev) => (prev ? prev : text));
       setAttachments((prev) => (prev.length ? prev : files));
       Alert.alert(
@@ -891,7 +906,64 @@ export default function SessionScreen() {
     );
   }, [t]);
 
+  const pickDocument = useCallback(async () => {
+    try {
+      const picked = await pickDocuments();
+      if (!picked) return;
+      if (picked.attachments.length) {
+        void hapticLight();
+        setAttachments((prev) => [...prev, ...picked.attachments]);
+      }
+      if (picked.skippedOversize.length) {
+        void hapticError();
+        Alert.alert(
+          t("session.alerts.fileTooLargeTitle"),
+          t("session.alerts.fileTooLargeMessage", {
+            max: formatFileSize(MAX_DOCUMENT_BYTES),
+            names: picked.skippedOversize.join(", "),
+          }),
+        );
+      } else if (!picked.attachments.length) {
+        Alert.alert(
+          t("session.alerts.fileFailedTitle"),
+          t("session.alerts.fileFailedMessage"),
+        );
+      }
+    } catch (err) {
+      console.error("Failed to pick document:", err);
+      void hapticError();
+      Alert.alert(
+        t("session.alerts.fileFailedTitle"),
+        t("session.alerts.fileFailedMessage"),
+      );
+    }
+  }, [t]);
+
+  const showAttachSheet = useCallback(() => {
+    void hapticSelection();
+    Alert.alert(t("session.alerts.attachTitle"), undefined, [
+      {
+        text: t("session.alerts.attachPhotos"),
+        onPress: () => void pickFromLibrary(),
+      },
+      {
+        text: t("session.alerts.attachCamera"),
+        onPress: () => void pickFromCamera(),
+      },
+      {
+        text: t("session.alerts.attachFiles"),
+        onPress: () => void pickDocument(),
+      },
+      {
+        text: t("session.alerts.attachPaste"),
+        onPress: () => void pasteFromClipboard(),
+      },
+      { text: t("common.cancel"), style: "cancel" },
+    ]);
+  }, [t, pickFromLibrary, pickFromCamera, pickDocument, pasteFromClipboard]);
+
   const removeAttachment = useCallback((index: number) => {
+    void hapticLight();
     setAttachments((prev) => prev.filter((_, i) => i !== index));
   }, []);
 
@@ -976,6 +1048,7 @@ export default function SessionScreen() {
     reply: "once" | "always" | "reject",
   ) => {
     if (!sessionClient || !sessionID) return;
+    void hapticSelection();
     // Snapshot for rollback
     const snapshot = useEvents.getState().permissions[sessionID] || [];
     // Optimistically remove from UI
@@ -987,8 +1060,10 @@ export default function SessionScreen() {
     }));
     try {
       await sessionClient.permission.reply(requestID, reply);
+      void hapticSuccess();
     } catch (err) {
       console.error("Permission reply failed:", err);
+      void hapticError();
       // Restore the prompt so the user can retry
       useEvents.setState((state) => ({
         permissions: { ...state.permissions, [sessionID]: snapshot },
@@ -1005,6 +1080,7 @@ export default function SessionScreen() {
     answers: string[][],
   ) => {
     if (!sessionClient || !sessionID) return;
+    void hapticSelection();
     const snapshot = useEvents.getState().questions[sessionID] || [];
     useEvents.setState((state) => ({
       questions: {
@@ -1014,8 +1090,10 @@ export default function SessionScreen() {
     }));
     try {
       await sessionClient.question.reply(requestID, answers);
+      void hapticSuccess();
     } catch (err) {
       console.error("Question reply failed:", err);
+      void hapticError();
       useEvents.setState((state) => ({
         questions: { ...state.questions, [sessionID]: snapshot },
       }));
@@ -1051,10 +1129,16 @@ export default function SessionScreen() {
 
   const handleModelSelect = useCallback(
     (providerID: string, modelID: string) => {
+      void hapticSelection();
       setModel({ providerID, modelID });
     },
     [setModel],
   );
+
+  const handleAbort = useCallback(() => {
+    void hapticHeavy();
+    void abortSession();
+  }, [abortSession]);
 
   // Agent cycling must never be a silent no-op: with fewer than two primary
   // agents loaded (e.g. /agent failing under this directory scope) the old
@@ -1517,7 +1601,7 @@ export default function SessionScreen() {
               {/* Attach button */}
               <TouchableOpacity
                 style={s.attachBtn}
-                onPress={pickFromLibrary}
+                onPress={showAttachSheet}
                 onLongPress={pickFromCamera}
               >
                 <Ionicons
@@ -1608,7 +1692,7 @@ export default function SessionScreen() {
                 !input.trim() &&
                 attachments.length === 0 &&
                 !speech.listening && (
-                  <TouchableOpacity style={s.stopBtn} onPress={abortSession}>
+                  <TouchableOpacity style={s.stopBtn} onPress={handleAbort}>
                     <Ionicons name="stop" size={20} color="#ffffff" />
                   </TouchableOpacity>
                 )}
