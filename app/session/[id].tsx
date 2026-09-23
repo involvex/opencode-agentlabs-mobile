@@ -64,6 +64,7 @@ import { useDensity, ds } from "../../src/lib/density";
 import { useSpeech } from "../../src/lib/speech";
 import { useSpeechOutput, speakText } from "../../src/lib/speech-output";
 import { useKeyboardShortcuts } from "../../src/lib/keyboard-shortcuts";
+import { extractPromptFromParts } from "../../src/lib/prompt-from-parts";
 import {
   pickDocuments,
   MAX_DOCUMENT_BYTES,
@@ -1140,6 +1141,47 @@ export default function SessionScreen() {
     void abortSession();
   }, [abortSession]);
 
+  // Busy mirrors StatusIndicator: SSE status is the source of truth, the
+  // optimistic `sending` flag only covers the gap before SSE confirms busy.
+  const sseBusy = sessionStatus != null && sessionStatus.type !== "idle";
+  const isBusy = sseBusy || (isSending && !sessionStatus);
+
+  // Retry re-sends the last confirmed user message's text with the current
+  // model/agent/variant. Text-only: original file URLs live server-side and
+  // can't be re-attached from local state.
+  const handleRetry = useCallback(async () => {
+    const state = useSessions.getState();
+    const lastUser = [...state.messages]
+      .reverse()
+      .find((m) => m.role === "user" && !m.id.startsWith("temp-"));
+    if (!lastUser) return;
+    const { text } = extractPromptFromParts(state.parts[lastUser.id]);
+    if (!text.trim()) return;
+    void hapticMedium();
+    try {
+      await sendMessage(
+        text,
+        model || undefined,
+        agent || undefined,
+        undefined,
+        variant || undefined,
+      );
+    } catch (err) {
+      console.error("Retry failed:", err);
+      void hapticError();
+      Alert.alert(
+        t("session.alerts.sendFailedTitle"),
+        t("session.alerts.sendFailedMessage"),
+      );
+    }
+  }, [sendMessage, model, agent, variant, t]);
+
+  const canRetry = useMemo(() => {
+    if (isBusy || speech.listening) return false;
+    if (input.trim() || attachments.length > 0) return false;
+    return messages.some((m) => m.role === "user" && !m.id.startsWith("temp-"));
+  }, [isBusy, speech.listening, input, attachments.length, messages]);
+
   // Agent cycling must never be a silent no-op: with fewer than two primary
   // agents loaded (e.g. /agent failing under this directory scope) the old
   // code returned void and taps appeared dead (issue #198).
@@ -1673,7 +1715,7 @@ export default function SessionScreen() {
                 placeholder={
                   speech.listening
                     ? t("session.input.placeholderListening")
-                    : isSending
+                    : isBusy
                       ? t("session.input.placeholderFollowUp")
                       : t("session.input.placeholderDefault")
                 }
@@ -1687,17 +1729,33 @@ export default function SessionScreen() {
                 maxLength={10000}
                 testID="chat-message-input"
               />
-              {/* Stop button: only when busy and no input */}
-              {isSending &&
-                !input.trim() &&
-                attachments.length === 0 &&
-                !speech.listening && (
-                  <TouchableOpacity style={s.stopBtn} onPress={handleAbort}>
-                    <Ionicons name="stop" size={20} color="#ffffff" />
-                  </TouchableOpacity>
-                )}
-              {/* Mic button: when no input, not sending, and not listening */}
-              {!isSending &&
+              {/* Stop button: whenever the session is busy, even while typing
+                  a follow-up — tapping it aborts the run, the draft stays. */}
+              {isBusy && !speech.listening && (
+                <TouchableOpacity
+                  style={s.stopBtn}
+                  onPress={handleAbort}
+                  testID="chat-stop-button"
+                >
+                  <Ionicons name="stop" size={20} color="#ffffff" />
+                </TouchableOpacity>
+              )}
+              {/* Retry button: idle, empty composer, prior user turn exists */}
+              {canRetry && (
+                <TouchableOpacity
+                  style={s.retryBtn}
+                  onPress={handleRetry}
+                  testID="chat-retry-button"
+                >
+                  <Ionicons
+                    name="refresh"
+                    size={22}
+                    color={isDark ? "#888888" : "#666666"}
+                  />
+                </TouchableOpacity>
+              )}
+              {/* Mic button: when idle, no input, and not listening */}
+              {!isBusy &&
                 !input.trim() &&
                 attachments.length === 0 &&
                 !speech.listening && (
@@ -1953,6 +2011,14 @@ const s = StyleSheet.create({
     height: 40,
     borderRadius: 20,
     backgroundColor: "#ef4444",
+    justifyContent: "center",
+    alignItems: "center",
+    marginLeft: 8,
+  },
+  retryBtn: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
     justifyContent: "center",
     alignItems: "center",
     marginLeft: 8,
