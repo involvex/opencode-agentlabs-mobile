@@ -434,16 +434,17 @@ export function SessionInfo({
               },
             ]}
             onPress={onExport}
+            testID="session-info-export"
           >
             <Ionicons
               name="share-outline"
               size={14}
-              color={isDark ? "#888888" : "#666666"}
+              color={isDark ? "#a78bfa" : "#8b5cf6"}
             />
             <Text
               style={[
                 s.actionText,
-                isDark && s.dimDark,
+                { color: isDark ? "#a78bfa" : "#8b5cf6" },
                 { ...ds({ fontSize: 12 }, density) },
               ]}
             >

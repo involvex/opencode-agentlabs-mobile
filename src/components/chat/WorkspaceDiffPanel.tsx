@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState } from "react";
 import {
   ActivityIndicator,
+  Alert,
   FlatList,
   StyleSheet,
   Text,
@@ -10,17 +11,21 @@ import {
 import { Ionicons } from "@expo/vector-icons";
 import { useTranslation } from "react-i18next";
 import type { Client } from "../../lib/sdk";
-import {
-  parseDiff,
-  type DiffHunk,
-  type FileDiffEntry,
-} from "../../lib/parse-diff";
+import { parseDiff, type DiffHunk, type FileDiffEntry } from "../../lib/parse-diff";
 import { useDensity, ds } from "../../lib/density";
+import { useTerminalRun } from "../../stores/terminal-run";
+import { hapticSelection } from "../../lib/haptics";
 
 interface Props {
   client: Client | null;
   sessionID?: string;
   isDark: boolean;
+  onOpenTerminal?: () => void;
+}
+
+function shellQuote(path: string): string {
+  if (/^[A-Za-z0-9_./\\:@+-]+$/.test(path)) return path;
+  return `'${path.replace(/'/g, `'\\''`)}'`;
 }
 
 function lineStyle(type: string, isDark: boolean) {
@@ -80,9 +85,15 @@ function HunkView({ hunk, isDark }: { hunk: DiffHunk; isDark: boolean }) {
   );
 }
 
-export function WorkspaceDiffPanel({ client, sessionID, isDark }: Props) {
+export function WorkspaceDiffPanel({
+  client,
+  sessionID,
+  isDark,
+  onOpenTerminal,
+}: Props) {
   const { t } = useTranslation();
   const density = useDensity();
+  const runInTerminal = useTerminalRun((st) => st.run);
   const [entries, setEntries] = useState<FileDiffEntry[]>([]);
   const [expanded, setExpanded] = useState<Record<string, boolean>>({});
   const [loading, setLoading] = useState(false);
@@ -97,7 +108,6 @@ export function WorkspaceDiffPanel({ client, sessionID, isDark }: Props) {
     setLoading(true);
     setError(null);
     try {
-      // Prefer session.diff when we have a session; fall back to file.status + read.
       if (sessionID && client.session.diff) {
         const raw = await client.session.diff(sessionID);
         if (Array.isArray(raw) && raw.length > 0) {
@@ -108,7 +118,6 @@ export function WorkspaceDiffPanel({ client, sessionID, isDark }: Props) {
             return { path, hunks: diffText ? parseDiff(diffText) : [] };
           });
           setEntries(mapped);
-          setLoading(false);
           return;
         }
       }
@@ -116,7 +125,6 @@ export function WorkspaceDiffPanel({ client, sessionID, isDark }: Props) {
       const changed = await client.file.status();
       if (!changed.length) {
         setEntries([]);
-        setLoading(false);
         return;
       }
 
@@ -149,6 +157,44 @@ export function WorkspaceDiffPanel({ client, sessionID, isDark }: Props) {
     }, 0);
     return () => clearTimeout(timer);
   }, [load]);
+
+  const runGit = useCallback(
+    (command: string, thenReload = true) => {
+      void hapticSelection();
+      const ok = runInTerminal(command);
+      if (!ok) {
+        // Queue the command; opening Terminal mounts the writer and flushes it.
+        onOpenTerminal?.();
+      } else {
+        onOpenTerminal?.();
+      }
+      if (thenReload) setTimeout(() => void load(), 1200);
+    },
+    [runInTerminal, onOpenTerminal, load],
+  );
+
+  const stageFile = (path: string) => {
+    runGit(`git add -- ${shellQuote(path)}`);
+  };
+
+  const discardFile = (path: string) => {
+    Alert.alert(
+      t("session.workspace.discardTitle", "Discard changes?"),
+      t(
+        "session.workspace.discardBody",
+        "This runs git restore on {{path}} and cannot be undone from the app.",
+        { path },
+      ),
+      [
+        { text: t("common.cancel", "Cancel"), style: "cancel" },
+        {
+          text: t("session.workspace.discardConfirm", "Discard"),
+          style: "destructive",
+          onPress: () => runGit(`git restore -- ${shellQuote(path)}`),
+        },
+      ],
+    );
+  };
 
   return (
     <View
@@ -218,6 +264,30 @@ export function WorkspaceDiffPanel({ client, sessionID, isDark }: Props) {
                     {item.hunks.length}
                   </Text>
                 </TouchableOpacity>
+                <View style={s.fileActions}>
+                  <TouchableOpacity
+                    style={[s.actionBtn, isDark && s.actionBtnDark]}
+                    onPress={() => stageFile(item.path)}
+                  >
+                    <Ionicons
+                      name="add-circle-outline"
+                      size={14}
+                      color="#22c55e"
+                    />
+                    <Text style={[s.actionText, { color: "#22c55e" }]}>
+                      {t("session.workspace.stage", "Stage")}
+                    </Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity
+                    style={[s.actionBtn, isDark && s.actionBtnDark]}
+                    onPress={() => discardFile(item.path)}
+                  >
+                    <Ionicons name="trash-outline" size={14} color="#ef4444" />
+                    <Text style={[s.actionText, { color: "#ef4444" }]}>
+                      {t("session.workspace.discard", "Discard")}
+                    </Text>
+                  </TouchableOpacity>
+                </View>
                 {open &&
                   (item.hunks.length === 0 ? (
                     <Text style={[s.empty, isDark && s.emptyDark]}>
@@ -286,6 +356,23 @@ const s = StyleSheet.create({
     overflow: "hidden",
   },
   hunkCountDark: { backgroundColor: "#1a1a1a", color: "#888888" },
+  fileActions: {
+    flexDirection: "row",
+    gap: 8,
+    paddingHorizontal: 12,
+    paddingBottom: 6,
+  },
+  actionBtn: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 4,
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 6,
+    backgroundColor: "#f5f5f5",
+  },
+  actionBtnDark: { backgroundColor: "#1a1a1a" },
+  actionText: { fontSize: 12, fontWeight: "600" },
   hunk: { paddingHorizontal: 8, marginBottom: 8 },
   hunkHeader: {
     color: "#888888",

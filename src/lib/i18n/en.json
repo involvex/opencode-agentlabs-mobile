@@ -171,6 +171,7 @@
     "banners": {
       "reconnecting": "Reconnecting… (attempt {{attempt}})",
       "connected": "Connected ✓",
+      "connectedJump": "Connected · Jump to latest",
       "reverting": "Message reverted — resend to confirm",
       "undo": "Undo",
       "offlineCache": "Showing cached messages (offline)",

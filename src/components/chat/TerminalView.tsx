@@ -27,6 +27,7 @@ import {
 } from "../../lib/local-terminal";
 import TerminalWebView, { type TerminalWebViewHandle } from "./TerminalWebView";
 import type { Client } from "../../lib/sdk";
+import type { PtySessionItem } from "../../hooks/use-pty-session";
 
 const SHELL_OPTIONS = ["auto", "bash", "zsh", "fish", "pwsh", "cmd"] as const;
 type ShellOption = (typeof SHELL_OPTIONS)[number];
@@ -39,6 +40,7 @@ interface Props {
   password?: string;
   isDark: boolean;
   onClose: () => void;
+  showClose?: boolean;
 }
 
 type WsState = "connecting" | "connected" | "disconnected" | "error";
@@ -66,6 +68,103 @@ const SPECIAL_KEYS_CTRL = [
   { label: "Ctrl+C", sequence: "\x03" },
   { label: "Ctrl+V", sequence: "\x16" },
 ] as const;
+
+function HeaderCloseButton({
+  showClose,
+  onClose,
+  isDark,
+}: {
+  showClose: boolean;
+  onClose: () => void;
+  isDark: boolean;
+}) {
+  if (!showClose) {
+    return <View style={styles.headerCloseSpacer} />;
+  }
+  return (
+    <TouchableOpacity onPress={onClose} hitSlop={8}>
+      <Ionicons name="close" size={22} color={isDark ? "#888888" : "#666666"} />
+    </TouchableOpacity>
+  );
+}
+
+function TerminalSessionTabs({
+  sessions,
+  activeId,
+  isDark,
+  onSelect,
+  onCloseSession,
+  onCreate,
+}: {
+  sessions: PtySessionItem[];
+  activeId: string | null;
+  isDark: boolean;
+  onSelect: (id: string) => void;
+  onCloseSession: (id: string) => void;
+  onCreate: () => void;
+}) {
+  return (
+    <ScrollView
+      horizontal
+      showsHorizontalScrollIndicator={false}
+      style={[styles.tabStrip, isDark && styles.tabStripDark]}
+      contentContainerStyle={styles.tabStripContent}
+      keyboardShouldPersistTaps="handled"
+    >
+      {sessions.map((session) => {
+        const label = session.title || session.id.slice(0, 6);
+        const active = session.id === activeId;
+        return (
+          <TouchableOpacity
+            key={session.id}
+            onPress={() => onSelect(session.id)}
+            onLongPress={() => onCloseSession(session.id)}
+            style={[
+              styles.tabChip,
+              isDark && styles.tabChipDark,
+              active && styles.tabChipActive,
+              active && isDark && styles.tabChipActiveDark,
+            ]}
+            accessibilityRole="button"
+            accessibilityState={{ selected: active }}
+          >
+            <Text
+              style={[
+                styles.tabChipText,
+                isDark && styles.tabChipTextDark,
+                active && styles.tabChipTextActive,
+              ]}
+              numberOfLines={1}
+            >
+              {label}
+            </Text>
+            <TouchableOpacity
+              onPress={() => onCloseSession(session.id)}
+              hitSlop={6}
+              style={styles.tabChipClose}
+              accessibilityLabel={`Close ${label}`}
+            >
+              <Ionicons
+                name="close"
+                size={14}
+                color={active ? "#16a34a" : isDark ? "#888888" : "#666666"}
+              />
+            </TouchableOpacity>
+          </TouchableOpacity>
+        );
+      })}
+      <TouchableOpacity
+        onPress={onCreate}
+        style={[styles.tabAdd, isDark && styles.tabAddDark]}
+        accessibilityRole="button"
+        accessibilityLabel="New terminal"
+        testID="terminal-tab-add"
+      >
+        <Ionicons name="add" size={20} color={isDark ? "#4ade80" : "#16a34a"} />
+      </TouchableOpacity>
+    </ScrollView>
+  );
+}
 
 function TerminalKeyButton({
   label,
@@ -144,11 +243,16 @@ interface TerminalSocketProps {
   isDark: boolean;
   terminalFontSize: number;
   onClose: () => void;
+  showClose: boolean;
   sessionDirectory: string | undefined;
   onWsError: () => void;
   authorization?: string;
   shell?: string;
   onCycleShell?: () => void;
+  sessions: PtySessionItem[];
+  onSelectSession: (id: string) => void;
+  onCloseSession: (id: string) => void;
+  onCreateSession: () => void;
 }
 
 function TerminalSocket({
@@ -158,11 +262,16 @@ function TerminalSocket({
   isDark,
   terminalFontSize,
   onClose,
+  showClose,
   sessionDirectory,
   onWsError,
   authorization,
   shell,
   onCycleShell,
+  sessions,
+  onSelectSession,
+  onCloseSession,
+  onCreateSession,
 }: TerminalSocketProps) {
   const density = useDensity();
   const { androidBottom: keyboardBottom, height: keyboardHeight } =
@@ -264,13 +373,11 @@ function TerminalSocket({
   return (
     <View style={[styles.container, isDark && styles.containerDark]}>
       <View style={styles.header}>
-        <TouchableOpacity onPress={handleClose} hitSlop={8}>
-          <Ionicons
-            name="close"
-            size={22}
-            color={isDark ? "#888888" : "#666666"}
-          />
-        </TouchableOpacity>
+        <HeaderCloseButton
+          showClose={showClose}
+          onClose={handleClose}
+          isDark={isDark}
+        />
         <Text style={[styles.headerTitle, isDark && styles.headerTitleDark]}>
           Terminal (Server)
         </Text>
@@ -288,6 +395,14 @@ function TerminalSocket({
           <View style={[styles.statusDot, { backgroundColor: statusColor }]} />
         )}
       </View>
+      <TerminalSessionTabs
+        sessions={sessions}
+        activeId={ptyId}
+        isDark={isDark}
+        onSelect={onSelectSession}
+        onCloseSession={onCloseSession}
+        onCreate={onCreateSession}
+      />
 
       {/* Android adjustResize is unreliable — pad by IME height so keybinds
           stay above the soft keyboard. iOS uses KeyboardAvoidingView below. */}
@@ -362,12 +477,14 @@ function LocalTerminalView({
   terminalFontSize,
   sessionDirectory,
   onClose,
+  showClose,
   onSwitchToServer,
 }: {
   isDark: boolean;
   terminalFontSize: number;
   sessionDirectory: string | undefined;
   onClose: () => void;
+  showClose: boolean;
   onSwitchToServer?: () => void;
 }) {
   const density = useDensity();
@@ -435,13 +552,11 @@ function LocalTerminalView({
   return (
     <View style={[styles.container, isDark && styles.containerDark]}>
       <View style={styles.header}>
-        <TouchableOpacity onPress={handleClose} hitSlop={8}>
-          <Ionicons
-            name="close"
-            size={22}
-            color={isDark ? "#888888" : "#666666"}
-          />
-        </TouchableOpacity>
+        <HeaderCloseButton
+          showClose={showClose}
+          onClose={handleClose}
+          isDark={isDark}
+        />
         <Text style={[styles.headerTitle, isDark && styles.headerTitleDark]}>
           Terminal (Local)
         </Text>
@@ -571,6 +686,7 @@ export default function TerminalView({
   password,
   isDark,
   onClose,
+  showClose = true,
 }: Props) {
   const { t } = useTranslation();
   const terminalFontSize = useSettings((s) => s.terminalFontSize);
@@ -580,13 +696,38 @@ export default function TerminalView({
   const localAvailable = isLocalTerminalAvailable();
 
   const {
+    sessions,
     ptyId,
     status: ptyStatus,
     error: ptyError,
     retry: retryPty,
     reset: resetPty,
     ticket,
+    select: selectSession,
+    createNew,
+    closeSession,
   } = usePtySession(sessionClient, sessionDirectory, shell);
+
+  const handleSelectSession = useCallback(
+    (id: string) => {
+      setWsFailed(false);
+      void selectSession(id);
+    },
+    [selectSession],
+  );
+
+  const handleCloseSession = useCallback(
+    (id: string) => {
+      setWsFailed(false);
+      void closeSession(id);
+    },
+    [closeSession],
+  );
+
+  const handleCreateSession = useCallback(() => {
+    setWsFailed(false);
+    void createNew();
+  }, [createNew]);
 
   const cycleShell = useCallback(() => {
     const idx = SHELL_OPTIONS.indexOf(shell);
@@ -644,6 +785,7 @@ export default function TerminalView({
         terminalFontSize={terminalFontSize}
         sessionDirectory={sessionDirectory}
         onClose={onClose}
+        showClose={showClose}
         onSwitchToServer={localAvailable ? switchToServer : undefined}
       />
     );
@@ -653,13 +795,11 @@ export default function TerminalView({
     return (
       <View style={[styles.container, isDark && styles.containerDark]}>
         <View style={styles.header}>
-          <TouchableOpacity onPress={onClose} hitSlop={8}>
-            <Ionicons
-              name="close"
-              size={22}
-              color={isDark ? "#888888" : "#666666"}
-            />
-          </TouchableOpacity>
+          <HeaderCloseButton
+            showClose={showClose}
+            onClose={onClose}
+            isDark={isDark}
+          />
           <Text style={[styles.headerTitle, isDark && styles.headerTitleDark]}>
             {t("session.terminal.title", "Terminal")}
           </Text>
@@ -673,6 +813,14 @@ export default function TerminalView({
             </Text>
           </TouchableOpacity>
         </View>
+        <TerminalSessionTabs
+          sessions={sessions}
+          activeId={ptyId}
+          isDark={isDark}
+          onSelect={handleSelectSession}
+          onCloseSession={handleCloseSession}
+          onCreate={handleCreateSession}
+        />
         <View style={styles.centerContent}>
           <ActivityIndicator color={isDark ? "#22c55e" : "#16a34a"} />
           <Text style={[styles.statusText, isDark && styles.statusTextDark]}>
@@ -687,13 +835,11 @@ export default function TerminalView({
     return (
       <View style={[styles.container, isDark && styles.containerDark]}>
         <View style={styles.header}>
-          <TouchableOpacity onPress={onClose} hitSlop={8}>
-            <Ionicons
-              name="close"
-              size={22}
-              color={isDark ? "#888888" : "#666666"}
-            />
-          </TouchableOpacity>
+          <HeaderCloseButton
+            showClose={showClose}
+            onClose={onClose}
+            isDark={isDark}
+          />
           <Text style={[styles.headerTitle, isDark && styles.headerTitleDark]}>
             {t("session.terminal.title", "Terminal")}
           </Text>
@@ -707,6 +853,14 @@ export default function TerminalView({
             </Text>
           </TouchableOpacity>
         </View>
+        <TerminalSessionTabs
+          sessions={sessions}
+          activeId={ptyId}
+          isDark={isDark}
+          onSelect={handleSelectSession}
+          onCloseSession={handleCloseSession}
+          onCreate={handleCreateSession}
+        />
         <View style={styles.centerContent}>
           <Ionicons
             name="terminal-outline"
@@ -746,11 +900,16 @@ export default function TerminalView({
       isDark={isDark}
       terminalFontSize={terminalFontSize}
       onClose={onClose}
+      showClose={showClose}
       sessionDirectory={sessionDirectory}
       onWsError={handleWsError}
       authorization={authorization ?? undefined}
       shell={shell}
       onCycleShell={cycleShell}
+      sessions={sessions}
+      onSelectSession={handleSelectSession}
+      onCloseSession={handleCloseSession}
+      onCreateSession={handleCreateSession}
     />
   );
 }
@@ -771,6 +930,75 @@ const styles = StyleSheet.create({
     paddingVertical: 12,
     borderBottomWidth: StyleSheet.hairlineWidth,
     borderBottomColor: "#e5e5e5",
+  },
+  headerCloseSpacer: {
+    width: 22,
+    height: 22,
+  },
+  tabStrip: {
+    borderBottomWidth: StyleSheet.hairlineWidth,
+    borderBottomColor: "#e5e5e5",
+    maxHeight: 44,
+  },
+  tabStripDark: {
+    borderBottomColor: "#2a2a2a",
+  },
+  tabStripContent: {
+    flexDirection: "row",
+    alignItems: "center",
+    paddingHorizontal: 8,
+    paddingVertical: 6,
+    gap: 6,
+  },
+  tabChip: {
+    flexDirection: "row",
+    alignItems: "center",
+    maxWidth: 140,
+    paddingLeft: 10,
+    paddingRight: 4,
+    paddingVertical: 6,
+    borderRadius: 8,
+    backgroundColor: "#f0f0f0",
+    borderWidth: 1,
+    borderColor: "transparent",
+  },
+  tabChipDark: {
+    backgroundColor: "#1a1a1a",
+  },
+  tabChipActive: {
+    backgroundColor: "rgba(34, 197, 94, 0.15)",
+    borderColor: "#22c55e",
+  },
+  tabChipActiveDark: {
+    backgroundColor: "rgba(34, 197, 94, 0.22)",
+    borderColor: "#4ade80",
+  },
+  tabChipText: {
+    fontSize: 12,
+    fontWeight: "600",
+    color: "#444444",
+    maxWidth: 96,
+  },
+  tabChipTextDark: {
+    color: "#cccccc",
+  },
+  tabChipTextActive: {
+    color: "#16a34a",
+  },
+  tabChipClose: {
+    marginLeft: 4,
+    padding: 2,
+  },
+  tabAdd: {
+    width: 32,
+    height: 32,
+    borderRadius: 8,
+    alignItems: "center",
+    justifyContent: "center",
+    backgroundColor: "rgba(34, 197, 94, 0.12)",
+  },
+  tabAddDark: {
+    backgroundColor: "rgba(34, 197, 94, 0.2)",
   },
   headerTitle: {
     fontSize: 17,

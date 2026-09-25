@@ -59,6 +59,10 @@ import {
 import { useSlashCommands } from "../../src/stores/slash-commands";
 import { useSlashKeyboard } from "../../src/lib/keyboard-slash";
 import { useKeyboardInset } from "../../src/lib/use-keyboard-inset";
+import {
+  loadWorkspaceMode,
+  saveWorkspaceMode,
+} from "../../src/lib/workspace-mode";
 import type { Part } from "../../src/lib/sdk";
 import { useSessions, type RevertResult } from "../../src/stores/sessions";
 import { useBudget } from "../../src/stores/budget";
@@ -272,6 +276,27 @@ export default function SessionScreen() {
   useEffect(() => {
     loadPrompts();
   }, [loadPrompts]);
+
+  // Restore last workspace mode for this session (Chat/Files/Terminal/Diff).
+  useEffect(() => {
+    if (!id) return;
+    let cancelled = false;
+    void loadWorkspaceMode(id).then((saved) => {
+      if (cancelled || !saved) return;
+      setWorkspaceMode(saved);
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [id]);
+
+  const changeWorkspaceMode = useCallback(
+    (mode: WorkspaceMode) => {
+      setWorkspaceMode(mode);
+      if (id) void saveWorkspaceMode(id, mode);
+    },
+    [id],
+  );
 
   // Permission & question state
   const sessionID = currentSession?.id;
@@ -726,13 +751,13 @@ export default function SessionScreen() {
           setShowSearch(true);
           return;
         case "mode-files":
-          setWorkspaceMode("files");
+          changeWorkspaceMode("files");
           return;
         case "mode-terminal":
-          setWorkspaceMode("terminal");
+          changeWorkspaceMode("terminal");
           return;
         case "mode-diff":
-          setWorkspaceMode("diff");
+          changeWorkspaceMode("diff");
           return;
         case "cycle-theme": {
           const current = useSettings.getState().theme;
@@ -761,14 +786,17 @@ export default function SessionScreen() {
           return;
       }
     },
-    [router],
+    [router, changeWorkspaceMode],
   );
 
-  const attachPathContext = useCallback((path: string) => {
-    setPathContexts((prev) => (prev.includes(path) ? prev : [...prev, path]));
-    setWorkspaceMode("chat");
-    void hapticSelection();
-  }, []);
+  const attachPathContext = useCallback(
+    (path: string) => {
+      setPathContexts((prev) => (prev.includes(path) ? prev : [...prev, path]));
+      changeWorkspaceMode("chat");
+      void hapticSelection();
+    },
+    [changeWorkspaceMode],
+  );
 
   const applyRevertResult = useCallback(
     (result: RevertResult) => {
@@ -1214,11 +1242,14 @@ export default function SessionScreen() {
     const isReconnecting = reconnectAttempts > 0;
     if (prevReconnecting.current && !isReconnecting) {
       setShowConnectedFlash(true);
+      // Jump to latest after a mid-stream reconnect so missed scroll position
+      // doesn't leave the user staring at stale mid-conversation content.
+      scrollToBottom(true);
       const t = setTimeout(() => setShowConnectedFlash(false), 2000);
       return () => clearTimeout(t);
     }
     prevReconnecting.current = isReconnecting;
-  }, [reconnectAttempts]);
+  }, [reconnectAttempts, scrollToBottom]);
 
   const handlePermissionReply = async (
     requestID: string,
@@ -1393,27 +1424,6 @@ export default function SessionScreen() {
           headerRight: () => (
             <View style={s.headerRight}>
               <TouchableOpacity
-                onPress={() => modelSheetRef.current?.expand()}
-                hitSlop={8}
-                testID="model-chip-header"
-              >
-                <View
-                  style={[s.modelChipHeader, isDark && s.modelChipHeaderDark]}
-                >
-                  <Ionicons
-                    name="hardware-chip-outline"
-                    size={14}
-                    color={isDark ? "#888888" : "#666666"}
-                  />
-                  <Text
-                    style={[s.modelLabelHeader, isDark && s.metaDark]}
-                    numberOfLines={1}
-                  >
-                    {modelLabel}
-                  </Text>
-                </View>
-              </TouchableOpacity>
-              <TouchableOpacity
                 onPress={() => setShowPalette(true)}
                 hitSlop={8}
                 testID="command-palette-toggle"
@@ -1434,31 +1444,6 @@ export default function SessionScreen() {
                   color={showInfo ? "#3b82f6" : isDark ? "#888888" : "#666666"}
                 />
               </TouchableOpacity>
-              <TouchableOpacity
-                onPress={() =>
-                  setWorkspaceMode((m) =>
-                    m === "terminal" ? "chat" : "terminal",
-                  )
-                }
-                hitSlop={8}
-                testID="terminal-toggle"
-              >
-                <Ionicons
-                  name={
-                    workspaceMode === "terminal"
-                      ? "terminal"
-                      : "terminal-outline"
-                  }
-                  size={20}
-                  color={
-                    workspaceMode === "terminal"
-                      ? "#22c55e"
-                      : isDark
-                        ? "#888888"
-                        : "#666666"
-                  }
-                />
-              </TouchableOpacity>
             </View>
           ),
         }}
@@ -1473,12 +1458,13 @@ export default function SessionScreen() {
             username={authUsername}
             password={authPassword}
             isDark={isDark}
-            onClose={() => setWorkspaceMode("chat")}
+            showClose={false}
+            onClose={() => changeWorkspaceMode("chat")}
           />
           {!keyboardVisible && (
             <WorkspaceModeStrip
               mode={workspaceMode}
-              onChange={setWorkspaceMode}
+              onChange={changeWorkspaceMode}
               isDark={isDark}
             />
           )}
@@ -1547,9 +1533,18 @@ export default function SessionScreen() {
             </View>
           )}
           {showConnectedFlash && reconnectAttempts === 0 && (
-            <View style={[s.banner, s.bannerConnected]}>
-              <Text style={s.bannerText}>{t("session.banners.connected")}</Text>
-            </View>
+            <TouchableOpacity
+              style={[s.banner, s.bannerConnected]}
+              onPress={() => scrollToBottom(true)}
+              activeOpacity={0.85}
+            >
+              <Text style={s.bannerText}>
+                {t(
+                  "session.banners.connectedJump",
+                  "Connected · Jump to latest",
+                )}
+              </Text>
+            </TouchableOpacity>
           )}
 
           {/* Usage budget alert (§3.9) */}
@@ -1624,6 +1619,7 @@ export default function SessionScreen() {
               client={sessionClient}
               sessionID={currentSession?.id}
               isDark={isDark}
+              onOpenTerminal={() => changeWorkspaceMode("terminal")}
             />
           ) : isLoading ? (
             <View style={s.loading}>
@@ -2083,7 +2079,7 @@ export default function SessionScreen() {
           {!keyboardVisible && (
             <WorkspaceModeStrip
               mode={workspaceMode}
-              onChange={setWorkspaceMode}
+              onChange={changeWorkspaceMode}
               isDark={isDark}
             />
           )}
@@ -2114,7 +2110,7 @@ export default function SessionScreen() {
               animated: true,
             });
           }
-          setWorkspaceMode("chat");
+          changeWorkspaceMode("chat");
         }}
       />
 
@@ -2253,17 +2249,6 @@ const s = StyleSheet.create({
   },
   modelChipDark: { backgroundColor: "#1a1a1a" },
   modelLabel: { fontSize: 12, color: "#666666", maxWidth: 160 },
-  modelChipHeader: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 2,
-    backgroundColor: "#f5f5f5",
-    borderRadius: 8,
-    paddingHorizontal: 6,
-    paddingVertical: 2,
-  },
-  modelChipHeaderDark: { backgroundColor: "#1a1a1a" },
-  modelLabelHeader: { fontSize: 10, color: "#666666", maxWidth: 80 },
 
   // Variant (reasoning effort) chip
   variantChip: {

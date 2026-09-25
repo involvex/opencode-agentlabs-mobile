@@ -2,6 +2,9 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import {
   ActivityIndicator,
   FlatList,
+  Modal,
+  RefreshControl,
+  ScrollView,
   StyleSheet,
   Text,
   TouchableOpacity,
@@ -19,6 +22,13 @@ interface Props {
   isDark: boolean;
   compact?: boolean;
   onAttachPath: (path: string) => void;
+}
+
+const TEXT_EXT =
+  /\.(tsx?|jsx?|json|md|mdx|txt|ya?ml|toml|xml|html?|css|scss|less|rs|go|py|java|kt|swift|c|cpp|h|hpp|sh|bash|zsh|ps1|sql|graphql|env|gitignore|dockerfile|makefile|csv|log)$/i;
+
+function isTextFile(name: string): boolean {
+  return TEXT_EXT.test(name) || !name.includes(".");
 }
 
 function statusColor(status?: string): string {
@@ -53,7 +63,13 @@ export function FileBrowserPanel({
   const [entries, setEntries] = useState<FileEntry[]>([]);
   const [statusMap, setStatusMap] = useState<Record<string, string>>({});
   const [loading, setLoading] = useState(false);
+  const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [preview, setPreview] = useState<{
+    path: string;
+    content: string;
+  } | null>(null);
+  const [previewLoading, setPreviewLoading] = useState(false);
   const token = useRef(0);
 
   const loadStatus = useCallback(async () => {
@@ -71,14 +87,15 @@ export function FileBrowserPanel({
   }, [client]);
 
   const load = useCallback(
-    (dir: string) => {
+    (dir: string, opts?: { refresh?: boolean }) => {
       if (!client) {
         setEntries([]);
         setError(t("session.workspace.noConnection", "No active connection"));
         return;
       }
       const id = ++token.current;
-      setLoading(true);
+      if (opts?.refresh) setRefreshing(true);
+      else setLoading(true);
       setError(null);
       client.file
         .list({ path: dir })
@@ -100,7 +117,9 @@ export function FileBrowserPanel({
           );
         })
         .finally(() => {
-          if (token.current === id) setLoading(false);
+          if (token.current !== id) return;
+          setLoading(false);
+          setRefreshing(false);
         });
     },
     [client, t],
@@ -122,10 +141,41 @@ export function FileBrowserPanel({
     load(parent);
   };
 
+  const openPreview = async (filePath: string) => {
+    if (!client?.file?.read) {
+      onAttachPath(filePath);
+      return;
+    }
+    setPreviewLoading(true);
+    setPreview({ path: filePath, content: "" });
+    try {
+      const result = await client.file.read({ path: filePath });
+      const content =
+        typeof result?.content === "string"
+          ? result.content
+          : t("session.workspace.previewEmpty", "(empty file)");
+      setPreview({ path: filePath, content });
+    } catch (err) {
+      setPreview({
+        path: filePath,
+        content:
+          err instanceof Error
+            ? err.message
+            : t("session.workspace.previewFailed", "Failed to read file"),
+      });
+    } finally {
+      setPreviewLoading(false);
+    }
+  };
+
   const openEntry = (entry: FileEntry) => {
     if (entry.type === "directory") {
       setPath(entry.path);
       load(entry.path);
+      return;
+    }
+    if (isTextFile(entry.name || entry.path)) {
+      void openPreview(entry.path);
       return;
     }
     onAttachPath(entry.path);
@@ -169,7 +219,7 @@ export function FileBrowserPanel({
         </Text>
         <TouchableOpacity
           onPress={() => {
-            load(path);
+            load(path, { refresh: true });
             void loadStatus();
           }}
           hitSlop={8}
@@ -182,7 +232,7 @@ export function FileBrowserPanel({
         </TouchableOpacity>
       </View>
 
-      {loading ? (
+      {loading && !refreshing ? (
         <ActivityIndicator style={s.loader} color={isDark ? "#888" : "#666"} />
       ) : error ? (
         <Text style={[s.error, isDark && s.errorDark]}>{error}</Text>
@@ -190,6 +240,16 @@ export function FileBrowserPanel({
         <FlatList
           data={entries}
           keyExtractor={(item) => item.path}
+          refreshControl={
+            <RefreshControl
+              refreshing={refreshing}
+              onRefresh={() => {
+                load(path, { refresh: true });
+                void loadStatus();
+              }}
+              tintColor={isDark ? "#888" : "#666"}
+            />
+          }
           ListEmptyComponent={
             <Text style={[s.empty, isDark && s.emptyDark]}>
               {t("session.workspace.emptyDir", "No files here")}
@@ -235,10 +295,66 @@ export function FileBrowserPanel({
         <Text style={[s.hint, isDark && s.hintDark]}>
           {t(
             "session.workspace.attachHint",
-            "Long-press a file to attach as context",
+            "Tap to preview · Long-press to attach as context",
           )}
         </Text>
       )}
+
+      <Modal
+        visible={!!preview}
+        animationType="slide"
+        onRequestClose={() => setPreview(null)}
+      >
+        <View style={[s.preview, isDark && s.previewDark]}>
+          <View style={[s.previewHeader, isDark && s.previewHeaderDark]}>
+            <TouchableOpacity onPress={() => setPreview(null)} hitSlop={8}>
+              <Ionicons
+                name="close"
+                size={22}
+                color={isDark ? "#888" : "#666"}
+              />
+            </TouchableOpacity>
+            <Text
+              style={[s.previewTitle, isDark && s.previewTitleDark]}
+              numberOfLines={1}
+            >
+              {preview ? nameOf(preview.path) || preview.path : ""}
+            </Text>
+            <TouchableOpacity
+              onPress={() => {
+                if (preview) onAttachPath(preview.path);
+                setPreview(null);
+              }}
+              hitSlop={8}
+            >
+              <Ionicons
+                name="attach-outline"
+                size={22}
+                color={isDark ? "#a78bfa" : "#8b5cf6"}
+              />
+            </TouchableOpacity>
+          </View>
+          {previewLoading ? (
+            <ActivityIndicator
+              style={s.loader}
+              color={isDark ? "#888" : "#666"}
+            />
+          ) : (
+            <ScrollView contentContainerStyle={s.previewBody}>
+              <Text
+                style={[
+                  s.previewText,
+                  isDark && s.previewTextDark,
+                  { ...ds({ fontSize: 12 }, density) },
+                ]}
+                selectable
+              >
+                {preview?.content || ""}
+              </Text>
+            </ScrollView>
+          )}
+        </View>
+      </Modal>
     </View>
   );
 }
@@ -278,13 +394,13 @@ const s = StyleSheet.create({
     borderBottomWidth: StyleSheet.hairlineWidth,
     borderBottomColor: "#f0f0f0",
   },
-  rowDark: { borderBottomColor: "#141414" },
+  rowDark: { borderBottomColor: "#1a1a1a" },
   name: { flex: 1, color: "#1a1a1a" },
   nameDark: { color: "#e5e5e5" },
   badge: {
     minWidth: 18,
     height: 18,
-    borderRadius: 9,
+    borderRadius: 4,
     alignItems: "center",
     justifyContent: "center",
     paddingHorizontal: 4,
@@ -295,8 +411,32 @@ const s = StyleSheet.create({
     color: "#999999",
     paddingHorizontal: 12,
     paddingVertical: 8,
-    borderTopWidth: StyleSheet.hairlineWidth,
-    borderTopColor: "#e5e5e5",
   },
-  hintDark: { color: "#666666", borderTopColor: "#1a1a1a" },
+  hintDark: { color: "#666666" },
+  preview: { flex: 1, backgroundColor: "#ffffff", paddingTop: 48 },
+  previewDark: { backgroundColor: "#0a0a0a" },
+  previewHeader: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 12,
+    paddingHorizontal: 16,
+    paddingBottom: 12,
+    borderBottomWidth: StyleSheet.hairlineWidth,
+    borderBottomColor: "#e5e5e5",
+  },
+  previewHeaderDark: { borderBottomColor: "#1a1a1a" },
+  previewTitle: {
+    flex: 1,
+    fontSize: 15,
+    fontWeight: "600",
+    color: "#1a1a1a",
+  },
+  previewTitleDark: { color: "#ffffff" },
+  previewBody: { padding: 16 },
+  previewText: {
+    color: "#1a1a1a",
+    fontFamily: "monospace",
+    lineHeight: 18,
+  },
+  previewTextDark: { color: "#e5e5e5" },
 });

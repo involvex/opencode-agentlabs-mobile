@@ -2,6 +2,7 @@ import { View, Text, TouchableOpacity, StyleSheet } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { useTranslation } from "react-i18next";
 import { useDensity, ds } from "../../lib/density";
+import { hapticSelection } from "../../lib/haptics";
 
 export type WorkspaceMode = "chat" | "files" | "terminal" | "diff";
 
@@ -69,7 +70,11 @@ export function WorkspaceModeStrip({ mode, onChange, isDark }: Props) {
           <TouchableOpacity
             key={item.id}
             style={[s.tab, active && (isDark ? s.tabActiveDark : s.tabActive)]}
-            onPress={() => onChange(item.id)}
+            onPress={() => {
+              if (item.id === mode) return;
+              void hapticSelection();
+              onChange(item.id);
+            }}
             testID={`workspace-mode-${item.id}`}
             accessibilityRole="button"
             accessibilityState={{ selected: active }}

@@ -171,6 +171,7 @@
     "banners": {
       "reconnecting": "正在重新连接…（第 {{attempt}} 次尝试）",
       "connected": "已连接 ✓",
+      "connectedJump": "已连接 · 跳到最新",
       "reverting": "消息已撤回 — 重新发送以确认",
       "undo": "撤销",
       "offlineCache": "显示缓存消息（离线）",
