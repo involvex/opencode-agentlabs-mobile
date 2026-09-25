@@ -454,6 +454,9 @@
       "open-session": "打开会话",
       "retry": "重试",
       "dismiss": "取消",
+      "allow": "允许",
+      "always": "始终允许",
+      "reject": "拒绝",
       "openSessionLabel": "打开会话操作",
       "retryLabel": "重试操作",
       "dismissLabel": "取消操作"

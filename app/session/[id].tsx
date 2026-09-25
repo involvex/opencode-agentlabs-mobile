@@ -10,6 +10,7 @@ import {
   Platform,
   ActivityIndicator,
   Alert,
+  useWindowDimensions,
 } from "react-native";
 import {
   useLocalSearchParams,
@@ -37,6 +38,16 @@ import {
   DirectoryBrowserSheet,
   PromptLibrarySheet,
   SlashHelpSheet,
+  WorkspaceModeStrip,
+  FileBrowserPanel,
+  PathContextChips,
+  WorkspaceDiffPanel,
+  CommandPalette,
+  MessageSearchBar,
+  OfflineQueueBanner,
+  PromptPresetBar,
+  type WorkspaceMode,
+  type PaletteAction,
   type Attachment,
 } from "../../src/components/chat";
 import { SlashPopover } from "../../src/components/chat/SlashPopover";
@@ -47,6 +58,7 @@ import {
 } from "../../src/lib/slash-commands";
 import { useSlashCommands } from "../../src/stores/slash-commands";
 import { useSlashKeyboard } from "../../src/lib/keyboard-slash";
+import { useKeyboardInset } from "../../src/lib/use-keyboard-inset";
 import type { Part } from "../../src/lib/sdk";
 import { useSessions, type RevertResult } from "../../src/stores/sessions";
 import { useBudget } from "../../src/stores/budget";
@@ -58,6 +70,7 @@ import { useAuth } from "../../src/stores/auth";
 import { useCatalog } from "../../src/stores/catalog";
 import { usePrompts } from "../../src/stores/prompts";
 import type { PromptSnippet } from "../../src/stores/prompts";
+import { useOfflineQueue } from "../../src/stores/offline-queue";
 import { useTheme } from "../../src/lib/theme";
 import { useSettings } from "../../src/stores/settings";
 import { useDensity, ds } from "../../src/lib/density";
@@ -138,8 +151,18 @@ export default function SessionScreen() {
   const [browseStartDir] = useState<string | null>(null);
   const [input, setInput] = useState(templatePrompt || "");
   const [attachments, setAttachments] = useState<Attachment[]>([]);
+  const [pathContexts, setPathContexts] = useState<string[]>([]);
   const [showInfo, setShowInfo] = useState(false);
-  const [showTerminal, setShowTerminal] = useState(false);
+  const [workspaceMode, setWorkspaceMode] = useState<WorkspaceMode>("chat");
+  const { visible: keyboardVisible, androidBottom: keyboardBottom } =
+    useKeyboardInset();
+  const [showPalette, setShowPalette] = useState(false);
+  const [showSearch, setShowSearch] = useState(false);
+  const { width: windowWidth, height: windowHeight } = useWindowDimensions();
+  const landscapeSplit =
+    workspaceMode === "chat" &&
+    windowWidth >= 600 &&
+    windowWidth > windowHeight;
   const [replyTo, setReplyTo] = useState<{
     messageID: string;
     text: string;
@@ -160,7 +183,24 @@ export default function SessionScreen() {
     abortSession,
     loadOlderMessages,
     unrevertSession,
+    sessions,
   } = useSessions();
+
+  const offlineQueue = useOfflineQueue((s) => s.queue);
+  const enqueueOffline = useOfflineQueue((s) => s.enqueue);
+  const dequeueOffline = useOfflineQueue((s) => s.dequeue);
+  const loadOfflineQueue = useOfflineQueue((s) => s.load);
+  const sessionQueueCount = useMemo(
+    () =>
+      currentSession
+        ? offlineQueue.filter((q) => q.sessionID === currentSession.id).length
+        : 0,
+    [offlineQueue, currentSession],
+  );
+
+  useEffect(() => {
+    void loadOfflineQueue();
+  }, [loadOfflineQueue]);
 
   // Derive sending state for this specific session
   const isSending = useSessions(
@@ -358,7 +398,8 @@ export default function SessionScreen() {
   );
 
   const handleSend = useCallback(async () => {
-    if (!input.trim() && attachments.length === 0) return;
+    if (!input.trim() && attachments.length === 0 && pathContexts.length === 0)
+      return;
     void hapticMedium();
     const authenticated = await authenticateForMessage();
     if (!authenticated) {
@@ -371,8 +412,16 @@ export default function SessionScreen() {
 
     let text = input.trim();
     const files = [...attachments];
+    const contexts = [...pathContexts];
     setInput("");
     setAttachments([]);
+    setPathContexts([]);
+
+    if (contexts.length > 0) {
+      const listed = contexts.map((p) => `- ${p}`).join("\n");
+      const prefix = `Context files:\n${listed}\n\n`;
+      text = text ? prefix + text : prefix.trim();
+    }
 
     if (replyTo) {
       const quoted = replyTo.text.trim();
@@ -398,6 +447,17 @@ export default function SessionScreen() {
       }
     }
 
+    // Queue offline when SSE is reconnecting and there's no usable client.
+    if ((!sessionClient || reconnectAttempts > 0) && currentSession) {
+      await enqueueOffline({
+        sessionID: currentSession.id,
+        text,
+        pathContexts: contexts,
+      });
+      void hapticLight();
+      return;
+    }
+
     try {
       await sendMessage(
         text,
@@ -413,8 +473,16 @@ export default function SessionScreen() {
     } catch (err) {
       console.error("Send failed:", err);
       void hapticError();
+      if (currentSession) {
+        await enqueueOffline({
+          sessionID: currentSession.id,
+          text,
+          pathContexts: contexts,
+        });
+      }
       setInput((prev) => (prev ? prev : text));
       setAttachments((prev) => (prev.length ? prev : files));
+      setPathContexts((prev) => (prev.length ? prev : contexts));
       Alert.alert(
         t("session.alerts.sendFailedTitle"),
         t("session.alerts.sendFailedMessage"),
@@ -423,6 +491,7 @@ export default function SessionScreen() {
   }, [
     input,
     attachments,
+    pathContexts,
     replyTo,
     authenticateForMessage,
     t,
@@ -433,6 +502,8 @@ export default function SessionScreen() {
     model,
     variant,
     sendMessage,
+    enqueueOffline,
+    reconnectAttempts,
   ]);
 
   // Slash command handler
@@ -566,6 +637,8 @@ export default function SessionScreen() {
         browserSheetRef.current?.close();
         promptSheetRef.current?.close();
         helpSheetRef.current?.close();
+        setShowPalette(false);
+        setShowSearch(false);
       },
     },
     {
@@ -579,7 +652,14 @@ export default function SessionScreen() {
       key: "k",
       ctrl: true,
       action: () => {
-        modelSheetRef.current?.expand();
+        setShowPalette(true);
+      },
+    },
+    {
+      key: "f",
+      ctrl: true,
+      action: () => {
+        setShowSearch(true);
       },
     },
     {
@@ -593,6 +673,102 @@ export default function SessionScreen() {
       },
     },
   ]);
+
+  const flushOfflineQueue = useCallback(async () => {
+    if (!currentSession || !sessionClient) return;
+    const pending = useOfflineQueue
+      .getState()
+      .queue.filter((q) => q.sessionID === currentSession.id);
+    for (const item of pending) {
+      try {
+        let text = item.text;
+        if (item.pathContexts.length) {
+          const listed = item.pathContexts.map((p) => `- ${p}`).join("\n");
+          text = `Context files:\n${listed}\n\n${text}`.trim();
+        }
+        await sendMessage(text, model || undefined, agent || undefined);
+        await dequeueOffline(item.id);
+      } catch {
+        break;
+      }
+    }
+  }, [
+    currentSession,
+    sessionClient,
+    sendMessage,
+    model,
+    agent,
+    dequeueOffline,
+  ]);
+
+  useEffect(() => {
+    if (reconnectAttempts === 0 && sessionClient && sessionQueueCount > 0) {
+      void flushOfflineQueue();
+    }
+  }, [reconnectAttempts, sessionClient, sessionQueueCount, flushOfflineQueue]);
+
+  const handlePaletteSelect = useCallback(
+    (action: PaletteAction) => {
+      if (action.type === "session") {
+        router.push(`/session/${action.session.id}`);
+        return;
+      }
+      switch (action.id) {
+        case "new-session":
+          void useSessions
+            .getState()
+            .createSession()
+            .then((session) => {
+              if (session?.id) router.push(`/session/${session.id}`);
+            });
+          return;
+        case "search-messages":
+          setShowSearch(true);
+          return;
+        case "mode-files":
+          setWorkspaceMode("files");
+          return;
+        case "mode-terminal":
+          setWorkspaceMode("terminal");
+          return;
+        case "mode-diff":
+          setWorkspaceMode("diff");
+          return;
+        case "cycle-theme": {
+          const current = useSettings.getState().theme;
+          const next =
+            current === "light"
+              ? "dark"
+              : current === "dark"
+                ? "auto"
+                : "light";
+          void useSettings.getState().setTheme(next);
+          return;
+        }
+        case "cycle-density": {
+          const current = useSettings.getState().density;
+          const next =
+            current === "compact"
+              ? "default"
+              : current === "default"
+                ? "comfortable"
+                : "compact";
+          void useSettings.getState().setDensity(next);
+          return;
+        }
+        case "settings":
+          router.push("/(tabs)/settings");
+          return;
+      }
+    },
+    [router],
+  );
+
+  const attachPathContext = useCallback((path: string) => {
+    setPathContexts((prev) => (prev.includes(path) ? prev : [...prev, path]));
+    setWorkspaceMode("chat");
+    void hapticSelection();
+  }, []);
 
   const applyRevertResult = useCallback(
     (result: RevertResult) => {
@@ -1238,6 +1414,17 @@ export default function SessionScreen() {
                 </View>
               </TouchableOpacity>
               <TouchableOpacity
+                onPress={() => setShowPalette(true)}
+                hitSlop={8}
+                testID="command-palette-toggle"
+              >
+                <Ionicons
+                  name="search-outline"
+                  size={20}
+                  color={isDark ? "#888888" : "#666666"}
+                />
+              </TouchableOpacity>
+              <TouchableOpacity
                 onPress={() => setShowInfo((v) => !v)}
                 hitSlop={8}
               >
@@ -1248,15 +1435,27 @@ export default function SessionScreen() {
                 />
               </TouchableOpacity>
               <TouchableOpacity
-                onPress={() => setShowTerminal((v) => !v)}
+                onPress={() =>
+                  setWorkspaceMode((m) =>
+                    m === "terminal" ? "chat" : "terminal",
+                  )
+                }
                 hitSlop={8}
                 testID="terminal-toggle"
               >
                 <Ionicons
-                  name={showTerminal ? "terminal" : "terminal-outline"}
+                  name={
+                    workspaceMode === "terminal"
+                      ? "terminal"
+                      : "terminal-outline"
+                  }
                   size={20}
                   color={
-                    showTerminal ? "#22c55e" : isDark ? "#888888" : "#666666"
+                    workspaceMode === "terminal"
+                      ? "#22c55e"
+                      : isDark
+                        ? "#888888"
+                        : "#666666"
                   }
                 />
               </TouchableOpacity>
@@ -1265,21 +1464,34 @@ export default function SessionScreen() {
         }}
       />
 
-      {showTerminal && sessionClient ? (
-        <TerminalView
-          sessionDirectory={sessionDirectory}
-          sessionClient={sessionClient}
-          baseUrl={baseUrl}
-          username={authUsername}
-          password={authPassword}
-          isDark={isDark}
-          onClose={() => setShowTerminal(false)}
-        />
+      {workspaceMode === "terminal" && sessionClient ? (
+        <View style={{ flex: 1 }}>
+          <TerminalView
+            sessionDirectory={sessionDirectory}
+            sessionClient={sessionClient}
+            baseUrl={baseUrl}
+            username={authUsername}
+            password={authPassword}
+            isDark={isDark}
+            onClose={() => setWorkspaceMode("chat")}
+          />
+          {!keyboardVisible && (
+            <WorkspaceModeStrip
+              mode={workspaceMode}
+              onChange={setWorkspaceMode}
+              isDark={isDark}
+            />
+          )}
+        </View>
       ) : (
         <KeyboardAvoidingView
-          style={[s.container, isDark && s.containerDark]}
-          behavior="padding"
-          keyboardVerticalOffset={Platform.OS === "ios" ? 90 : 100}
+          style={[
+            s.container,
+            isDark && s.containerDark,
+            keyboardBottom > 0 ? { paddingBottom: keyboardBottom } : null,
+          ]}
+          behavior={Platform.OS === "ios" ? "padding" : undefined}
+          keyboardVerticalOffset={Platform.OS === "ios" ? 90 : 0}
         >
           {/* Session info pulldown */}
           <SessionInfo
@@ -1386,7 +1598,34 @@ export default function SessionScreen() {
             </View>
           )}
 
-          {isLoading ? (
+          <OfflineQueueBanner
+            count={sessionQueueCount}
+            isDark={isDark}
+            onFlush={() => void flushOfflineQueue()}
+            onClear={() => {
+              if (!currentSession) return;
+              const ids = useOfflineQueue
+                .getState()
+                .queue.filter((q) => q.sessionID === currentSession.id)
+                .map((q) => q.id);
+              void Promise.all(ids.map((id) => dequeueOffline(id)));
+            }}
+          />
+
+          {workspaceMode === "files" ? (
+            <FileBrowserPanel
+              client={sessionClient}
+              rootDirectory={sessionDirectory}
+              isDark={isDark}
+              onAttachPath={attachPathContext}
+            />
+          ) : workspaceMode === "diff" ? (
+            <WorkspaceDiffPanel
+              client={sessionClient}
+              sessionID={currentSession?.id}
+              isDark={isDark}
+            />
+          ) : isLoading ? (
             <View style={s.loading}>
               <ActivityIndicator
                 size="large"
@@ -1394,202 +1633,189 @@ export default function SessionScreen() {
               />
             </View>
           ) : (
-            <View style={s.listWrap}>
-              <FlatList
-                ref={flatListRef}
-                data={messageData}
-                inverted
-                keyExtractor={(item) => item.message.id}
-                renderItem={({ item }) => {
-                  return (
-                    <MessageBubble
-                      message={item.message}
-                      parts={item.parts}
-                      isDark={isDark}
-                      onLongPress={handleMessageLongPress}
-                      onReply={(messageID, role, text) =>
-                        setReplyTo({ messageID, text, role })
-                      }
-                      onImageAction={handleImageAction}
-                    />
-                  );
-                }}
-                contentContainerStyle={s.messageList}
-                onScroll={handleScroll}
-                scrollEventThrottle={100}
-                onEndReached={handleLoadMore}
-                onEndReachedThreshold={0.5}
-                // Prevent jump when older messages are prepended
-                maintainVisibleContentPosition={{ minIndexForVisible: 0 }}
-                ListFooterComponent={
-                  loadingMore ? (
-                    <View style={s.loadingMore}>
-                      <ActivityIndicator
-                        size="small"
-                        color={isDark ? "#888888" : "#666666"}
+            <View style={[s.listWrap, landscapeSplit && s.splitRow]}>
+              {landscapeSplit ? (
+                <FileBrowserPanel
+                  client={sessionClient}
+                  rootDirectory={sessionDirectory}
+                  isDark={isDark}
+                  compact
+                  onAttachPath={attachPathContext}
+                />
+              ) : null}
+              <View style={s.listWrap}>
+                <FlatList
+                  ref={flatListRef}
+                  data={messageData}
+                  inverted
+                  keyExtractor={(item) => item.message.id}
+                  renderItem={({ item }) => {
+                    return (
+                      <MessageBubble
+                        message={item.message}
+                        parts={item.parts}
+                        isDark={isDark}
+                        onLongPress={handleMessageLongPress}
+                        onReply={(messageID, role, text) =>
+                          setReplyTo({ messageID, text, role })
+                        }
+                        onImageAction={handleImageAction}
                       />
-                      <Text style={[s.loadingMoreText, isDark && s.metaDark]}>
-                        {t("session.loadingOlder")}
-                      </Text>
-                    </View>
-                  ) : null
-                }
-              />
-              {/* Empty state rendered OUTSIDE the inverted list to avoid the
+                    );
+                  }}
+                  contentContainerStyle={s.messageList}
+                  onScroll={handleScroll}
+                  scrollEventThrottle={100}
+                  onEndReached={handleLoadMore}
+                  onEndReachedThreshold={0.5}
+                  // Prevent jump when older messages are prepended
+                  maintainVisibleContentPosition={{ minIndexForVisible: 0 }}
+                  ListFooterComponent={
+                    loadingMore ? (
+                      <View style={s.loadingMore}>
+                        <ActivityIndicator
+                          size="small"
+                          color={isDark ? "#888888" : "#666666"}
+                        />
+                        <Text style={[s.loadingMoreText, isDark && s.metaDark]}>
+                          {t("session.loadingOlder")}
+                        </Text>
+                      </View>
+                    ) : null
+                  }
+                />
+                {/* Empty state rendered OUTSIDE the inverted list to avoid the
                 inverted transform mirroring its text/icon (see #ui-mirror). */}
-              {messageData.length === 0 && (
-                <View style={s.emptyOverlay} pointerEvents="none">
-                  <Ionicons
-                    name="chatbubble-outline"
-                    size={48}
-                    color={isDark ? "#444444" : "#cccccc"}
-                  />
-                  <Text style={[s.emptyText, isDark && s.metaDark]}>
-                    {t("session.empty.title")}
-                  </Text>
-                  <Text style={[s.emptyHint, isDark && s.metaDark]}>
-                    {t("session.empty.hint")}
-                  </Text>
-                </View>
-              )}
-              {showScrollButton && (
-                <TouchableOpacity
-                  style={[s.scrollBtn, isDark && s.scrollBtnDark]}
-                  onPress={() => scrollToBottom(true)}
-                >
-                  <Ionicons
-                    name="chevron-down"
-                    size={24}
-                    color={isDark ? "#ffffff" : "#0a0a0a"}
-                  />
-                </TouchableOpacity>
-              )}
+                {messageData.length === 0 && (
+                  <View style={s.emptyOverlay} pointerEvents="none">
+                    <Ionicons
+                      name="chatbubble-outline"
+                      size={48}
+                      color={isDark ? "#444444" : "#cccccc"}
+                    />
+                    <Text style={[s.emptyText, isDark && s.metaDark]}>
+                      {t("session.empty.title")}
+                    </Text>
+                    <Text style={[s.emptyHint, isDark && s.metaDark]}>
+                      {t("session.empty.hint")}
+                    </Text>
+                  </View>
+                )}
+                {showScrollButton && (
+                  <TouchableOpacity
+                    style={[s.scrollBtn, isDark && s.scrollBtnDark]}
+                    onPress={() => scrollToBottom(true)}
+                  >
+                    <Ionicons
+                      name="chevron-down"
+                      size={24}
+                      color={isDark ? "#ffffff" : "#0a0a0a"}
+                    />
+                  </TouchableOpacity>
+                )}
+              </View>
             </View>
           )}
 
-          {/* Status */}
-          {currentSession && (
-            <StatusIndicator sessionID={currentSession.id} isDark={isDark} />
-          )}
+          {workspaceMode === "chat" ? (
+            <View style={s.composerChrome}>
+              {/* Status */}
+              {currentSession && (
+                <StatusIndicator
+                  sessionID={currentSession.id}
+                  isDark={isDark}
+                />
+              )}
 
-          {/* Permissions */}
-          {permissions.map((perm) => (
-            <PermissionPrompt
-              key={perm.id}
-              permission={perm}
-              isDark={isDark}
-              onReply={(reply) => handlePermissionReply(perm.id, reply)}
-            />
-          ))}
+              {/* Permissions */}
+              {permissions.map((perm) => (
+                <PermissionPrompt
+                  key={perm.id}
+                  permission={perm}
+                  isDark={isDark}
+                  onReply={(reply) => handlePermissionReply(perm.id, reply)}
+                />
+              ))}
 
-          {/* Questions */}
-          {questions.map((q) => (
-            <QuestionPrompt
-              key={q.id}
-              request={q}
-              isDark={isDark}
-              onReply={(answers) => handleQuestionReply(q.id, answers)}
-              onReject={() => handleQuestionReject(q.id)}
-            />
-          ))}
+              {/* Questions */}
+              {questions.map((q) => (
+                <QuestionPrompt
+                  key={q.id}
+                  request={q}
+                  isDark={isDark}
+                  onReply={(answers) => handleQuestionReply(q.id, answers)}
+                  onReject={() => handleQuestionReject(q.id)}
+                />
+              ))}
 
-          {/* Slash popover */}
-          {slashActive && (
-            <SlashPopover
-              query={slashQuery}
-              commands={filteredCommands}
-              isDark={isDark}
-              onSelect={handleSlashSelect}
-              onDismiss={() => setInput("")}
-            />
-          )}
+              {/* Slash popover */}
+              {slashActive && (
+                <SlashPopover
+                  query={slashQuery}
+                  commands={filteredCommands}
+                  isDark={isDark}
+                  onSelect={handleSlashSelect}
+                  onDismiss={() => setInput("")}
+                />
+              )}
 
-          {/* Slash help sheet */}
-          <SlashHelpSheet
-            isDark={isDark}
-            sheetRef={helpSheetRef}
-            customCommands={filteredCommands.filter((c) => c.type === "custom")}
-          />
+              {/* Slash help sheet */}
+              <SlashHelpSheet
+                isDark={isDark}
+                sheetRef={helpSheetRef}
+                customCommands={filteredCommands.filter(
+                  (c) => c.type === "custom",
+                )}
+              />
 
-          {/* Agent/model toolbar */}
-          <View
-            style={[
-              s.toolbar,
-              isDark && s.toolbarDark,
-              {
-                ...ds(
-                  { gap: 8, paddingHorizontal: 12, paddingVertical: 6 },
-                  density,
-                ),
-              },
-            ]}
-          >
-            <TouchableOpacity
-              style={[
-                s.agentChip,
-                {
-                  borderColor: agentColor,
-                  ...ds({ paddingHorizontal: 10, paddingVertical: 4 }, density),
-                },
-              ]}
-              onPress={() => handleCycleAgent(1)}
-              onLongPress={() => handleCycleAgent(-1)}
-            >
-              <View style={[s.agentDot, { backgroundColor: agentColor }]} />
-              <Text
+              {/* Agent/model toolbar */}
+              <View
                 style={[
-                  s.agentLabel,
-                  isDark && s.textWhite,
-                  { ...ds({ fontSize: 12 }, density) },
+                  s.toolbar,
+                  isDark && s.toolbarDark,
+                  {
+                    ...ds(
+                      { gap: 8, paddingHorizontal: 12, paddingVertical: 6 },
+                      density,
+                    ),
+                  },
                 ]}
               >
-                {agent || "build"}
-              </Text>
-              <Ionicons
-                name="swap-horizontal-outline"
-                size={12}
-                color={isDark ? "#888888" : "#666666"}
-              />
-            </TouchableOpacity>
-
-            <TouchableOpacity
-              style={[
-                s.modelChip,
-                isDark && s.modelChipDark,
-                {
-                  ...ds(
-                    { gap: 4, paddingHorizontal: 10, paddingVertical: 4 },
-                    density,
-                  ),
-                },
-              ]}
-              onPress={() => modelSheetRef.current?.expand()}
-              testID="model-chip"
-            >
-              <Ionicons
-                name="hardware-chip-outline"
-                size={14}
-                color={isDark ? "#888888" : "#666666"}
-              />
-              <Text
-                style={[
-                  s.modelLabel,
-                  isDark && s.metaDark,
-                  { ...ds({ fontSize: 12 }, density) },
-                ]}
-                numberOfLines={1}
-              >
-                {modelLabel}
-              </Text>
-            </TouchableOpacity>
-
-            {currentModelVariants &&
-              Object.keys(currentModelVariants).length > 0 && (
                 <TouchableOpacity
                   style={[
-                    s.variantChip,
-                    isDark && s.variantChipDark,
-                    variant && s.variantChipActive,
+                    s.agentChip,
+                    {
+                      borderColor: agentColor,
+                      ...ds(
+                        { paddingHorizontal: 10, paddingVertical: 4 },
+                        density,
+                      ),
+                    },
+                  ]}
+                  onPress={() => handleCycleAgent(1)}
+                  onLongPress={() => handleCycleAgent(-1)}
+                >
+                  <View style={[s.agentDot, { backgroundColor: agentColor }]} />
+                  <Text
+                    style={[
+                      s.agentLabel,
+                      isDark && s.textWhite,
+                      { ...ds({ fontSize: 12 }, density) },
+                    ]}
+                  >
+                    {agent || "build"}
+                  </Text>
+                  <Ionicons
+                    name="swap-horizontal-outline"
+                    size={12}
+                    color={isDark ? "#888888" : "#666666"}
+                  />
+                </TouchableOpacity>
+
+                <TouchableOpacity
+                  style={[
+                    s.modelChip,
+                    isDark && s.modelChipDark,
                     {
                       ...ds(
                         { gap: 4, paddingHorizontal: 10, paddingVertical: 4 },
@@ -1597,197 +1823,300 @@ export default function SessionScreen() {
                       ),
                     },
                   ]}
-                  onPress={() => variantSheetRef.current?.expand()}
-                  testID="variant-chip"
+                  onPress={() => modelSheetRef.current?.expand()}
+                  testID="model-chip"
                 >
                   <Ionicons
-                    name="flash-outline"
+                    name="hardware-chip-outline"
                     size={14}
-                    color={variant ? "#8b5cf6" : isDark ? "#888888" : "#666666"}
+                    color={isDark ? "#888888" : "#666666"}
                   />
                   <Text
                     style={[
-                      s.variantLabel,
+                      s.modelLabel,
                       isDark && s.metaDark,
-                      variant && s.variantLabelActive,
                       { ...ds({ fontSize: 12 }, density) },
                     ]}
                     numberOfLines={1}
                   >
-                    {variant
-                      ? variant.charAt(0).toUpperCase() + variant.slice(1)
-                      : t("session.toolbar.auto")}
+                    {modelLabel}
                   </Text>
                 </TouchableOpacity>
-              )}
-          </View>
 
-          {/* Attachment preview */}
-          <ImageAttachments
-            attachments={attachments}
-            isDark={isDark}
-            onRemove={removeAttachment}
-          />
-
-          {/* Input */}
-          <View
-            style={[
-              s.inputContainer,
-              isDark && s.inputContainerDark,
-              {
-                ...ds({ padding: 12 }, density),
-              },
-            ]}
-          >
-            <View style={s.inputRow}>
-              {/* Attach button */}
-              <TouchableOpacity
-                style={s.attachBtn}
-                onPress={showAttachSheet}
-                onLongPress={pickFromCamera}
-              >
-                <Ionicons
-                  name="add-circle-outline"
-                  size={26}
-                  color={isDark ? "#888888" : "#666666"}
-                />
-              </TouchableOpacity>
-
-              {/* Clipboard paste button */}
-              <TouchableOpacity
-                style={s.attachBtn}
-                onPress={pasteFromClipboard}
-              >
-                <Ionicons
-                  name="clipboard-outline"
-                  size={22}
-                  color={isDark ? "#888888" : "#666666"}
-                />
-              </TouchableOpacity>
-
-              {/* Reply preview */}
-              {replyTo && (
-                <View style={[s.replyPreview, isDark && s.replyPreviewDark]}>
-                  <View style={s.replyPreviewHeader}>
-                    <Text
-                      style={[
-                        s.replyPreviewLabel,
-                        isDark && s.replyPreviewLabelDark,
-                      ]}
-                    >
-                      {replyTo.role === "user"
-                        ? t("session.reply.inReplyToUser")
-                        : t("session.reply.inReplyToAssistant")}
-                    </Text>
+                {currentModelVariants &&
+                  Object.keys(currentModelVariants).length > 0 && (
                     <TouchableOpacity
-                      onPress={cancelReply}
-                      style={s.replyPreviewDismiss}
+                      style={[
+                        s.variantChip,
+                        isDark && s.variantChipDark,
+                        variant && s.variantChipActive,
+                        {
+                          ...ds(
+                            {
+                              gap: 4,
+                              paddingHorizontal: 10,
+                              paddingVertical: 4,
+                            },
+                            density,
+                          ),
+                        },
+                      ]}
+                      onPress={() => variantSheetRef.current?.expand()}
+                      testID="variant-chip"
                     >
                       <Ionicons
-                        name="close"
-                        size={16}
-                        color={isDark ? "#888888" : "#666666"}
+                        name="flash-outline"
+                        size={14}
+                        color={
+                          variant ? "#8b5cf6" : isDark ? "#888888" : "#666666"
+                        }
                       />
+                      <Text
+                        style={[
+                          s.variantLabel,
+                          isDark && s.metaDark,
+                          variant && s.variantLabelActive,
+                          { ...ds({ fontSize: 12 }, density) },
+                        ]}
+                        numberOfLines={1}
+                      >
+                        {variant
+                          ? variant.charAt(0).toUpperCase() + variant.slice(1)
+                          : t("session.toolbar.auto")}
+                      </Text>
                     </TouchableOpacity>
-                  </View>
-                  <Text
-                    style={[
-                      s.replyPreviewText,
-                      isDark && s.replyPreviewTextDark,
-                    ]}
-                    numberOfLines={3}
-                  >
-                    {replyTo.text || t("session.reply.emptyMessage")}
-                  </Text>
-                </View>
-              )}
+                  )}
+              </View>
 
-              <TextInput
-                ref={composerRef}
-                {...shortcutProps}
-                {...(slashActive ? { onKeyPress: slashKeyHandler } : {})}
-                style={[
-                  s.input,
-                  isDark && s.inputDark,
-                  speech.listening && s.inputListening,
-                  { ...ds({ fontSize: 16 }, density) },
-                ]}
-                placeholder={
-                  speech.listening
-                    ? t("session.input.placeholderListening")
-                    : isBusy
-                      ? t("session.input.placeholderFollowUp")
-                      : t("session.input.placeholderDefault")
+              {/* Attachment preview */}
+              <PathContextChips
+                paths={pathContexts}
+                isDark={isDark}
+                onRemove={(path) =>
+                  setPathContexts((prev) => prev.filter((p) => p !== path))
                 }
-                placeholderTextColor={
-                  speech.listening ? "#ef4444" : isDark ? "#666666" : "#999999"
-                }
-                value={speech.listening ? speech.transcript : input}
-                onChangeText={speech.listening ? undefined : setInput}
-                editable={!speech.listening}
-                multiline
-                maxLength={10000}
-                testID="chat-message-input"
               />
-              {/* Stop button: whenever the session is busy, even while typing
-                  a follow-up — tapping it aborts the run, the draft stays. */}
-              {isBusy && !speech.listening && (
-                <TouchableOpacity
-                  style={s.stopBtn}
-                  onPress={handleAbort}
-                  testID="chat-stop-button"
-                >
-                  <Ionicons name="stop" size={20} color="#ffffff" />
-                </TouchableOpacity>
-              )}
-              {/* Retry button: idle, empty composer, prior user turn exists */}
-              {canRetry && (
-                <TouchableOpacity
-                  style={s.retryBtn}
-                  onPress={handleRetry}
-                  testID="chat-retry-button"
-                >
-                  <Ionicons
-                    name="refresh"
-                    size={22}
-                    color={isDark ? "#888888" : "#666666"}
-                  />
-                </TouchableOpacity>
-              )}
-              {/* Mic button: when idle, no input, and not listening */}
-              {!isBusy &&
-                !input.trim() &&
-                attachments.length === 0 &&
-                !speech.listening && (
-                  <TouchableOpacity style={s.micBtn} onPress={speech.start}>
+              <PromptPresetBar
+                isDark={isDark}
+                onSelect={(text, sendImmediately) => {
+                  setInput(text);
+                  if (sendImmediately) {
+                    setTimeout(() => void handleSend(), 0);
+                  }
+                }}
+              />
+              <ImageAttachments
+                attachments={attachments}
+                isDark={isDark}
+                onRemove={removeAttachment}
+              />
+
+              {/* Input */}
+              <View
+                style={[
+                  s.inputContainer,
+                  isDark && s.inputContainerDark,
+                  {
+                    ...ds({ padding: 12 }, density),
+                  },
+                ]}
+              >
+                <View style={s.inputRow}>
+                  {/* Attach button */}
+                  <TouchableOpacity
+                    style={s.attachBtn}
+                    onPress={showAttachSheet}
+                    onLongPress={pickFromCamera}
+                  >
                     <Ionicons
-                      name="mic"
+                      name="add-circle-outline"
+                      size={26}
+                      color={isDark ? "#888888" : "#666666"}
+                    />
+                  </TouchableOpacity>
+
+                  {/* Clipboard paste button */}
+                  <TouchableOpacity
+                    style={s.attachBtn}
+                    onPress={pasteFromClipboard}
+                  >
+                    <Ionicons
+                      name="clipboard-outline"
                       size={22}
                       color={isDark ? "#888888" : "#666666"}
                     />
                   </TouchableOpacity>
-                )}
-              {/* Listening indicator: tap to stop */}
-              {speech.listening && (
-                <TouchableOpacity style={s.micBtnActive} onPress={speech.stop}>
-                  <Ionicons name="mic" size={22} color="#ffffff" />
-                </TouchableOpacity>
-              )}
-              {/* Send button: when there's input */}
-              {!speech.listening &&
-                (input.trim() || attachments.length > 0) && (
-                  <TouchableOpacity
-                    style={s.sendBtn}
-                    onPress={handleSend}
-                    testID="chat-send-button"
-                  >
-                    <Ionicons name="send" size={20} color="#ffffff" />
-                  </TouchableOpacity>
-                )}
+
+                  {/* Reply preview */}
+                  {replyTo && (
+                    <View
+                      style={[s.replyPreview, isDark && s.replyPreviewDark]}
+                    >
+                      <View style={s.replyPreviewHeader}>
+                        <Text
+                          style={[
+                            s.replyPreviewLabel,
+                            isDark && s.replyPreviewLabelDark,
+                          ]}
+                        >
+                          {replyTo.role === "user"
+                            ? t("session.reply.inReplyToUser")
+                            : t("session.reply.inReplyToAssistant")}
+                        </Text>
+                        <TouchableOpacity
+                          onPress={cancelReply}
+                          style={s.replyPreviewDismiss}
+                        >
+                          <Ionicons
+                            name="close"
+                            size={16}
+                            color={isDark ? "#888888" : "#666666"}
+                          />
+                        </TouchableOpacity>
+                      </View>
+                      <Text
+                        style={[
+                          s.replyPreviewText,
+                          isDark && s.replyPreviewTextDark,
+                        ]}
+                        numberOfLines={3}
+                      >
+                        {replyTo.text || t("session.reply.emptyMessage")}
+                      </Text>
+                    </View>
+                  )}
+
+                  <TextInput
+                    ref={composerRef}
+                    {...shortcutProps}
+                    {...(slashActive ? { onKeyPress: slashKeyHandler } : {})}
+                    style={[
+                      s.input,
+                      isDark && s.inputDark,
+                      speech.listening && s.inputListening,
+                      { ...ds({ fontSize: 16 }, density) },
+                    ]}
+                    placeholder={
+                      speech.listening
+                        ? t("session.input.placeholderListening")
+                        : isBusy
+                          ? t("session.input.placeholderFollowUp")
+                          : t("session.input.placeholderDefault")
+                    }
+                    placeholderTextColor={
+                      speech.listening
+                        ? "#ef4444"
+                        : isDark
+                          ? "#666666"
+                          : "#999999"
+                    }
+                    value={speech.listening ? speech.transcript : input}
+                    onChangeText={speech.listening ? undefined : setInput}
+                    editable={!speech.listening}
+                    multiline
+                    maxLength={10000}
+                    testID="chat-message-input"
+                  />
+                  {/* Stop button: whenever the session is busy, even while typing
+                  a follow-up — tapping it aborts the run, the draft stays. */}
+                  {isBusy && !speech.listening && (
+                    <TouchableOpacity
+                      style={s.stopBtn}
+                      onPress={handleAbort}
+                      testID="chat-stop-button"
+                    >
+                      <Ionicons name="stop" size={20} color="#ffffff" />
+                    </TouchableOpacity>
+                  )}
+                  {/* Retry button: idle, empty composer, prior user turn exists */}
+                  {canRetry && (
+                    <TouchableOpacity
+                      style={s.retryBtn}
+                      onPress={handleRetry}
+                      testID="chat-retry-button"
+                    >
+                      <Ionicons
+                        name="refresh"
+                        size={22}
+                        color={isDark ? "#888888" : "#666666"}
+                      />
+                    </TouchableOpacity>
+                  )}
+                  {/* Mic button: when idle, no input, and not listening */}
+                  {!isBusy &&
+                    !input.trim() &&
+                    attachments.length === 0 &&
+                    !speech.listening && (
+                      <TouchableOpacity style={s.micBtn} onPress={speech.start}>
+                        <Ionicons
+                          name="mic"
+                          size={22}
+                          color={isDark ? "#888888" : "#666666"}
+                        />
+                      </TouchableOpacity>
+                    )}
+                  {/* Listening indicator: tap to stop */}
+                  {speech.listening && (
+                    <TouchableOpacity
+                      style={s.micBtnActive}
+                      onPress={speech.stop}
+                    >
+                      <Ionicons name="mic" size={22} color="#ffffff" />
+                    </TouchableOpacity>
+                  )}
+                  {/* Send button: when there's input */}
+                  {!speech.listening &&
+                    (input.trim() || attachments.length > 0) && (
+                      <TouchableOpacity
+                        style={s.sendBtn}
+                        onPress={handleSend}
+                        testID="chat-send-button"
+                      >
+                        <Ionicons name="send" size={20} color="#ffffff" />
+                      </TouchableOpacity>
+                    )}
+                </View>
+              </View>
             </View>
-          </View>
+          ) : null}
+
+          {!keyboardVisible && (
+            <WorkspaceModeStrip
+              mode={workspaceMode}
+              onChange={setWorkspaceMode}
+              isDark={isDark}
+            />
+          )}
         </KeyboardAvoidingView>
       )}
+
+      <CommandPalette
+        visible={showPalette}
+        onClose={() => setShowPalette(false)}
+        sessions={sessions}
+        isDark={isDark}
+        onSelect={handlePaletteSelect}
+      />
+
+      <MessageSearchBar
+        visible={showSearch}
+        onClose={() => setShowSearch(false)}
+        messages={messages || []}
+        parts={parts}
+        isDark={isDark}
+        onSelectMessage={(messageId) => {
+          const idx = (messageData || []).findIndex(
+            (m) => m.message.id === messageId,
+          );
+          if (idx >= 0) {
+            flatListRef.current?.scrollToIndex({
+              index: idx,
+              animated: true,
+            });
+          }
+          setWorkspaceMode("chat");
+        }}
+      />
 
       {/* Model picker bottom sheet */}
       <ModelPicker
@@ -1834,6 +2163,7 @@ const s = StyleSheet.create({
   containerDark: { backgroundColor: "#0a0a0a" },
   loading: { flex: 1, justifyContent: "center", alignItems: "center" },
   listWrap: { flex: 1, position: "relative" },
+  splitRow: { flexDirection: "row" },
 
   // Messages
   messageList: { padding: 16, paddingBottom: 8 },
@@ -1887,6 +2217,7 @@ const s = StyleSheet.create({
   emptyHint: { fontSize: 13, color: "#bbbbbb", marginTop: 4 },
   metaDark: { color: "#666666" },
   textWhite: { color: "#ffffff" },
+  composerChrome: { flexGrow: 0, flexShrink: 0 },
 
   // Toolbar
   toolbar: {

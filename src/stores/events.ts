@@ -471,6 +471,7 @@ export const useEvents = create<EventsState>((set, get) => ({
                   "A tool is requesting file access — open app to review",
                 ),
                 sessionId: req.sessionID,
+                permissionId: req.id,
                 dedupeKey: `perm-${req.id}`,
                 dedupeCooldownMs: 60_000,
               });

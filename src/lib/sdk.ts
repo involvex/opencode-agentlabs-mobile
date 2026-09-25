@@ -177,6 +177,11 @@ export interface FileEntry {
   ignored: boolean;
 }
 
+export interface FileStatusEntry {
+  path: string;
+  status?: string;
+}
+
 export interface Event {
   type: string;
   properties: Record<string, unknown>;
@@ -365,6 +370,41 @@ export function createClient(config: ClientConfig) {
           return await request<FileRoot[]>(config, "/file/roots");
         } catch (err) {
           if (err instanceof ApiError && err.status === 404) return null;
+          throw err;
+        }
+      },
+      // Git status for the active worktree. Returns [] on older servers.
+      status: async (): Promise<FileStatusEntry[]> => {
+        try {
+          return await request<FileStatusEntry[]>(config, "/file/status");
+        } catch (err) {
+          if (err instanceof ApiError && err.status === 404) return [];
+          throw err;
+        }
+      },
+      // Read file content and optional unified diff vs HEAD.
+      read: async (params: {
+        path: string;
+      }): Promise<{ content?: string; diff?: string } | null> => {
+        const query = new URLSearchParams({ path: params.path });
+        try {
+          return await request<{ content?: string; diff?: string }>(
+            config,
+            `/file/content?${query.toString()}`,
+          );
+        } catch (err) {
+          if (err instanceof ApiError && err.status === 404) {
+            try {
+              return await request<{ content?: string; diff?: string }>(
+                config,
+                `/file/read?${query.toString()}`,
+              );
+            } catch (inner) {
+              if (inner instanceof ApiError && inner.status === 404)
+                return null;
+              throw inner;
+            }
+          }
           throw err;
         }
       },
@@ -640,6 +680,22 @@ export function createClient(config: ClientConfig) {
           ? `?location[directory]=${encodeURIComponent(directory)}`
           : "";
         return request<PtyInfo>(config, `/api/pty/${ptyID}${qs}`);
+      },
+      update: (
+        ptyID: string,
+        params: {
+          title?: string;
+          size?: { cols: number; rows: number };
+        },
+        directory?: string,
+      ) => {
+        const qs = directory
+          ? `?location[directory]=${encodeURIComponent(directory)}`
+          : "";
+        return request<PtyInfo>(config, `/api/pty/${ptyID}${qs}`, {
+          method: "PATCH",
+          body: JSON.stringify(params),
+        });
       },
       remove: (ptyID: string, directory?: string) =>
         request<void>(

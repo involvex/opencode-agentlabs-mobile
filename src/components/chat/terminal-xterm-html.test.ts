@@ -80,3 +80,16 @@ test("buildReceiveScript safely embeds quotes and markup", () => {
   );
   assert.deepEqual(payload, { type: "write", data });
 });
+
+test("buildTerminalHtml schedules ResizeObserver and resize posts", () => {
+  const html = buildTerminalHtml({
+    theme: xtermTheme(true),
+    fontSize: 13,
+    scrollback: 2000,
+    vendor: FAKE_VENDOR,
+  });
+  assert.ok(html.includes("ResizeObserver"));
+  assert.ok(html.includes('type: "resize"'));
+  assert.ok(html.includes("scheduleFit"));
+  assert.ok(html.includes('msg.type === "fit"'));
+});

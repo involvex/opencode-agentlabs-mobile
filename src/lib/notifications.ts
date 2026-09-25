@@ -62,6 +62,21 @@ export const defaultPreferences: Record<Category, boolean> = {
 export const actionMap: Record<Category, ActionMap[]> = {
   permissions: [
     {
+      id: "allow",
+      titleKey: "notifications.actions.allow",
+      style: "default",
+    },
+    {
+      id: "always",
+      titleKey: "notifications.actions.always",
+      style: "default",
+    },
+    {
+      id: "reject",
+      titleKey: "notifications.actions.reject",
+      style: "destructive",
+    },
+    {
       id: "open-session",
       titleKey: "notifications.actions.open-session",
       style: "default",
@@ -116,9 +131,19 @@ export interface Payload {
   dedupeKey?: string;
   dedupeCooldownMs?: number;
   action?: string;
+  /** Permission request id for Allow/Reject/Always actions. */
+  permissionId?: string;
 }
 
-export type NotificationAction = "open-session" | "retry" | "dismiss";
+export const notificationActions = [
+  "open-session",
+  "retry",
+  "dismiss",
+  "allow",
+  "always",
+  "reject",
+] as const;
+export type NotificationAction = (typeof notificationActions)[number];
 
 export interface ActionMap {
   id: string;
@@ -127,11 +152,21 @@ export interface ActionMap {
 }
 
 // Data embedded in the notification for tap handling
-interface NotificationData {
+export interface NotificationData {
   category: Category;
   sessionId: string;
   action?: string;
+  permissionId?: string;
 }
+
+const actionTitles: Record<string, string> = {
+  "open-session": "Open Session",
+  retry: "Retry",
+  dismiss: "Dismiss",
+  allow: "Allow",
+  always: "Always Allow",
+  reject: "Reject",
+};
 
 // ---------------------------------------------------------------------------
 // Preferences accessor — injected to avoid circular imports with the store
@@ -217,6 +252,7 @@ export async function send(payload: Payload) {
         category: payload.category,
         sessionId: payload.sessionId,
         action: payload.action,
+        permissionId: payload.permissionId,
       } satisfies NotificationData as Record<string, unknown>,
       sound: Platform.OS === "android" ? "ping" : "ping.wav",
       ...(Platform.OS === "android" ? { channelId: "prompts" } : {}),
@@ -224,7 +260,7 @@ export async function send(payload: Payload) {
         ? {
             actions: actionMap[payload.category].map((a) => ({
               identifier: a.id,
-              title: a.titleKey,
+              title: actionTitles[a.id] || a.titleKey,
               options: {
                 opensApp: true,
                 isDestructive: a.style === "destructive",

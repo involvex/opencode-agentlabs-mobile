@@ -4,6 +4,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   ActivityIndicator,
   KeyboardAvoidingView,
+  Platform,
   ScrollView,
   StyleSheet,
   Text,
@@ -17,13 +18,18 @@ import { usePtySession } from "../../hooks/use-pty-session";
 import { buildPtyWsUrl, PtyWebSocket } from "../../lib/pty-ws";
 import { ansiToSegments } from "../../lib/ansi-to-style";
 import { useSettings } from "../../stores/settings";
+import { useTerminalRun } from "../../stores/terminal-run";
 import { useDensity, ds } from "../../lib/density";
+import { useKeyboardInset } from "../../lib/use-keyboard-inset";
 import {
   executeLocalCommand,
   isLocalTerminalAvailable,
 } from "../../lib/local-terminal";
 import TerminalWebView, { type TerminalWebViewHandle } from "./TerminalWebView";
 import type { Client } from "../../lib/sdk";
+
+const SHELL_OPTIONS = ["auto", "bash", "zsh", "fish", "pwsh", "cmd"] as const;
+type ShellOption = (typeof SHELL_OPTIONS)[number];
 
 interface Props {
   sessionDirectory: string | undefined;
@@ -133,27 +139,38 @@ function AnsiLine({
 
 interface TerminalSocketProps {
   wsUrl: string;
+  ptyId: string;
+  sessionClient: Client;
   isDark: boolean;
   terminalFontSize: number;
   onClose: () => void;
   sessionDirectory: string | undefined;
   onWsError: () => void;
   authorization?: string;
+  shell?: string;
+  onCycleShell?: () => void;
 }
 
 function TerminalSocket({
   wsUrl,
+  ptyId,
+  sessionClient,
   isDark,
   terminalFontSize,
   onClose,
   sessionDirectory,
   onWsError,
   authorization,
+  shell,
+  onCycleShell,
 }: TerminalSocketProps) {
   const density = useDensity();
+  const { androidBottom: keyboardBottom, height: keyboardHeight } =
+    useKeyboardInset();
   const [wsState, setWsState] = useState<WsState>("connecting");
   const wsRef = useRef<PtyWebSocket | null>(null);
   const termHandleRef = useRef<TerminalWebViewHandle | null>(null);
+  const sizeRef = useRef({ cols: 0, rows: 0 });
 
   useEffect(() => {
     const ws = new PtyWebSocket();
@@ -191,12 +208,42 @@ function TerminalSocket({
     wsRef.current?.send(data);
   }, []);
 
+  const setWriter = useTerminalRun((s) => s.setWriter);
+  useEffect(() => {
+    setWriter((data: string) => {
+      wsRef.current?.send(data);
+    });
+    return () => setWriter(null);
+  }, [setWriter]);
+
   const handleTermHandle = useCallback(
     (handle: TerminalWebViewHandle | null) => {
       termHandleRef.current = handle;
     },
     [],
   );
+
+  const handleResize = useCallback(
+    (cols: number, rows: number) => {
+      if (cols < 2 || rows < 2) return;
+      if (sizeRef.current.cols === cols && sizeRef.current.rows === rows) {
+        return;
+      }
+      sizeRef.current = { cols, rows };
+      void sessionClient.pty.update(
+        ptyId,
+        { size: { cols, rows } },
+        sessionDirectory,
+      );
+    },
+    [sessionClient, ptyId, sessionDirectory],
+  );
+
+  useEffect(() => {
+    // Refit after keyboard show/hide changes available WebView height.
+    const timer = setTimeout(() => termHandleRef.current?.fit(), 50);
+    return () => clearTimeout(timer);
+  }, [keyboardHeight]);
 
   const statusLabel =
     wsState === "connected"
@@ -227,19 +274,35 @@ function TerminalSocket({
         <Text style={[styles.headerTitle, isDark && styles.headerTitleDark]}>
           Terminal (Server)
         </Text>
-        <View style={[styles.statusDot, { backgroundColor: statusColor }]} />
+        {onCycleShell ? (
+          <TouchableOpacity
+            onPress={onCycleShell}
+            hitSlop={8}
+            testID="shell-picker"
+          >
+            <Text style={[styles.shellChip, isDark && styles.shellChipDark]}>
+              {shell || "auto"}
+            </Text>
+          </TouchableOpacity>
+        ) : (
+          <View style={[styles.statusDot, { backgroundColor: statusColor }]} />
+        )}
       </View>
 
-      <KeyboardAvoidingView
-        behavior="padding"
-        keyboardVerticalOffset={56}
-        style={{ flex: 1 }}
+      {/* Android adjustResize is unreliable — pad by IME height so keybinds
+          stay above the soft keyboard. iOS uses KeyboardAvoidingView below. */}
+      <View
+        style={[
+          styles.body,
+          keyboardBottom > 0 ? { paddingBottom: keyboardBottom } : null,
+        ]}
       >
         <View style={[styles.output, isDark && styles.outputDark]}>
           <TerminalWebView
             isDark={isDark}
             fontSize={terminalFontSize}
             onInput={handleTermInput}
+            onResize={handleResize}
             handleRef={handleTermHandle}
             testID="terminal-webview"
           />
@@ -275,7 +338,8 @@ function TerminalSocket({
         <View
           style={[
             styles.keyButtonRow,
-            { ...ds({ gap: 6, paddingBottom: 4 }, density) },
+            styles.keyButtonRowLast,
+            { ...ds({ gap: 6, paddingBottom: 8 }, density) },
           ]}
         >
           {SPECIAL_KEYS_CTRL.map((k) => (
@@ -288,7 +352,7 @@ function TerminalSocket({
             />
           ))}
         </View>
-      </KeyboardAvoidingView>
+      </View>
     </View>
   );
 }
@@ -307,6 +371,7 @@ function LocalTerminalView({
   onSwitchToServer?: () => void;
 }) {
   const density = useDensity();
+  const { androidBottom: keyboardBottom } = useKeyboardInset();
   const [output, setOutput] = useState<TerminalLine[]>([
     {
       id: "initial",
@@ -393,9 +458,12 @@ function LocalTerminalView({
       </View>
 
       <KeyboardAvoidingView
-        behavior="padding"
-        keyboardVerticalOffset={56}
-        style={{ flex: 1 }}
+        behavior={Platform.OS === "ios" ? "padding" : undefined}
+        keyboardVerticalOffset={Platform.OS === "ios" ? 56 : 0}
+        style={[
+          styles.body,
+          keyboardBottom > 0 ? { paddingBottom: keyboardBottom } : null,
+        ]}
       >
         <ScrollView
           ref={scrollRef}
@@ -507,6 +575,7 @@ export default function TerminalView({
   const { t } = useTranslation();
   const terminalFontSize = useSettings((s) => s.terminalFontSize);
   const [mode, setMode] = useState<TerminalMode>("server");
+  const [shell, setShell] = useState<ShellOption>("auto");
   const [wsFailed, setWsFailed] = useState(false);
   const localAvailable = isLocalTerminalAvailable();
 
@@ -515,8 +584,17 @@ export default function TerminalView({
     status: ptyStatus,
     error: ptyError,
     retry: retryPty,
+    reset: resetPty,
     ticket,
-  } = usePtySession(sessionClient, sessionDirectory);
+  } = usePtySession(sessionClient, sessionDirectory, shell);
+
+  const cycleShell = useCallback(() => {
+    const idx = SHELL_OPTIONS.indexOf(shell);
+    const next = SHELL_OPTIONS[(idx + 1) % SHELL_OPTIONS.length];
+    setShell(next);
+    setWsFailed(false);
+    resetPty();
+  }, [shell, resetPty]);
 
   const authorization = useMemo(() => {
     if (!username && !password) return null;
@@ -585,7 +663,15 @@ export default function TerminalView({
           <Text style={[styles.headerTitle, isDark && styles.headerTitleDark]}>
             {t("session.terminal.title", "Terminal")}
           </Text>
-          <View style={{ width: 22 }} />
+          <TouchableOpacity
+            onPress={cycleShell}
+            hitSlop={8}
+            testID="shell-picker"
+          >
+            <Text style={[styles.shellChip, isDark && styles.shellChipDark]}>
+              {shell}
+            </Text>
+          </TouchableOpacity>
         </View>
         <View style={styles.centerContent}>
           <ActivityIndicator color={isDark ? "#22c55e" : "#16a34a"} />
@@ -611,7 +697,15 @@ export default function TerminalView({
           <Text style={[styles.headerTitle, isDark && styles.headerTitleDark]}>
             {t("session.terminal.title", "Terminal")}
           </Text>
-          <View style={{ width: 22 }} />
+          <TouchableOpacity
+            onPress={cycleShell}
+            hitSlop={8}
+            testID="shell-picker"
+          >
+            <Text style={[styles.shellChip, isDark && styles.shellChipDark]}>
+              {shell}
+            </Text>
+          </TouchableOpacity>
         </View>
         <View style={styles.centerContent}>
           <Ionicons
@@ -647,12 +741,16 @@ export default function TerminalView({
     <TerminalSocket
       key={wsUrl}
       wsUrl={wsUrl!}
+      ptyId={ptyId!}
+      sessionClient={sessionClient}
       isDark={isDark}
       terminalFontSize={terminalFontSize}
       onClose={onClose}
       sessionDirectory={sessionDirectory}
       onWsError={handleWsError}
       authorization={authorization ?? undefined}
+      shell={shell}
+      onCycleShell={cycleShell}
     />
   );
 }
@@ -681,6 +779,24 @@ const styles = StyleSheet.create({
   },
   headerTitleDark: {
     color: "#ffffff",
+  },
+  body: {
+    flex: 1,
+  },
+  shellChip: {
+    fontSize: 12,
+    fontWeight: "600",
+    color: "#16a34a",
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 6,
+    overflow: "hidden",
+    backgroundColor: "rgba(34, 197, 94, 0.12)",
+    textTransform: "lowercase",
+  },
+  shellChipDark: {
+    color: "#4ade80",
+    backgroundColor: "rgba(34, 197, 94, 0.2)",
   },
   statusDot: {
     width: 8,
@@ -818,10 +934,17 @@ const styles = StyleSheet.create({
   },
   keyButtonRow: {
     flexDirection: "row",
+    flexShrink: 0,
+    flexWrap: "wrap",
     gap: 6,
     paddingHorizontal: 12,
     alignItems: "center",
+    paddingTop: 4,
     paddingBottom: 4,
+    backgroundColor: "transparent",
+  },
+  keyButtonRowLast: {
+    paddingBottom: 8,
   },
   keyButton: {
     paddingHorizontal: 10,

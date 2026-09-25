@@ -454,6 +454,9 @@
       "open-session": "Open Session",
       "retry": "Retry",
       "dismiss": "Dismiss",
+      "allow": "Allow",
+      "always": "Always Allow",
+      "reject": "Reject",
       "openSessionLabel": "Open session action",
       "retryLabel": "Retry action",
       "dismissLabel": "Dismiss action"

@@ -7,10 +7,12 @@ import {
   useColorScheme,
   Platform,
   ScrollView,
+  Alert,
 } from "react-native";
 import * as Clipboard from "expo-clipboard";
 import { WIDE_CONTENT_SCROLL_CONFIG } from "../../lib/scroll-config";
 import { useDensity, ds } from "../../lib/density";
+import { useTerminalRun } from "../../stores/terminal-run";
 
 interface Props {
   code: string;
@@ -21,6 +23,8 @@ export function CodeBlock({ code, language }: Props) {
   const isDark = useColorScheme() === "dark";
   const [copied, setCopied] = useState(false);
   const density = useDensity();
+  const run = useTerminalRun((s) => s.run);
+  const hasWriter = useTerminalRun((s) => !!s.write);
 
   const copy = async () => {
     try {
@@ -28,6 +32,14 @@ export function CodeBlock({ code, language }: Props) {
       setCopied(true);
       setTimeout(() => setCopied(false), 2000);
     } catch {}
+  };
+
+  const runInTerminal = () => {
+    if (run(code)) return;
+    Alert.alert(
+      "Terminal not open",
+      "Open the Terminal workspace panel first, then tap Run.",
+    );
   };
 
   return (
@@ -48,17 +60,31 @@ export function CodeBlock({ code, language }: Props) {
         <Text style={[styles.language, isDark && styles.languageDark]}>
           {language || "code"}
         </Text>
-        <TouchableOpacity onPress={copy} hitSlop={8}>
-          <Text
-            style={[
-              styles.copyBtn,
-              { ...ds({ fontSize: 11 }, density) },
-              isDark && styles.copyBtnDark,
-            ]}
-          >
-            {copied ? "Copied!" : "Copy"}
-          </Text>
-        </TouchableOpacity>
+        <View style={styles.actions}>
+          <TouchableOpacity onPress={runInTerminal} hitSlop={8}>
+            <Text
+              style={[
+                styles.copyBtn,
+                { ...ds({ fontSize: 11 }, density) },
+                isDark && styles.copyBtnDark,
+                !hasWriter && styles.runMuted,
+              ]}
+            >
+              Run
+            </Text>
+          </TouchableOpacity>
+          <TouchableOpacity onPress={copy} hitSlop={8}>
+            <Text
+              style={[
+                styles.copyBtn,
+                { ...ds({ fontSize: 11 }, density) },
+                isDark && styles.copyBtnDark,
+              ]}
+            >
+              {copied ? "Copied!" : "Copy"}
+            </Text>
+          </TouchableOpacity>
+        </View>
       </View>
       <ScrollView
         {...WIDE_CONTENT_SCROLL_CONFIG}
@@ -104,6 +130,11 @@ const styles = StyleSheet.create({
   headerDark: {
     backgroundColor: "#2a2a2a",
   },
+  actions: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 12,
+  },
   language: {
     fontSize: 11,
     fontWeight: "600",
@@ -120,6 +151,9 @@ const styles = StyleSheet.create({
   },
   copyBtnDark: {
     color: "#a78bfa",
+  },
+  runMuted: {
+    opacity: 0.5,
   },
   codeScroll: {
     padding: 12,

@@ -57,6 +57,38 @@ function RootLayout() {
       switch (action) {
         case "dismiss":
           return;
+        case "allow":
+        case "always":
+        case "reject": {
+          if (data.category === "permissions" && data.permissionId) {
+            const reply =
+              action === "allow"
+                ? "once"
+                : action === "always"
+                  ? "always"
+                  : "reject";
+            const client = connectionStore.client;
+            if (client) {
+              try {
+                await client.permission.reply(data.permissionId, reply);
+                if (data.sessionId) {
+                  useEvents.setState((state) => ({
+                    permissions: {
+                      ...state.permissions,
+                      [data.sessionId]: (
+                        state.permissions[data.sessionId] || []
+                      ).filter((p) => p.id !== data.permissionId),
+                    },
+                  }));
+                }
+              } catch (err) {
+                console.error("[notifications] permission reply failed", err);
+              }
+            }
+            return;
+          }
+          break;
+        }
         case "retry":
           if (data.category === "connection") {
             categories.connect();

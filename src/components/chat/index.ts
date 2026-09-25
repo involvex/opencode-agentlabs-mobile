@@ -24,3 +24,15 @@ export { CompactionBanner } from "./CompactionBanner";
 export { SnapshotPartCard } from "./SnapshotPartCard";
 export { PatchPartCard } from "./PatchPartCard";
 export { RetryBanner } from "./RetryBanner";
+export { WorkspaceModeStrip, type WorkspaceMode } from "./WorkspaceModeStrip";
+export { FileBrowserPanel } from "./FileBrowserPanel";
+export { PathContextChips } from "./PathContextChips";
+export { WorkspaceDiffPanel } from "./WorkspaceDiffPanel";
+export { CommandPalette, type PaletteAction } from "./CommandPalette";
+export { MessageSearchBar } from "./MessageSearchBar";
+export { OfflineQueueBanner } from "./OfflineQueueBanner";
+export {
+  PromptPresetBar,
+  DEFAULT_PROMPT_PRESETS,
+  type PromptPreset,
+} from "./PromptPresetBar";

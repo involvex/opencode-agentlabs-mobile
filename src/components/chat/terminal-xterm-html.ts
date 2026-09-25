@@ -31,12 +31,14 @@ export type XtermInbound =
   | { type: "write"; data: string }
   | { type: "clear" }
   | { type: "focus" }
+  | { type: "fit" }
   | { type: "theme"; theme: XtermTheme }
   | { type: "fontSize"; size: number };
 
 export type XtermOutbound =
   | { type: "ready" }
   | { type: "input"; data: string }
+  | { type: "resize"; cols: number; rows: number }
   | { type: "error"; message: string };
 
 export function buildReceiveScript(msg: XtermInbound): string {
@@ -121,18 +123,47 @@ html, body { height: 100%; margin: 0; padding: 0; background: ${theme.background
     fitAddon = new FitAddon.FitAddon();
     term.loadAddon(fitAddon);
   }
-  term.open(document.getElementById("terminal"));
-  if (fitAddon) fitAddon.fit();
+  var host = document.getElementById("terminal");
+  term.open(host);
+  var lastCols = 0;
+  var lastRows = 0;
+  var fitRaf = 0;
+  function fitAndNotify() {
+    if (!fitAddon) return;
+    fitAddon.fit();
+    var cols = term.cols;
+    var rows = term.rows;
+    if (!cols || !rows) return;
+    if (cols === lastCols && rows === lastRows) return;
+    lastCols = cols;
+    lastRows = rows;
+    post({ type: "resize", cols: cols, rows: rows });
+  }
+  function scheduleFit() {
+    if (fitRaf) cancelAnimationFrame(fitRaf);
+    fitRaf = requestAnimationFrame(function () {
+      fitRaf = requestAnimationFrame(fitAndNotify);
+    });
+  }
   term.onData(function (data) { post({ type: "input", data: data }); });
-  window.addEventListener("resize", function () { if (fitAddon) fitAddon.fit(); });
-  document.getElementById("terminal").addEventListener("click", function () { term.focus(); });
+  window.addEventListener("resize", scheduleFit);
+  if (typeof ResizeObserver !== "undefined") {
+    var ro = new ResizeObserver(scheduleFit);
+    ro.observe(host);
+    ro.observe(document.documentElement);
+  }
+  host.addEventListener("click", function () { term.focus(); });
   function handle(msg) {
     if (!msg || typeof msg.type !== "string") return;
     if (msg.type === "write" && typeof msg.data === "string") term.write(msg.data);
     else if (msg.type === "clear") term.clear();
     else if (msg.type === "focus") term.focus();
+    else if (msg.type === "fit") scheduleFit();
     else if (msg.type === "theme" && msg.theme) term.options.theme = msg.theme;
-    else if (msg.type === "fontSize" && typeof msg.size === "number") term.options.fontSize = msg.size;
+    else if (msg.type === "fontSize" && typeof msg.size === "number") {
+      term.options.fontSize = msg.size;
+      scheduleFit();
+    }
   }
   var queued = window.__xtermQueue;
   window.__xtermQueue = [];
@@ -141,6 +172,7 @@ html, body { height: 100%; margin: 0; padding: 0; background: ${theme.background
   var boot = document.getElementById("boot");
   if (boot) boot.className = "hidden";
   post({ type: "ready" });
+  scheduleFit();
 })();
 </script>
 </body>

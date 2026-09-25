@@ -6,6 +6,7 @@ import {
   Text,
   TouchableOpacity,
   View,
+  type LayoutChangeEvent,
 } from "react-native";
 import { WebView, type WebViewMessageEvent } from "react-native-webview";
 import { loadTerminalVendor } from "./terminal-assets";
@@ -21,6 +22,7 @@ export interface TerminalWebViewHandle {
   write: (data: string) => void;
   clear: () => void;
   focus: () => void;
+  fit: () => void;
 }
 
 interface Props {
@@ -28,6 +30,7 @@ interface Props {
   fontSize: number;
   onInput: (data: string) => void;
   onReady?: () => void;
+  onResize?: (cols: number, rows: number) => void;
   handleRef?: (handle: TerminalWebViewHandle | null) => void;
   testID?: string;
 }
@@ -45,6 +48,17 @@ function parseOutbound(raw: string): XtermOutbound | null {
       typeof (parsed as { data?: unknown }).data === "string"
     ) {
       return { type: "input", data: (parsed as { data: string }).data };
+    }
+    if (
+      type === "resize" &&
+      typeof (parsed as { cols?: unknown }).cols === "number" &&
+      typeof (parsed as { rows?: unknown }).rows === "number"
+    ) {
+      return {
+        type: "resize",
+        cols: (parsed as { cols: number }).cols,
+        rows: (parsed as { rows: number }).rows,
+      };
     }
     if (
       type === "error" &&
@@ -66,6 +80,7 @@ export default function TerminalWebView({
   fontSize,
   onInput,
   onReady,
+  onResize,
   handleRef,
   testID,
 }: Props) {
@@ -77,6 +92,7 @@ export default function TerminalWebView({
   const [html, setHtml] = useState<string | null>(null);
   const pendingRef = useRef<string[]>([]);
   const readyRef = useRef(false);
+  const layoutRef = useRef({ width: 0, height: 0 });
   const onInputRef = useRef(onInput);
   useEffect(() => {
     onInputRef.current = onInput;
@@ -85,6 +101,10 @@ export default function TerminalWebView({
   useEffect(() => {
     onReadyRef.current = onReady;
   }, [onReady]);
+  const onResizeRef = useRef(onResize);
+  useEffect(() => {
+    onResizeRef.current = onResize;
+  }, [onResize]);
 
   useEffect(() => {
     const attempt = loadKey;
@@ -108,7 +128,7 @@ export default function TerminalWebView({
           });
         });
       })
-      .catch((caught) => {
+      .catch(() => {
         if (cancelled) return;
         setFailed("Terminal engine failed to load. Tap Retry to reload.");
       });
@@ -151,10 +171,14 @@ export default function TerminalWebView({
     send({ type: "focus" });
   }, [send]);
 
+  const fit = useCallback(() => {
+    send({ type: "fit" });
+  }, [send]);
+
   useEffect(() => {
-    handleRef?.({ write, clear, focus });
+    handleRef?.({ write, clear, focus, fit });
     return () => handleRef?.(null);
-  }, [handleRef, write, clear, focus]);
+  }, [handleRef, write, clear, focus, fit]);
 
   useEffect(() => {
     if (ready) send({ type: "theme", theme: xtermTheme(isDark) });
@@ -173,15 +197,35 @@ export default function TerminalWebView({
         setReady(true);
         flushPending();
         onReadyRef.current?.();
+        send({ type: "fit" });
         return;
       }
       if (msg.type === "input") {
         onInputRef.current(msg.data);
         return;
       }
+      if (msg.type === "resize") {
+        onResizeRef.current?.(msg.cols, msg.rows);
+        return;
+      }
       setFailed(msg.message);
     },
-    [flushPending],
+    [flushPending, send],
+  );
+
+  const handleLayout = useCallback(
+    (event: LayoutChangeEvent) => {
+      const { width, height } = event.nativeEvent.layout;
+      if (
+        Math.abs(width - layoutRef.current.width) < 1 &&
+        Math.abs(height - layoutRef.current.height) < 1
+      ) {
+        return;
+      }
+      layoutRef.current = { width, height };
+      if (readyRef.current) send({ type: "fit" });
+    },
+    [send],
   );
 
   const handleRetry = useCallback(() => {
@@ -205,7 +249,10 @@ export default function TerminalWebView({
   }
 
   return (
-    <View style={[styles.fill, isDark && styles.fillDark]}>
+    <View
+      style={[styles.fill, isDark && styles.fillDark]}
+      onLayout={handleLayout}
+    >
       {html !== null && (
         <WebView
           key={reloadKey}
