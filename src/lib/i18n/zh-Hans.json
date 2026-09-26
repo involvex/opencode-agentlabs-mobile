@@ -640,7 +640,15 @@
       "disconnected": "已断开",
       "error": "终端连接失败",
       "placeholder": "输入命令...",
-      "closeMessage": "终端会话将继续在服务器上运行。"
+      "closeMessage": "终端会话将继续在服务器上运行。",
+      "selectionTitle": "终端所选内容",
+      "copy": "复制",
+      "copyAll": "复制全部",
+      "paste": "粘贴",
+      "copied": "已复制到剪贴板",
+      "pasted": "已粘贴",
+      "empty": "终端为空",
+      "clipboardEmpty": "剪贴板为空"
     }
   },
   "demo": {

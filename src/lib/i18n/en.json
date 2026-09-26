@@ -640,7 +640,15 @@
       "disconnected": "Disconnected",
       "error": "Terminal connection failed",
       "placeholder": "Type a command...",
-      "closeMessage": "The terminal session will keep running on the server."
+      "closeMessage": "The terminal session will keep running on the server.",
+      "selectionTitle": "Terminal selection",
+      "copy": "Copy",
+      "copyAll": "Copy all",
+      "paste": "Paste",
+      "copied": "Copied to clipboard",
+      "pasted": "Pasted",
+      "empty": "Terminal is empty",
+      "clipboardEmpty": "Clipboard is empty"
     }
   },
   "demo": {

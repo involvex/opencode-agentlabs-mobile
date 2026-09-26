@@ -93,3 +93,32 @@ test("buildTerminalHtml schedules ResizeObserver and resize posts", () => {
   assert.ok(html.includes("scheduleFit"));
   assert.ok(html.includes('msg.type === "fit"'));
 });
+
+test("buildTerminalHtml posts longpress with selection on touch hold", () => {
+  const html = buildTerminalHtml({
+    theme: xtermTheme(true),
+    fontSize: 13,
+    scrollback: 2000,
+    vendor: FAKE_VENDOR,
+  });
+  assert.ok(html.includes('type: "longpress"'));
+  assert.ok(html.includes("getSelection"));
+  assert.ok(html.includes("touchstart"));
+  assert.ok(html.includes("touchmove"));
+  assert.ok(html.includes("touchend"));
+  assert.ok(html.includes("hasSelection"));
+});
+
+test("buildTerminalHtml answers get-buffer from scrollback lines", () => {
+  const html = buildTerminalHtml({
+    theme: xtermTheme(true),
+    fontSize: 13,
+    scrollback: 2000,
+    vendor: FAKE_VENDOR,
+  });
+  assert.ok(html.includes('msg.type === "get-buffer"'));
+  assert.ok(html.includes('type: "buffer"'));
+  assert.ok(html.includes("translateToString"));
+  assert.ok(html.includes('msg.type === "get-selection"'));
+  assert.ok(html.includes('type: "selection"'));
+});

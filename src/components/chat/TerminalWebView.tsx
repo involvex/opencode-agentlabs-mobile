@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import {
   ActivityIndicator,
+  Alert,
   Platform,
   StyleSheet,
   Text,
@@ -9,14 +10,20 @@ import {
   type LayoutChangeEvent,
 } from "react-native";
 import { WebView, type WebViewMessageEvent } from "react-native-webview";
+import * as Clipboard from "expo-clipboard";
+import { useTranslation } from "react-i18next";
 import { loadTerminalVendor } from "./terminal-assets";
+import { hapticSelection } from "../../lib/haptics";
 import {
   buildReceiveScript,
   buildTerminalHtml,
   xtermTheme,
   type XtermInbound,
-  type XtermOutbound,
 } from "./terminal-xterm-html";
+import { parseOutbound } from "./terminal-copy";
+
+export { buildTerminalMenuOptions, parseOutbound } from "./terminal-copy";
+export type { TerminalMenuOption } from "./terminal-copy";
 
 export interface TerminalWebViewHandle {
   write: (data: string) => void;
@@ -36,44 +43,6 @@ interface Props {
 }
 
 const SCROLLBACK = 2000;
-
-function parseOutbound(raw: string): XtermOutbound | null {
-  try {
-    const parsed: unknown = JSON.parse(raw);
-    if (!parsed || typeof parsed !== "object") return null;
-    const type = (parsed as { type?: unknown }).type;
-    if (type === "ready") return { type: "ready" };
-    if (
-      type === "input" &&
-      typeof (parsed as { data?: unknown }).data === "string"
-    ) {
-      return { type: "input", data: (parsed as { data: string }).data };
-    }
-    if (
-      type === "resize" &&
-      typeof (parsed as { cols?: unknown }).cols === "number" &&
-      typeof (parsed as { rows?: unknown }).rows === "number"
-    ) {
-      return {
-        type: "resize",
-        cols: (parsed as { cols: number }).cols,
-        rows: (parsed as { rows: number }).rows,
-      };
-    }
-    if (
-      type === "error" &&
-      typeof (parsed as { message?: unknown }).message === "string"
-    ) {
-      return {
-        type: "error",
-        message: (parsed as { message: string }).message,
-      };
-    }
-    return null;
-  } catch {
-    return null;
-  }
-}
 
 export default function TerminalWebView({
   isDark,
@@ -105,6 +74,12 @@ export default function TerminalWebView({
   useEffect(() => {
     onResizeRef.current = onResize;
   }, [onResize]);
+  const { t } = useTranslation();
+  const tRef = useRef(t);
+  useEffect(() => {
+    tRef.current = t;
+  }, [t]);
+  const copyAllPendingRef = useRef(false);
 
   useEffect(() => {
     const attempt = loadKey;
@@ -188,6 +163,66 @@ export default function TerminalWebView({
     if (ready) send({ type: "fontSize", size: fontSize });
   }, [fontSize, ready, send]);
 
+  const copyToClipboard = useCallback((text: string) => {
+    if (!text.trim()) return;
+    void hapticSelection();
+    void Clipboard.setStringAsync(text).catch(() => {});
+  }, []);
+
+  const pasteFromClipboard = useCallback(() => {
+    void Clipboard.getStringAsync()
+      .then((text) => {
+        if (!text) {
+          Alert.alert(tRef.current("session.terminal.clipboardEmpty"));
+          return;
+        }
+        void hapticSelection();
+        onInputRef.current(text);
+      })
+      .catch(() => {});
+  }, []);
+
+  const requestCopyAll = useCallback(() => {
+    copyAllPendingRef.current = true;
+    send({ type: "get-buffer" });
+  }, [send]);
+
+  const showSelectionMenu = useCallback(
+    (selection: string, hasSelection: boolean) => {
+      const translate = tRef.current;
+      if (hasSelection) {
+        Alert.alert(translate("session.terminal.selectionTitle"), undefined, [
+          {
+            text: translate("session.terminal.copy"),
+            onPress: () => copyToClipboard(selection),
+          },
+          {
+            text: translate("session.terminal.copyAll"),
+            onPress: requestCopyAll,
+          },
+          {
+            text: translate("session.terminal.paste"),
+            onPress: pasteFromClipboard,
+          },
+          { text: translate("common.cancel"), style: "cancel" },
+        ]);
+        return;
+      }
+      Alert.alert(translate("session.terminal.selectionTitle"), undefined, [
+        {
+          text: translate("session.terminal.copyAll"),
+          onPress: requestCopyAll,
+        },
+        {
+          text: translate("session.terminal.paste"),
+          onPress: pasteFromClipboard,
+        },
+        { text: translate("common.cancel"), style: "cancel" },
+      ]);
+    },
+    [copyToClipboard, pasteFromClipboard, requestCopyAll],
+  );
+
   const handleMessage = useCallback(
     (event: WebViewMessageEvent) => {
       const msg = parseOutbound(event.nativeEvent.data);
@@ -208,9 +243,28 @@ export default function TerminalWebView({
         onResizeRef.current?.(msg.cols, msg.rows);
         return;
       }
-      setFailed(msg.message);
+      if (msg.type === "longpress") {
+        void hapticSelection();
+        showSelectionMenu(msg.data, msg.hasSelection);
+        return;
+      }
+      if (msg.type === "buffer") {
+        if (!copyAllPendingRef.current) return;
+        copyAllPendingRef.current = false;
+        if (!msg.data.trim()) {
+          Alert.alert(tRef.current("session.terminal.empty"));
+          return;
+        }
+        copyToClipboard(msg.data);
+        return;
+      }
+      if (msg.type === "selection") return;
+      if (msg.type === "error") {
+        setFailed(msg.message);
+        return;
+      }
     },
-    [flushPending, send],
+    [flushPending, send, showSelectionMenu, copyToClipboard],
   );
 
   const handleLayout = useCallback(

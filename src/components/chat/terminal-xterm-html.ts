@@ -33,13 +33,18 @@ export type XtermInbound =
   | { type: "focus" }
   | { type: "fit" }
   | { type: "theme"; theme: XtermTheme }
-  | { type: "fontSize"; size: number };
+  | { type: "fontSize"; size: number }
+  | { type: "get-buffer" }
+  | { type: "get-selection" };
 
 export type XtermOutbound =
   | { type: "ready" }
   | { type: "input"; data: string }
   | { type: "resize"; cols: number; rows: number }
-  | { type: "error"; message: string };
+  | { type: "error"; message: string }
+  | { type: "longpress"; data: string; hasSelection: boolean }
+  | { type: "buffer"; data: string }
+  | { type: "selection"; data: string; hasSelection: boolean };
 
 export function buildReceiveScript(msg: XtermInbound): string {
   return `window.__xtermReceive(${JSON.stringify(msg)});true;`;
@@ -153,12 +158,59 @@ html, body { height: 100%; margin: 0; padding: 0; background: ${theme.background
     ro.observe(document.documentElement);
   }
   host.addEventListener("click", function () { term.focus(); });
+  function selectionText() {
+    try { return term.getSelection() || ""; } catch (e) { return ""; }
+  }
+  function bufferText() {
+    try {
+      var buf = term.buffer.active;
+      var out = [];
+      for (var i = 0; i < buf.length; i++) {
+        var line = buf.getLine(i);
+        if (!line) continue;
+        out.push(line.translateToString(true));
+      }
+      return out.join("\n").replace(/\n+$/, "");
+    } catch (e) { return ""; }
+  }
+  var lpTimer = 0;
+  var lpX = 0;
+  var lpY = 0;
+  function cancelLongpress() {
+    if (lpTimer) { clearTimeout(lpTimer); lpTimer = 0; }
+  }
+  host.addEventListener("touchstart", function (e) {
+    var t = e.touches[0];
+    if (!t) return;
+    lpX = t.clientX;
+    lpY = t.clientY;
+    cancelLongpress();
+    lpTimer = setTimeout(function () {
+      lpTimer = 0;
+      var sel = selectionText();
+      post({ type: "longpress", data: sel, hasSelection: !!sel });
+    }, 600);
+  }, { passive: true });
+  host.addEventListener("touchmove", function (e) {
+    var t = e.touches[0];
+    if (!t) return;
+    var dx = t.clientX - lpX;
+    var dy = t.clientY - lpY;
+    if (dx * dx + dy * dy > 100) cancelLongpress();
+  }, { passive: true });
+  host.addEventListener("touchend", cancelLongpress, { passive: true });
+  host.addEventListener("touchcancel", cancelLongpress, { passive: true });
   function handle(msg) {
     if (!msg || typeof msg.type !== "string") return;
     if (msg.type === "write" && typeof msg.data === "string") term.write(msg.data);
     else if (msg.type === "clear") term.clear();
     else if (msg.type === "focus") term.focus();
     else if (msg.type === "fit") scheduleFit();
+    else if (msg.type === "get-buffer") post({ type: "buffer", data: bufferText() });
+    else if (msg.type === "get-selection") {
+      var sel = selectionText();
+      post({ type: "selection", data: sel, hasSelection: !!sel });
+    }
     else if (msg.type === "theme" && msg.theme) term.options.theme = msg.theme;
     else if (msg.type === "fontSize" && typeof msg.size === "number") {
       term.options.fontSize = msg.size;

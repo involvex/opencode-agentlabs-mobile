@@ -3,8 +3,10 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   ActivityIndicator,
+  Alert,
   KeyboardAvoidingView,
   Platform,
+  Pressable,
   ScrollView,
   StyleSheet,
   Text,
@@ -14,6 +16,8 @@ import {
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { useTranslation } from "react-i18next";
+import * as Clipboard from "expo-clipboard";
+import { hapticSelection } from "../../lib/haptics";
 import {
   formatPtyError,
   usePtySession,
@@ -519,6 +523,7 @@ function LocalTerminalView({
   onSwitchToServer?: () => void;
 }) {
   const density = useDensity();
+  const { t } = useTranslation();
   const { androidBottom: keyboardBottom, height: keyboardHeight } =
     useKeyboardInset();
   const [output, setOutput] = useState<TerminalLine[]>([
@@ -532,6 +537,52 @@ function LocalTerminalView({
   const scrollRef = useRef<ScrollView>(null);
   const cwdRef = useRef(sessionDirectory || "/");
   const showKeys = keyboardHeight === 0;
+
+  const copyLocalText = useCallback((text: string) => {
+    if (!text.trim()) return;
+    void hapticSelection();
+    void Clipboard.setStringAsync(text).catch(() => {});
+  }, []);
+
+  const copyAllLocal = useCallback(() => {
+    const all = output.map((line) => line.text).join("\n");
+    copyLocalText(all);
+  }, [output, copyLocalText]);
+
+  const pasteToLocalInput = useCallback(() => {
+    void Clipboard.getStringAsync()
+      .then((text) => {
+        if (!text) {
+          Alert.alert(t("session.terminal.clipboardEmpty"));
+          return;
+        }
+        void hapticSelection();
+        setInput((prev) => prev + text);
+      })
+      .catch(() => {});
+  }, [t]);
+
+  const showLocalLineMenu = useCallback(
+    (lineText: string) => {
+      void hapticSelection();
+      Alert.alert(t("session.terminal.selectionTitle"), undefined, [
+        {
+          text: t("session.terminal.copy"),
+          onPress: () => copyLocalText(lineText),
+        },
+        {
+          text: t("session.terminal.copyAll"),
+          onPress: copyAllLocal,
+        },
+        {
+          text: t("session.terminal.paste"),
+          onPress: pasteToLocalInput,
+        },
+        { text: t("common.cancel"), style: "cancel" },
+      ]);
+    },
+    [t, copyLocalText, copyAllLocal, pasteToLocalInput],
+  );
 
   const handleSend = useCallback(async () => {
     const trimmed = input.trim();
@@ -630,12 +681,16 @@ function LocalTerminalView({
           keyboardShouldPersistTaps="handled"
         >
           {output.map((line) => (
-            <AnsiLine
+            <Pressable
               key={line.id}
-              text={line.text}
-              isDark={isDark}
-              fontSize={terminalFontSize}
-            />
+              onLongPress={() => showLocalLineMenu(line.text)}
+            >
+              <AnsiLine
+                text={line.text}
+                isDark={isDark}
+                fontSize={terminalFontSize}
+              />
+            </Pressable>
           ))}
         </ScrollView>
 
