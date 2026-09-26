@@ -170,7 +170,7 @@ html, body { height: 100%; margin: 0; padding: 0; background: ${theme.background
         if (!line) continue;
         out.push(line.translateToString(true));
       }
-      return out.join("\n").replace(/\n+$/, "");
+      return out.join("\\n").replace(/\\n+$/, "");
     } catch (e) { return ""; }
   }
   var lpTimer = 0;

@@ -1,5 +1,6 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
+import { Script } from "node:vm";
 import {
   buildReceiveScript,
   buildTerminalHtml,
@@ -121,4 +122,20 @@ test("buildTerminalHtml answers get-buffer from scrollback lines", () => {
   assert.ok(html.includes("translateToString"));
   assert.ok(html.includes('msg.type === "get-selection"'));
   assert.ok(html.includes('type: "selection"'));
+});
+
+test("buildTerminalHtml inline script is syntactically valid JS", () => {
+  const html = buildTerminalHtml({
+    theme: xtermTheme(true),
+    fontSize: 13,
+    scrollback: 2000,
+    vendor: FAKE_VENDOR,
+  });
+  const blocks = [...html.matchAll(/<script>([\s\S]*?)<\/script>/g)].map(
+    (m) => m[1],
+  );
+  assert.ok(blocks.length > 0);
+  for (const code of blocks) {
+    new Script(code);
+  }
 });
