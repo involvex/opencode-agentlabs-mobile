@@ -60,6 +60,35 @@ function runningSessions(ptys: PtyInfo[]): PtySessionItem[] {
     }));
 }
 
+/** sdk request() throws plain Error (via apiErrorFor), message embeds status + body. */
+export function isPtyNotFoundError(err: unknown): boolean {
+  if (!(err instanceof Error)) return false;
+  return (
+    /PtyNotFoundError/i.test(err.message) ||
+    /PTY session not found/i.test(err.message) ||
+    (/API Error:\s*404/i.test(err.message) && /pty/i.test(err.message))
+  );
+}
+
+export function formatPtyError(raw: string | null | undefined): string {
+  if (!raw) return "Terminal connection failed";
+  if (/PtyNotFoundError/i.test(raw) || /PTY session not found/i.test(raw)) {
+    return "This terminal session expired. Tap Retry to open a new one.";
+  }
+  const jsonMatch = raw.match(/\{[\s\S]*\}$/);
+  if (jsonMatch) {
+    try {
+      const parsed = JSON.parse(jsonMatch[0]) as { message?: string };
+      if (typeof parsed.message === "string" && parsed.message) {
+        return parsed.message;
+      }
+    } catch {
+      // keep raw below
+    }
+  }
+  return raw.replace(/^API Error:\s*\d+\s*-\s*/i, "").trim() || raw;
+}
+
 export function usePtySession(
   client: Client | null,
   directory: string | undefined,
@@ -72,15 +101,21 @@ export function usePtySession(
   const [ticket, setTicket] = useState<string | null>(null);
   const [bootstrapKey, setBootstrapKey] = useState(0);
   const selectGen = useRef(0);
+  const sessionsRef = useRef(sessions);
+
+  useEffect(() => {
+    sessionsRef.current = sessions;
+  }, [sessions]);
 
   const bumpBootstrap = useCallback(() => {
     setBootstrapKey((key) => key + 1);
   }, []);
 
   const buildCreateBody = useCallback((): Record<string, unknown> => {
+    const n = sessionsRef.current.length + 1;
     const body: Record<string, unknown> = {
       cwd: directory,
-      title: "Terminal",
+      title: `Shell ${n}`,
     };
     if (shell !== "auto") body.command = shell;
     return body;
@@ -103,6 +138,58 @@ export function usePtySession(
     [client],
   );
 
+  const createPty = useCallback(async (): Promise<string> => {
+    if (!client?.pty) {
+      throw new Error("PTY create API not available on client");
+    }
+    if (!directory) throw new Error("No session directory for PTY");
+
+    const created = await client.pty.create(buildCreateBody(), directory);
+    const createdId = extractPtyId(created);
+    if (!createdId) throw new Error("Server did not return a PTY id.");
+    return createdId;
+  }, [client, directory, buildCreateBody]);
+
+  const dropSession = useCallback((id: string) => {
+    setSessions((prev) => prev.filter((s) => s.id !== id));
+  }, []);
+
+  const createNew = useCallback(async () => {
+    if (!client || !directory) return;
+
+    setStatus("loading");
+    setError(null);
+    setTicket(null);
+
+    try {
+      const createdId = await createPty();
+      const listed = await refreshList();
+      const known = listed.some((s) => s.id === createdId);
+      if (!known) {
+        const title = `Shell ${listed.length + 1}`;
+        setSessions((prev) => [
+          ...prev,
+          { id: createdId, title, status: "running" },
+        ]);
+      }
+
+      const gen = selectGen.current + 1;
+      selectGen.current = gen;
+      setPtyId(createdId);
+      const nextTicket = await fetchConnectTicket(createdId);
+      if (selectGen.current !== gen) return;
+      setTicket(nextTicket);
+      setStatus("ready");
+    } catch (caught) {
+      const message =
+        caught instanceof Error ? caught.message : "Failed to start terminal.";
+      setPtyId(null);
+      setTicket(null);
+      setStatus("error");
+      setError(message);
+    }
+  }, [client, directory, createPty, refreshList, fetchConnectTicket]);
+
   const select = useCallback(
     async (id: string) => {
       if (!client || !directory) return;
@@ -121,6 +208,19 @@ export function usePtySession(
         setStatus("ready");
       } catch (caught) {
         if (selectGen.current !== gen) return;
+
+        // Stale list entry — drop it and open a fresh PTY instead of a raw 404.
+        if (isPtyNotFoundError(caught)) {
+          dropSession(id);
+          try {
+            await client.pty.remove(id, directory);
+          } catch {
+            // already gone
+          }
+          await createNew();
+          return;
+        }
+
         const message =
           caught instanceof Error
             ? caught.message
@@ -129,48 +229,8 @@ export function usePtySession(
         setError(message);
       }
     },
-    [client, directory, fetchConnectTicket],
+    [client, directory, fetchConnectTicket, dropSession, createNew],
   );
-
-  const createPty = useCallback(async (): Promise<string> => {
-    if (!client?.pty) {
-      throw new Error("PTY create API not available on client");
-    }
-    if (!directory) throw new Error("No session directory for PTY");
-
-    const created = await client.pty.create(buildCreateBody(), directory);
-    const createdId = extractPtyId(created);
-    if (!createdId) throw new Error("Server did not return a PTY id.");
-    return createdId;
-  }, [client, directory, buildCreateBody]);
-
-  const createNew = useCallback(async () => {
-    if (!client || !directory) return;
-
-    setStatus("loading");
-    setError(null);
-    setTicket(null);
-
-    try {
-      const createdId = await createPty();
-      const listed = await refreshList();
-      const known = listed.some((s) => s.id === createdId);
-      if (!known) {
-        setSessions((prev) => [
-          ...prev,
-          { id: createdId, title: "Terminal", status: "running" },
-        ]);
-      }
-      await select(createdId);
-    } catch (caught) {
-      const message =
-        caught instanceof Error ? caught.message : "Failed to start terminal.";
-      setPtyId(null);
-      setTicket(null);
-      setStatus("error");
-      setError(message);
-    }
-  }, [client, directory, createPty, refreshList, select]);
 
   const closeSession = useCallback(
     async (id: string) => {
@@ -179,13 +239,16 @@ export function usePtySession(
       try {
         await client.pty.remove(id, directory);
       } catch (caught) {
-        const message =
-          caught instanceof Error
-            ? caught.message
-            : "Failed to close terminal.";
-        setError(message);
-        setStatus("error");
-        return;
+        // Already gone is fine — still drop from UI.
+        if (!isPtyNotFoundError(caught)) {
+          const message =
+            caught instanceof Error
+              ? caught.message
+              : "Failed to close terminal.";
+          setError(message);
+          setStatus("error");
+          return;
+        }
       }
 
       const remaining = (await refreshList()).filter((s) => s.id !== id);
@@ -212,8 +275,9 @@ export function usePtySession(
     setTicket(null);
     setStatus("loading");
     setError(null);
-    bumpBootstrap();
-  }, [bumpBootstrap]);
+    // Prefer a fresh PTY — list may still contain expired IDs.
+    void createNew();
+  }, [createNew]);
 
   const reset = useCallback(() => {
     selectGen.current += 1;
@@ -255,24 +319,7 @@ export function usePtySession(
       }
 
       try {
-        const createdId = await createPty();
-        if (cancelled) return;
-
-        await refreshList();
-        setSessions((prev) => {
-          if (prev.some((s) => s.id === createdId)) return prev;
-          return [
-            ...prev,
-            { id: createdId, title: "Terminal", status: "running" },
-          ];
-        });
-
-        const nextTicket = await fetchConnectTicket(createdId);
-        if (cancelled) return;
-
-        setPtyId(createdId);
-        setTicket(nextTicket);
-        setStatus("ready");
+        await createNew();
       } catch (caught) {
         if (cancelled) return;
         const createError =
@@ -293,15 +340,7 @@ export function usePtySession(
       cancelled = true;
       selectGen.current += 1;
     };
-  }, [
-    client,
-    directory,
-    bootstrapKey,
-    refreshList,
-    select,
-    createPty,
-    fetchConnectTicket,
-  ]);
+  }, [client, directory, bootstrapKey, refreshList, select, createNew]);
 
   return {
     sessions,

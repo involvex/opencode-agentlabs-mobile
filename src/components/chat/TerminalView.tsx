@@ -14,7 +14,11 @@ import {
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { useTranslation } from "react-i18next";
-import { usePtySession } from "../../hooks/use-pty-session";
+import {
+  formatPtyError,
+  usePtySession,
+  type PtySessionItem,
+} from "../../hooks/use-pty-session";
 import { buildPtyWsUrl, PtyWebSocket } from "../../lib/pty-ws";
 import { ansiToSegments } from "../../lib/ansi-to-style";
 import { useSettings } from "../../stores/settings";
@@ -27,7 +31,6 @@ import {
 } from "../../lib/local-terminal";
 import TerminalWebView, { type TerminalWebViewHandle } from "./TerminalWebView";
 import type { Client } from "../../lib/sdk";
-import type { PtySessionItem } from "../../hooks/use-pty-session";
 
 const SHELL_OPTIONS = ["auto", "bash", "zsh", "fish", "pwsh", "cmd"] as const;
 type ShellOption = (typeof SHELL_OPTIONS)[number];
@@ -69,100 +72,141 @@ const SPECIAL_KEYS_CTRL = [
   { label: "Ctrl+V", sequence: "\x16" },
 ] as const;
 
-function HeaderCloseButton({
+function tabLabel(session: PtySessionItem, index: number): string {
+  const titled = session.title?.match(/(\d+)\s*$/);
+  if (titled) return titled[1];
+  return String(index + 1);
+}
+
+function TerminalToolbar({
   showClose,
   onClose,
   isDark,
+  shell,
+  onCycleShell,
+  sessions,
+  activeId,
+  onSelect,
+  onCloseSession,
+  onCreate,
+  badge,
 }: {
   showClose: boolean;
   onClose: () => void;
   isDark: boolean;
-}) {
-  if (!showClose) {
-    return <View style={styles.headerCloseSpacer} />;
-  }
-  return (
-    <TouchableOpacity onPress={onClose} hitSlop={8}>
-      <Ionicons name="close" size={22} color={isDark ? "#888888" : "#666666"} />
-    </TouchableOpacity>
-  );
-}
-
-function TerminalSessionTabs({
-  sessions,
-  activeId,
-  isDark,
-  onSelect,
-  onCloseSession,
-  onCreate,
-}: {
+  shell?: string;
+  onCycleShell?: () => void;
   sessions: PtySessionItem[];
   activeId: string | null;
-  isDark: boolean;
   onSelect: (id: string) => void;
   onCloseSession: (id: string) => void;
   onCreate: () => void;
+  /** Optional right-side badge when shell picker is absent (e.g. Local). */
+  badge?: string;
 }) {
   return (
-    <ScrollView
-      horizontal
-      showsHorizontalScrollIndicator={false}
-      style={[styles.tabStrip, isDark && styles.tabStripDark]}
-      contentContainerStyle={styles.tabStripContent}
-      keyboardShouldPersistTaps="handled"
-    >
-      {sessions.map((session) => {
-        const label = session.title || session.id.slice(0, 6);
-        const active = session.id === activeId;
-        return (
-          <TouchableOpacity
-            key={session.id}
-            onPress={() => onSelect(session.id)}
-            onLongPress={() => onCloseSession(session.id)}
-            style={[
-              styles.tabChip,
-              isDark && styles.tabChipDark,
-              active && styles.tabChipActive,
-              active && isDark && styles.tabChipActiveDark,
-            ]}
-            accessibilityRole="button"
-            accessibilityState={{ selected: active }}
-          >
-            <Text
-              style={[
-                styles.tabChipText,
-                isDark && styles.tabChipTextDark,
-                active && styles.tabChipTextActive,
-              ]}
-              numberOfLines={1}
-            >
-              {label}
-            </Text>
-            <TouchableOpacity
-              onPress={() => onCloseSession(session.id)}
-              hitSlop={6}
-              style={styles.tabChipClose}
-              accessibilityLabel={`Close ${label}`}
-            >
-              <Ionicons
-                name="close"
-                size={14}
-                color={active ? "#16a34a" : isDark ? "#888888" : "#666666"}
-              />
-            </TouchableOpacity>
-          </TouchableOpacity>
-        );
-      })}
-      <TouchableOpacity
-        onPress={onCreate}
-        style={[styles.tabAdd, isDark && styles.tabAddDark]}
-        accessibilityRole="button"
-        accessibilityLabel="New terminal"
-        testID="terminal-tab-add"
+    <View style={[styles.toolbar, isDark && styles.toolbarDark]}>
+      {showClose ? (
+        <TouchableOpacity
+          onPress={onClose}
+          hitSlop={8}
+          style={styles.toolbarClose}
+        >
+          <Ionicons
+            name="close"
+            size={20}
+            color={isDark ? "#888888" : "#666666"}
+          />
+        </TouchableOpacity>
+      ) : null}
+      <ScrollView
+        horizontal
+        showsHorizontalScrollIndicator={false}
+        style={styles.tabStrip}
+        contentContainerStyle={styles.tabStripContent}
+        keyboardShouldPersistTaps="handled"
       >
-        <Ionicons name="add" size={20} color={isDark ? "#4ade80" : "#16a34a"} />
-      </TouchableOpacity>
-    </ScrollView>
+        {sessions.map((session, index) => {
+          const label = tabLabel(session, index);
+          const a11y = session.title || `Shell ${index + 1}`;
+          const active = session.id === activeId;
+          return (
+            <TouchableOpacity
+              key={session.id}
+              onPress={() => onSelect(session.id)}
+              onLongPress={() => onCloseSession(session.id)}
+              style={[
+                styles.tabChip,
+                isDark && styles.tabChipDark,
+                active && styles.tabChipActive,
+                active && isDark && styles.tabChipActiveDark,
+              ]}
+              accessibilityRole="button"
+              accessibilityLabel={a11y}
+              accessibilityState={{ selected: active }}
+            >
+              <Text
+                style={[
+                  styles.tabChipText,
+                  isDark && styles.tabChipTextDark,
+                  active && styles.tabChipTextActive,
+                ]}
+                numberOfLines={1}
+              >
+                {label}
+              </Text>
+              <TouchableOpacity
+                onPress={() => onCloseSession(session.id)}
+                hitSlop={6}
+                style={styles.tabChipClose}
+                accessibilityLabel={`Close ${a11y}`}
+              >
+                <Ionicons
+                  name="close"
+                  size={14}
+                  color={active ? "#16a34a" : isDark ? "#888888" : "#666666"}
+                />
+              </TouchableOpacity>
+            </TouchableOpacity>
+          );
+        })}
+        <TouchableOpacity
+          onPress={onCreate}
+          style={[styles.tabAdd, isDark && styles.tabAddDark]}
+          accessibilityRole="button"
+          accessibilityLabel="New terminal"
+          testID="terminal-tab-add"
+        >
+          <Ionicons
+            name="add"
+            size={18}
+            color={isDark ? "#4ade80" : "#16a34a"}
+          />
+        </TouchableOpacity>
+      </ScrollView>
+      {onCycleShell ? (
+        <TouchableOpacity
+          onPress={onCycleShell}
+          hitSlop={8}
+          testID="shell-picker"
+          style={styles.toolbarTrailing}
+        >
+          <Text style={[styles.shellChip, isDark && styles.shellChipDark]}>
+            {shell || "auto"}
+          </Text>
+        </TouchableOpacity>
+      ) : badge ? (
+        <Text
+          style={[
+            styles.shellChip,
+            isDark && styles.shellChipDark,
+            styles.toolbarTrailing,
+          ]}
+        >
+          {badge}
+        </Text>
+      ) : null}
+    </View>
   );
 }
 
@@ -370,42 +414,25 @@ function TerminalSocket({
         ? "#ef4444"
         : "#f59e0b";
 
+  const showKeys = keyboardHeight === 0;
+
   return (
     <View style={[styles.container, isDark && styles.containerDark]}>
-      <View style={styles.header}>
-        <HeaderCloseButton
-          showClose={showClose}
-          onClose={handleClose}
-          isDark={isDark}
-        />
-        <Text style={[styles.headerTitle, isDark && styles.headerTitleDark]}>
-          Terminal (Server)
-        </Text>
-        {onCycleShell ? (
-          <TouchableOpacity
-            onPress={onCycleShell}
-            hitSlop={8}
-            testID="shell-picker"
-          >
-            <Text style={[styles.shellChip, isDark && styles.shellChipDark]}>
-              {shell || "auto"}
-            </Text>
-          </TouchableOpacity>
-        ) : (
-          <View style={[styles.statusDot, { backgroundColor: statusColor }]} />
-        )}
-      </View>
-      <TerminalSessionTabs
+      <TerminalToolbar
+        showClose={showClose}
+        onClose={handleClose}
+        isDark={isDark}
+        shell={shell}
+        onCycleShell={onCycleShell}
         sessions={sessions}
         activeId={ptyId}
-        isDark={isDark}
         onSelect={onSelectSession}
         onCloseSession={onCloseSession}
         onCreate={onCreateSession}
       />
 
-      {/* Android adjustResize is unreliable — pad by IME height so keybinds
-          stay above the soft keyboard. iOS uses KeyboardAvoidingView below. */}
+      {/* Android adjustResize is unreliable — pad by IME height so content
+          stays above the soft keyboard. Special keys hide while IME is open. */}
       <View
         style={[
           styles.body,
@@ -434,39 +461,43 @@ function TerminalSocket({
           )}
         </View>
 
-        <View
-          style={[
-            styles.keyButtonRow,
-            { ...ds({ gap: 6, paddingBottom: 4 }, density) },
-          ]}
-        >
-          {SPECIAL_KEYS_NAV.map((k) => (
-            <TerminalKeyButton
-              key={k.label}
-              label={k.label}
-              onPress={() => wsRef.current?.send(k.sequence)}
-              isDark={isDark}
-              disabled={wsState !== "connected"}
-            />
-          ))}
-        </View>
-        <View
-          style={[
-            styles.keyButtonRow,
-            styles.keyButtonRowLast,
-            { ...ds({ gap: 6, paddingBottom: 8 }, density) },
-          ]}
-        >
-          {SPECIAL_KEYS_CTRL.map((k) => (
-            <TerminalKeyButton
-              key={k.label}
-              label={k.label}
-              onPress={() => wsRef.current?.send(k.sequence)}
-              isDark={isDark}
-              disabled={wsState !== "connected"}
-            />
-          ))}
-        </View>
+        {showKeys ? (
+          <>
+            <View
+              style={[
+                styles.keyButtonRow,
+                { ...ds({ gap: 6, paddingBottom: 4 }, density) },
+              ]}
+            >
+              {SPECIAL_KEYS_NAV.map((k) => (
+                <TerminalKeyButton
+                  key={k.label}
+                  label={k.label}
+                  onPress={() => wsRef.current?.send(k.sequence)}
+                  isDark={isDark}
+                  disabled={wsState !== "connected"}
+                />
+              ))}
+            </View>
+            <View
+              style={[
+                styles.keyButtonRow,
+                styles.keyButtonRowLast,
+                { ...ds({ gap: 6, paddingBottom: 8 }, density) },
+              ]}
+            >
+              {SPECIAL_KEYS_CTRL.map((k) => (
+                <TerminalKeyButton
+                  key={k.label}
+                  label={k.label}
+                  onPress={() => wsRef.current?.send(k.sequence)}
+                  isDark={isDark}
+                  disabled={wsState !== "connected"}
+                />
+              ))}
+            </View>
+          </>
+        ) : null}
       </View>
     </View>
   );
@@ -488,7 +519,8 @@ function LocalTerminalView({
   onSwitchToServer?: () => void;
 }) {
   const density = useDensity();
-  const { androidBottom: keyboardBottom } = useKeyboardInset();
+  const { androidBottom: keyboardBottom, height: keyboardHeight } =
+    useKeyboardInset();
   const [output, setOutput] = useState<TerminalLine[]>([
     {
       id: "initial",
@@ -499,6 +531,7 @@ function LocalTerminalView({
   const [executing, setExecuting] = useState(false);
   const scrollRef = useRef<ScrollView>(null);
   const cwdRef = useRef(sessionDirectory || "/");
+  const showKeys = keyboardHeight === 0;
 
   const handleSend = useCallback(async () => {
     const trimmed = input.trim();
@@ -551,16 +584,27 @@ function LocalTerminalView({
 
   return (
     <View style={[styles.container, isDark && styles.containerDark]}>
-      <View style={styles.header}>
-        <HeaderCloseButton
-          showClose={showClose}
-          onClose={handleClose}
-          isDark={isDark}
-        />
-        <Text style={[styles.headerTitle, isDark && styles.headerTitleDark]}>
-          Terminal (Local)
+      <View style={[styles.toolbar, isDark && styles.toolbarDark]}>
+        {showClose ? (
+          <TouchableOpacity
+            onPress={handleClose}
+            hitSlop={8}
+            style={styles.toolbarClose}
+          >
+            <Ionicons
+              name="close"
+              size={20}
+              color={isDark ? "#888888" : "#666666"}
+            />
+          </TouchableOpacity>
+        ) : null}
+        <Text
+          style={[styles.localTitle, isDark && styles.localTitleDark]}
+          numberOfLines={1}
+        >
+          Local
         </Text>
-        {onSwitchToServer && (
+        {onSwitchToServer ? (
           <TouchableOpacity
             onPress={onSwitchToServer}
             hitSlop={8}
@@ -568,8 +612,7 @@ function LocalTerminalView({
           >
             <Text style={styles.switchButtonText}>Server</Text>
           </TouchableOpacity>
-        )}
-        <View style={[styles.statusDot, { backgroundColor: "#22c55e" }]} />
+        ) : null}
       </View>
 
       <KeyboardAvoidingView
@@ -596,42 +639,46 @@ function LocalTerminalView({
           ))}
         </ScrollView>
 
-        <View
-          style={[
-            styles.keyButtonRow,
-            { ...ds({ gap: 6, paddingBottom: 4 }, density) },
-          ]}
-        >
-          {SPECIAL_KEYS_NAV.map((k) => (
-            <TerminalKeyButton
-              key={k.label}
-              label={k.label}
-              onPress={() => {}}
-              isDark={isDark}
-              disabled
-            />
-          ))}
-        </View>
-        <View
-          style={[
-            styles.keyButtonRow,
-            { ...ds({ gap: 6, paddingBottom: 4 }, density) },
-          ]}
-        >
-          {SPECIAL_KEYS_CTRL.map((k) => (
-            <TerminalKeyButton
-              key={k.label}
-              label={k.label}
-              onPress={() => {
-                if (k.label === "Tab" || k.label === "Esc") {
-                  setInput((prev) => prev + k.sequence);
-                }
-              }}
-              isDark={isDark}
-              disabled={executing}
-            />
-          ))}
-        </View>
+        {showKeys ? (
+          <>
+            <View
+              style={[
+                styles.keyButtonRow,
+                { ...ds({ gap: 6, paddingBottom: 4 }, density) },
+              ]}
+            >
+              {SPECIAL_KEYS_NAV.map((k) => (
+                <TerminalKeyButton
+                  key={k.label}
+                  label={k.label}
+                  onPress={() => {}}
+                  isDark={isDark}
+                  disabled
+                />
+              ))}
+            </View>
+            <View
+              style={[
+                styles.keyButtonRow,
+                { ...ds({ gap: 6, paddingBottom: 4 }, density) },
+              ]}
+            >
+              {SPECIAL_KEYS_CTRL.map((k) => (
+                <TerminalKeyButton
+                  key={k.label}
+                  label={k.label}
+                  onPress={() => {
+                    if (k.label === "Tab" || k.label === "Esc") {
+                      setInput((prev) => prev + k.sequence);
+                    }
+                  }}
+                  isDark={isDark}
+                  disabled={executing}
+                />
+              ))}
+            </View>
+          </>
+        ) : null}
 
         <View style={[styles.inputBar, isDark && styles.inputBarDark]}>
           <Text
@@ -794,29 +841,14 @@ export default function TerminalView({
   if (showServerLoading) {
     return (
       <View style={[styles.container, isDark && styles.containerDark]}>
-        <View style={styles.header}>
-          <HeaderCloseButton
-            showClose={showClose}
-            onClose={onClose}
-            isDark={isDark}
-          />
-          <Text style={[styles.headerTitle, isDark && styles.headerTitleDark]}>
-            {t("session.terminal.title", "Terminal")}
-          </Text>
-          <TouchableOpacity
-            onPress={cycleShell}
-            hitSlop={8}
-            testID="shell-picker"
-          >
-            <Text style={[styles.shellChip, isDark && styles.shellChipDark]}>
-              {shell}
-            </Text>
-          </TouchableOpacity>
-        </View>
-        <TerminalSessionTabs
+        <TerminalToolbar
+          showClose={showClose}
+          onClose={onClose}
+          isDark={isDark}
+          shell={shell}
+          onCycleShell={cycleShell}
           sessions={sessions}
           activeId={ptyId}
-          isDark={isDark}
           onSelect={handleSelectSession}
           onCloseSession={handleCloseSession}
           onCreate={handleCreateSession}
@@ -834,29 +866,14 @@ export default function TerminalView({
   if (showServerError) {
     return (
       <View style={[styles.container, isDark && styles.containerDark]}>
-        <View style={styles.header}>
-          <HeaderCloseButton
-            showClose={showClose}
-            onClose={onClose}
-            isDark={isDark}
-          />
-          <Text style={[styles.headerTitle, isDark && styles.headerTitleDark]}>
-            {t("session.terminal.title", "Terminal")}
-          </Text>
-          <TouchableOpacity
-            onPress={cycleShell}
-            hitSlop={8}
-            testID="shell-picker"
-          >
-            <Text style={[styles.shellChip, isDark && styles.shellChipDark]}>
-              {shell}
-            </Text>
-          </TouchableOpacity>
-        </View>
-        <TerminalSessionTabs
+        <TerminalToolbar
+          showClose={showClose}
+          onClose={onClose}
+          isDark={isDark}
+          shell={shell}
+          onCycleShell={cycleShell}
           sessions={sessions}
           activeId={ptyId}
-          isDark={isDark}
           onSelect={handleSelectSession}
           onCloseSession={handleCloseSession}
           onCreate={handleCreateSession}
@@ -868,24 +885,25 @@ export default function TerminalView({
             color={isDark ? "#666666" : "#999999"}
           />
           <Text style={[styles.errorText, isDark && styles.errorTextDark]}>
-            {ptyError ||
+            {formatPtyError(ptyError) ||
               t("session.terminal.error", "Terminal connection failed")}
-            {localAvailable &&
-              "\n\nServer PTY not available. Try Local Terminal instead."}
+            {localAvailable
+              ? "\n\nServer PTY not available. Try Local Terminal instead."
+              : ""}
           </Text>
           <TouchableOpacity style={styles.retryButton} onPress={retryPty}>
             <Text style={styles.retryButtonText}>
-              {t("common.retry", "Retry Server")}
+              {t("common.retry", "Retry")}
             </Text>
           </TouchableOpacity>
-          {localAvailable && (
+          {localAvailable ? (
             <TouchableOpacity
               style={[styles.retryButton, styles.localButton]}
               onPress={() => setMode("local")}
             >
               <Text style={styles.retryButtonText}>Use Local Terminal</Text>
             </TouchableOpacity>
-          )}
+          ) : null}
         </View>
       </View>
     );
@@ -922,41 +940,51 @@ const styles = StyleSheet.create({
   containerDark: {
     backgroundColor: "#0a0a0a",
   },
-  header: {
+  toolbar: {
     flexDirection: "row",
     alignItems: "center",
-    justifyContent: "space-between",
-    paddingHorizontal: 16,
-    paddingVertical: 12,
+    paddingLeft: 8,
+    paddingRight: 10,
+    paddingVertical: 6,
     borderBottomWidth: StyleSheet.hairlineWidth,
     borderBottomColor: "#e5e5e5",
+    gap: 6,
   },
-  headerCloseSpacer: {
-    width: 22,
-    height: 22,
+  toolbarDark: {
+    borderBottomColor: "#2a2a2a",
+  },
+  toolbarClose: {
+    padding: 4,
+  },
+  toolbarTrailing: {
+    flexShrink: 0,
+  },
+  localTitle: {
+    flex: 1,
+    fontSize: 14,
+    fontWeight: "600",
+    color: "#0a0a0a",
+    paddingHorizontal: 4,
+  },
+  localTitleDark: {
+    color: "#ffffff",
   },
   tabStrip: {
-    borderBottomWidth: StyleSheet.hairlineWidth,
-    borderBottomColor: "#e5e5e5",
-    maxHeight: 44,
-  },
-  tabStripDark: {
-    borderBottomColor: "#2a2a2a",
+    flex: 1,
+    maxHeight: 36,
   },
   tabStripContent: {
     flexDirection: "row",
     alignItems: "center",
-    paddingHorizontal: 8,
-    paddingVertical: 6,
+    paddingVertical: 2,
     gap: 6,
   },
   tabChip: {
     flexDirection: "row",
     alignItems: "center",
-    maxWidth: 140,
     paddingLeft: 10,
     paddingRight: 4,
-    paddingVertical: 6,
+    paddingVertical: 5,
     borderRadius: 8,
     backgroundColor: "#f0f0f0",
     borderWidth: 1,
@@ -974,10 +1002,11 @@ const styles = StyleSheet.create({
     borderColor: "#4ade80",
   },
   tabChipText: {
-    fontSize: 12,
-    fontWeight: "600",
+    fontSize: 13,
+    fontWeight: "700",
     color: "#444444",
-    maxWidth: 96,
+    minWidth: 10,
+    textAlign: "center",
   },
   tabChipTextDark: {
     color: "#cccccc",
@@ -986,12 +1015,12 @@ const styles = StyleSheet.create({
     color: "#16a34a",
   },
   tabChipClose: {
-    marginLeft: 4,
+    marginLeft: 2,
     padding: 2,
   },
   tabAdd: {
-    width: 32,
-    height: 32,
+    width: 28,
+    height: 28,
     borderRadius: 8,
     alignItems: "center",
     justifyContent: "center",
@@ -1000,19 +1029,11 @@ const styles = StyleSheet.create({
   tabAddDark: {
     backgroundColor: "rgba(34, 197, 94, 0.2)",
   },
-  headerTitle: {
-    fontSize: 17,
-    fontWeight: "600",
-    color: "#0a0a0a",
-  },
-  headerTitleDark: {
-    color: "#ffffff",
-  },
   body: {
     flex: 1,
   },
   shellChip: {
-    fontSize: 12,
+    fontSize: 11,
     fontWeight: "600",
     color: "#16a34a",
     paddingHorizontal: 8,
@@ -1025,11 +1046,6 @@ const styles = StyleSheet.create({
   shellChipDark: {
     color: "#4ade80",
     backgroundColor: "rgba(34, 197, 94, 0.2)",
-  },
-  statusDot: {
-    width: 8,
-    height: 8,
-    borderRadius: 4,
   },
   centerContent: {
     flex: 1,
@@ -1083,13 +1099,6 @@ const styles = StyleSheet.create({
     paddingHorizontal: 12,
     paddingTop: 8,
     paddingBottom: 4,
-  },
-  line: {
-    color: "#1a1a1a",
-    lineHeight: 20,
-  },
-  lineDark: {
-    color: "#e5e5e5",
   },
   statusInline: {
     fontSize: 13,
