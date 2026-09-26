@@ -11,7 +11,11 @@ import {
 import { Ionicons } from "@expo/vector-icons";
 import { useTranslation } from "react-i18next";
 import type { Client } from "../../lib/sdk";
-import { parseDiff, type DiffHunk, type FileDiffEntry } from "../../lib/parse-diff";
+import {
+  parseDiff,
+  type DiffHunk,
+  type FileDiffEntry,
+} from "../../lib/parse-diff";
 import { useDensity, ds } from "../../lib/density";
 import { useTerminalRun } from "../../stores/terminal-run";
 import { hapticSelection } from "../../lib/haptics";
