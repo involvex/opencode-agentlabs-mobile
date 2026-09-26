@@ -176,8 +176,70 @@ html, body { height: 100%; margin: 0; padding: 0; background: ${theme.background
   var lpTimer = 0;
   var lpX = 0;
   var lpY = 0;
+  var selAnchor = null;
+  var selecting = false;
+  /*__FIND_WORD_AT_START__*/
+  var findWordAt = function (line, col) {
+    function isWord(ch) { return /[A-Za-z0-9_./~-]/.test(ch); }
+    if (!line || col < 0 || col >= line.length) return null;
+    if (!isWord(line[col])) return null;
+    var start = col;
+    while (start > 0 && isWord(line[start - 1])) start--;
+    var end = col;
+    while (end < line.length && isWord(line[end])) end++;
+    return { start: start, length: end - start };
+  };
+  /*__FIND_WORD_AT_END__*/
   function cancelLongpress() {
     if (lpTimer) { clearTimeout(lpTimer); lpTimer = 0; }
+  }
+  function touchCell(clientX, clientY) {
+    try {
+      var screen = host.querySelector(".xterm-screen");
+      if (!screen) return null;
+      var rect = screen.getBoundingClientRect();
+      if (!rect.width || !rect.height || !term.cols || !term.rows) return null;
+      var col = Math.floor((clientX - rect.left) / (rect.width / term.cols));
+      var rowView = Math.floor((clientY - rect.top) / (rect.height / term.rows));
+      if (col < 0) col = 0;
+      if (col > term.cols - 1) col = term.cols - 1;
+      if (rowView < 0) rowView = 0;
+      if (rowView > term.rows - 1) rowView = term.rows - 1;
+      return { col: col, row: rowView + term.buffer.active.viewportY };
+    } catch (e) { return null; }
+  }
+  function lineTextAt(rowAbs) {
+    try {
+      var line = term.buffer.active.getLine(rowAbs);
+      return line ? line.translateToString(true) : "";
+    } catch (e) { return ""; }
+  }
+  function selectWordAt(cell) {
+    if (!cell) return false;
+    var bounds = findWordAt(lineTextAt(cell.row), cell.col);
+    if (!bounds) return false;
+    try {
+      term.select(bounds.start, cell.row, bounds.length);
+      return true;
+    } catch (e) { return false; }
+  }
+  function extendSelection(anchor, cur) {
+    try {
+      var cols = term.cols;
+      var a = anchor.row * cols + anchor.col;
+      var b = cur.row * cols + cur.col;
+      if (a === b) return;
+      var s = a < b ? anchor : cur;
+      term.select(s.col, s.row, Math.abs(b - a));
+    } catch (e) {}
+  }
+  function endTouchSelect() {
+    cancelLongpress();
+    if (!selecting) return;
+    selecting = false;
+    selAnchor = null;
+    var sel = selectionText();
+    post({ type: "longpress", data: sel, hasSelection: !!sel });
   }
   host.addEventListener("touchstart", function (e) {
     var t = e.touches[0];
@@ -185,21 +247,36 @@ html, body { height: 100%; margin: 0; padding: 0; background: ${theme.background
     lpX = t.clientX;
     lpY = t.clientY;
     cancelLongpress();
+    selecting = false;
+    selAnchor = null;
     lpTimer = setTimeout(function () {
       lpTimer = 0;
-      var sel = selectionText();
-      post({ type: "longpress", data: sel, hasSelection: !!sel });
+      var cell = touchCell(lpX, lpY);
+      if (cell) {
+        selectWordAt(cell);
+        selAnchor = cell;
+      }
+      selecting = true;
     }, 600);
   }, { passive: true });
   host.addEventListener("touchmove", function (e) {
     var t = e.touches[0];
     if (!t) return;
+    if (selecting) {
+      var cell = touchCell(t.clientX, t.clientY);
+      if (cell && selAnchor) extendSelection(selAnchor, cell);
+      return;
+    }
     var dx = t.clientX - lpX;
     var dy = t.clientY - lpY;
     if (dx * dx + dy * dy > 100) cancelLongpress();
   }, { passive: true });
-  host.addEventListener("touchend", cancelLongpress, { passive: true });
-  host.addEventListener("touchcancel", cancelLongpress, { passive: true });
+  host.addEventListener("touchend", endTouchSelect, { passive: true });
+  host.addEventListener("touchcancel", function () {
+    cancelLongpress();
+    selecting = false;
+    selAnchor = null;
+  }, { passive: true });
   function handle(msg) {
     if (!msg || typeof msg.type !== "string") return;
     if (msg.type === "write" && typeof msg.data === "string") term.write(msg.data);

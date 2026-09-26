@@ -124,6 +124,74 @@ test("buildTerminalHtml answers get-buffer from scrollback lines", () => {
   assert.ok(html.includes('type: "selection"'));
 });
 
+test("buildTerminalHtml selects the word at the long-press point", () => {
+  const html = buildTerminalHtml({
+    theme: xtermTheme(true),
+    fontSize: 13,
+    scrollback: 2000,
+    vendor: FAKE_VENDOR,
+  });
+  assert.ok(html.includes(".xterm-screen"));
+  assert.ok(html.includes("viewportY"));
+  assert.ok(html.includes("term.select("));
+  assert.ok(html.includes("selectWordAt"));
+  assert.ok(html.includes("extendSelection"));
+  assert.ok(html.includes("findWordAt"));
+});
+
+test("buildTerminalHtml defers the menu until touchend for drag-select", () => {
+  const html = buildTerminalHtml({
+    theme: xtermTheme(true),
+    fontSize: 13,
+    scrollback: 2000,
+    vendor: FAKE_VENDOR,
+  });
+  assert.ok(html.includes("endTouchSelect"));
+  assert.ok(html.includes("selecting = true"));
+});
+
+interface WordHit {
+  start: number;
+  length: number;
+}
+
+function extractFindWordAt(
+  html: string,
+): (line: string, col: number) => WordHit | null {
+  const fromMarker = "/*__FIND_WORD_AT_START__*/";
+  const toMarker = "/*__FIND_WORD_AT_END__*/";
+  const from = html.indexOf(fromMarker);
+  const to = html.indexOf(toMarker);
+  assert.ok(from !== -1 && to > from, "word finder markers missing");
+  const snippet = html.slice(from + fromMarker.length, to);
+  const factory = new Function(`${snippet}; return findWordAt;`) as () => (
+    line: string,
+    col: number,
+  ) => WordHit | null;
+  return factory();
+}
+
+test("embedded word finder selects paths and words like a terminal", () => {
+  const html = buildTerminalHtml({
+    theme: xtermTheme(true),
+    fontSize: 13,
+    scrollback: 2000,
+    vendor: FAKE_VENDOR,
+  });
+  const findWordAt = extractFindWordAt(html);
+  assert.deepEqual(findWordAt("$ ls src/lib/time-format.ts", 8), {
+    start: 5,
+    length: 22,
+  });
+  assert.deepEqual(findWordAt("foo, bar", 1), { start: 0, length: 3 });
+  assert.deepEqual(findWordAt("(unchanged)", 2), { start: 1, length: 9 });
+  assert.deepEqual(findWordAt("17ms (36ms)", 7), { start: 6, length: 4 });
+  assert.equal(findWordAt("foo bar", 3), null);
+  assert.equal(findWordAt("", 0), null);
+  assert.equal(findWordAt("foo", -1), null);
+  assert.equal(findWordAt("foo", 3), null);
+});
+
 test("buildTerminalHtml inline script is syntactically valid JS", () => {
   const html = buildTerminalHtml({
     theme: xtermTheme(true),

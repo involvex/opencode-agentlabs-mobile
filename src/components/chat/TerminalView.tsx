@@ -553,7 +553,7 @@ function LocalTerminalView({
     void Clipboard.getStringAsync()
       .then((text) => {
         if (!text) {
-          Alert.alert(t("session.terminal.clipboardEmpty"));
+          Alert.alert(t("chat.terminal.clipboardEmpty", "Clipboard is empty"));
           return;
         }
         void hapticSelection();
@@ -565,21 +565,25 @@ function LocalTerminalView({
   const showLocalLineMenu = useCallback(
     (lineText: string) => {
       void hapticSelection();
-      Alert.alert(t("session.terminal.selectionTitle"), undefined, [
-        {
-          text: t("session.terminal.copy"),
-          onPress: () => copyLocalText(lineText),
-        },
-        {
-          text: t("session.terminal.copyAll"),
-          onPress: copyAllLocal,
-        },
-        {
-          text: t("session.terminal.paste"),
-          onPress: pasteToLocalInput,
-        },
-        { text: t("common.cancel"), style: "cancel" },
-      ]);
+      Alert.alert(
+        t("chat.terminal.selectionTitle", "Terminal selection"),
+        undefined,
+        [
+          {
+            text: t("chat.terminal.copy", "Copy"),
+            onPress: () => copyLocalText(lineText),
+          },
+          {
+            text: t("chat.terminal.copyAll", "Copy all"),
+            onPress: copyAllLocal,
+          },
+          {
+            text: t("chat.terminal.paste", "Paste"),
+            onPress: pasteToLocalInput,
+          },
+          { text: t("common.cancel"), style: "cancel" },
+        ],
+      );
     },
     [t, copyLocalText, copyAllLocal, pasteToLocalInput],
   );
@@ -911,7 +915,7 @@ export default function TerminalView({
         <View style={styles.centerContent}>
           <ActivityIndicator color={isDark ? "#22c55e" : "#16a34a"} />
           <Text style={[styles.statusText, isDark && styles.statusTextDark]}>
-            {t("session.terminal.connecting", "Connecting to terminal...")}
+            {t("chat.terminal.connecting", "Connecting to terminal...")}
           </Text>
         </View>
       </View>
@@ -941,7 +945,7 @@ export default function TerminalView({
           />
           <Text style={[styles.errorText, isDark && styles.errorTextDark]}>
             {formatPtyError(ptyError) ||
-              t("session.terminal.error", "Terminal connection failed")}
+              t("chat.terminal.error", "Terminal connection failed")}
             {localAvailable
               ? "\n\nServer PTY not available. Try Local Terminal instead."
               : ""}

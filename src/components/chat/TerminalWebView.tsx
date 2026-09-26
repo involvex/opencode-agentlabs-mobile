@@ -173,7 +173,9 @@ export default function TerminalWebView({
     void Clipboard.getStringAsync()
       .then((text) => {
         if (!text) {
-          Alert.alert(tRef.current("session.terminal.clipboardEmpty"));
+          Alert.alert(
+            tRef.current("chat.terminal.clipboardEmpty", "Clipboard is empty"),
+          );
           return;
         }
         void hapticSelection();
@@ -191,34 +193,42 @@ export default function TerminalWebView({
     (selection: string, hasSelection: boolean) => {
       const translate = tRef.current;
       if (hasSelection) {
-        Alert.alert(translate("session.terminal.selectionTitle"), undefined, [
+        Alert.alert(
+          translate("chat.terminal.selectionTitle", "Terminal selection"),
+          undefined,
+          [
+            {
+              text: translate("chat.terminal.copy", "Copy"),
+              onPress: () => copyToClipboard(selection),
+            },
+            {
+              text: translate("chat.terminal.copyAll", "Copy all"),
+              onPress: requestCopyAll,
+            },
+            {
+              text: translate("chat.terminal.paste", "Paste"),
+              onPress: pasteFromClipboard,
+            },
+            { text: translate("common.cancel"), style: "cancel" },
+          ],
+        );
+        return;
+      }
+      Alert.alert(
+        translate("chat.terminal.selectionTitle", "Terminal selection"),
+        undefined,
+        [
           {
-            text: translate("session.terminal.copy"),
-            onPress: () => copyToClipboard(selection),
-          },
-          {
-            text: translate("session.terminal.copyAll"),
+            text: translate("chat.terminal.copyAll", "Copy all"),
             onPress: requestCopyAll,
           },
           {
-            text: translate("session.terminal.paste"),
+            text: translate("chat.terminal.paste", "Paste"),
             onPress: pasteFromClipboard,
           },
           { text: translate("common.cancel"), style: "cancel" },
-        ]);
-        return;
-      }
-      Alert.alert(translate("session.terminal.selectionTitle"), undefined, [
-        {
-          text: translate("session.terminal.copyAll"),
-          onPress: requestCopyAll,
-        },
-        {
-          text: translate("session.terminal.paste"),
-          onPress: pasteFromClipboard,
-        },
-        { text: translate("common.cancel"), style: "cancel" },
-      ]);
+        ],
+      );
     },
     [copyToClipboard, pasteFromClipboard, requestCopyAll],
   );
@@ -252,7 +262,7 @@ export default function TerminalWebView({
         if (!copyAllPendingRef.current) return;
         copyAllPendingRef.current = false;
         if (!msg.data.trim()) {
-          Alert.alert(tRef.current("session.terminal.empty"));
+          Alert.alert(tRef.current("chat.terminal.empty", "Terminal is empty"));
           return;
         }
         copyToClipboard(msg.data);
