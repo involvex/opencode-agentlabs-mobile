@@ -13,24 +13,18 @@ jobs:
     steps:
       - uses: actions/checkout@v6
 
-      - uses: actions/setup-node@v6
-        with:
-          # Node >= 23.6 runs the TypeScript test files natively (type-stripping),
-          # matching the local toolchain. No build step or extra deps required.
-          node-version: 24
-          cache: npm
-
+      - uses: oven-sh/setup-bun@v2.2.0
       - name: Install dependencies
-        run: npm install --legacy-peer-deps
+        run: bun install
 
       - name: Check release version metadata
-        run: npm run check:versions
+        run: bun run check:versions
 
       - name: Typecheck
-        run: npm run typecheck
+        run: bun run typecheck
 
       - name: Unit tests
-        run: npm test
+        run: bun test
 
   build:
     runs-on: ubuntu-latest
@@ -44,15 +38,7 @@ jobs:
     steps:
       - uses: actions/checkout@v6
 
-      - uses: actions/setup-node@v6
-        with:
-          node-version: 20
-          cache: npm
-
-      - uses: actions/setup-java@v5
-        with:
-          distribution: temurin
-          java-version: 17
+      - uses: oven-sh/setup-bun@v2.2.0
 
       - name: Setup Android SDK
         uses: android-actions/setup-android@v4
@@ -69,7 +55,7 @@ jobs:
             ${{ runner.os }}-gradle-
 
       - name: Install dependencies
-        run: npm install --legacy-peer-deps
+        run: bun install
 
       - name: Set Sentry release identifiers
         # sentry.gradle (applied from android/app/build.gradle) defaults the
@@ -80,13 +66,13 @@ jobs:
         # never looks up, so symbolication silently failed. Pin the Gradle-side
         # values to exactly what the app reports.
         run: |
-          VERSION=$(node -p "require('./app.json').expo.version")
+          VERSION=$(bun -p "require('./app.json').expo.version")
           echo "SENTRY_RELEASE=opencode-mobile@${VERSION}" >> "$GITHUB_ENV"
           echo "SENTRY_DIST=${VERSION}" >> "$GITHUB_ENV"
           echo "Sentry release=opencode-mobile@${VERSION} dist=${VERSION}"
 
       - name: Expo prebuild
-        run: npx expo prebuild --platform android --no-install
+        run: bunx expo prebuild --platform android --no-install
 
       - name: Setup signing
         run: |
@@ -149,10 +135,7 @@ jobs:
     steps:
       - uses: actions/checkout@v6
 
-      - uses: actions/setup-node@v6
-        with:
-          node-version: 20
-          cache: npm
+      - uses: oven-sh/setup-bun@v2.2.0
 
       # F-Droid's metadata.yml prebuild patch bumps the Kotlin/Java toolchain
       # target from 17 to 21 (see the "Apply F-Droid source patches" step
@@ -183,7 +166,7 @@ jobs:
             ${{ runner.os }}-gradle-fdroid-
 
       - name: Install dependencies
-        run: npm install --legacy-peer-deps
+        run: bun install
 
       - name: Apply F-Droid source patches
         # Mirrors distribution/fdroid-submission/metadata.yml `Builds:.prebuild`
