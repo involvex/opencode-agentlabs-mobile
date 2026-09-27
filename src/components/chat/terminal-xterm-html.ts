@@ -183,8 +183,13 @@ html, body { height: 100%; margin: 0; padding: 0; background: ${theme.background
     ro.observe(host);
     ro.observe(document.documentElement);
   }
+  var selShownAt = 0;
   host.addEventListener("click", function () {
-    if (selVisible) { hideSelUI(true); return; }
+    if (selVisible) {
+      if (Date.now() - selShownAt < 500) return;
+      hideSelUI(true);
+      return;
+    }
     term.focus();
   });
   function selectionText() {
@@ -378,6 +383,7 @@ html, body { height: 100%; margin: 0; padding: 0; background: ${theme.background
     selbar.style.left = Math.round(tx) + "px";
     selbar.style.top = Math.round(ty) + "px";
     selVisible = true;
+    selShownAt = Date.now();
   }
   function hideSelUI(clear) {
     selVisible = false;
@@ -392,7 +398,7 @@ html, body { height: 100%; margin: 0; padding: 0; background: ${theme.background
     if (!selecting) return;
     selecting = false;
     selAnchor = null;
-    showSelUI();
+    if (selVisible) showSelUI();
   }
   function inSelbar(el) {
     try { return !!el.closest("#selbar"); } catch (e) { return false; }
@@ -414,6 +420,7 @@ html, body { height: 100%; margin: 0; padding: 0; background: ${theme.background
         selAnchor = cell;
       }
       selecting = true;
+      showSelUI();
     }, 600);
   }, { passive: true });
   host.addEventListener("touchmove", function (e) {
@@ -434,6 +441,7 @@ html, body { height: 100%; margin: 0; padding: 0; background: ${theme.background
   host.addEventListener("touchend", endTouchSelect, { passive: true });
   host.addEventListener("touchcancel", function () {
     cancelLongpress();
+    if (selecting && selectionText()) showSelUI();
     selecting = false;
     selAnchor = null;
   }, { passive: true });

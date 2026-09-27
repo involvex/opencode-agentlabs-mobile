@@ -160,7 +160,7 @@ test("buildTerminalHtml selects the word at the long-press point", () => {
   assert.ok(html.includes("findWordAt"));
 });
 
-test("buildTerminalHtml defers the menu until touchend for drag-select", () => {
+test("buildTerminalHtml shows selection UI at long-press fire time", () => {
   const html = buildTerminalHtml({
     theme: xtermTheme(true),
     fontSize: 13,
@@ -168,7 +168,9 @@ test("buildTerminalHtml defers the menu until touchend for drag-select", () => {
     vendor: FAKE_VENDOR,
   });
   assert.ok(html.includes("endTouchSelect"));
-  assert.ok(html.includes("selecting = true"));
+  assert.ok(html.includes("selecting = true;"));
+  assert.ok(html.includes("showSelUI();"));
+  assert.ok(html.includes("selShownAt"));
 });
 
 interface WordHit {
