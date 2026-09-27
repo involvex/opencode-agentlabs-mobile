@@ -22,8 +22,7 @@ import {
 } from "./terminal-xterm-html";
 import { parseOutbound } from "./terminal-copy";
 
-export { buildTerminalMenuOptions, parseOutbound } from "./terminal-copy";
-export type { TerminalMenuOption } from "./terminal-copy";
+export { parseOutbound } from "./terminal-copy";
 
 export interface TerminalWebViewHandle {
   write: (data: string) => void;
@@ -79,7 +78,6 @@ export default function TerminalWebView({
   useEffect(() => {
     tRef.current = t;
   }, [t]);
-  const copyAllPendingRef = useRef(false);
 
   useEffect(() => {
     const attempt = loadKey;
@@ -94,12 +92,19 @@ export default function TerminalWebView({
         if (cancelled) return;
         setHtml((prev) => {
           if (prev !== null && attempt === 0) return prev;
+          const translate = tRef.current;
           return buildTerminalHtml({
             theme: xtermTheme(isDark),
             fontSize,
             scrollback: SCROLLBACK,
             vendor,
             fontFamily,
+            labels: {
+              copy: translate("chat.terminal.copy", "Copy"),
+              copyAll: translate("chat.terminal.copyAll", "Copy all"),
+              paste: translate("chat.terminal.paste", "Paste"),
+              dismiss: translate("chat.terminal.dismiss", "Dismiss"),
+            },
           });
         });
       })
@@ -184,54 +189,18 @@ export default function TerminalWebView({
       .catch(() => {});
   }, []);
 
-  const requestCopyAll = useCallback(() => {
-    copyAllPendingRef.current = true;
-    send({ type: "get-buffer" });
+  const sendLabels = useCallback(() => {
+    const translate = tRef.current;
+    send({
+      type: "labels",
+      labels: {
+        copy: translate("chat.terminal.copy", "Copy"),
+        copyAll: translate("chat.terminal.copyAll", "Copy all"),
+        paste: translate("chat.terminal.paste", "Paste"),
+        dismiss: translate("chat.terminal.dismiss", "Dismiss"),
+      },
+    });
   }, [send]);
-
-  const showSelectionMenu = useCallback(
-    (selection: string, hasSelection: boolean) => {
-      const translate = tRef.current;
-      if (hasSelection) {
-        Alert.alert(
-          translate("chat.terminal.selectionTitle", "Terminal selection"),
-          undefined,
-          [
-            {
-              text: translate("chat.terminal.copy", "Copy"),
-              onPress: () => copyToClipboard(selection),
-            },
-            {
-              text: translate("chat.terminal.copyAll", "Copy all"),
-              onPress: requestCopyAll,
-            },
-            {
-              text: translate("chat.terminal.paste", "Paste"),
-              onPress: pasteFromClipboard,
-            },
-            { text: translate("common.cancel"), style: "cancel" },
-          ],
-        );
-        return;
-      }
-      Alert.alert(
-        translate("chat.terminal.selectionTitle", "Terminal selection"),
-        undefined,
-        [
-          {
-            text: translate("chat.terminal.copyAll", "Copy all"),
-            onPress: requestCopyAll,
-          },
-          {
-            text: translate("chat.terminal.paste", "Paste"),
-            onPress: pasteFromClipboard,
-          },
-          { text: translate("common.cancel"), style: "cancel" },
-        ],
-      );
-    },
-    [copyToClipboard, pasteFromClipboard, requestCopyAll],
-  );
 
   const handleMessage = useCallback(
     (event: WebViewMessageEvent) => {
@@ -243,6 +212,7 @@ export default function TerminalWebView({
         flushPending();
         onReadyRef.current?.();
         send({ type: "fit" });
+        sendLabels();
         return;
       }
       if (msg.type === "input") {
@@ -253,28 +223,20 @@ export default function TerminalWebView({
         onResizeRef.current?.(msg.cols, msg.rows);
         return;
       }
-      if (msg.type === "longpress") {
-        void hapticSelection();
-        showSelectionMenu(msg.data, msg.hasSelection);
-        return;
-      }
-      if (msg.type === "buffer") {
-        if (!copyAllPendingRef.current) return;
-        copyAllPendingRef.current = false;
-        if (!msg.data.trim()) {
-          Alert.alert(tRef.current("chat.terminal.empty", "Terminal is empty"));
-          return;
-        }
+      if (msg.type === "copy") {
         copyToClipboard(msg.data);
         return;
       }
-      if (msg.type === "selection") return;
+      if (msg.type === "paste-request") {
+        pasteFromClipboard();
+        return;
+      }
       if (msg.type === "error") {
         setFailed(msg.message);
         return;
       }
     },
-    [flushPending, send, showSelectionMenu, copyToClipboard],
+    [flushPending, send, sendLabels, copyToClipboard, pasteFromClipboard],
   );
 
   const handleLayout = useCallback(

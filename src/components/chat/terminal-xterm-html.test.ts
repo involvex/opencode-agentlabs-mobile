@@ -95,33 +95,54 @@ test("buildTerminalHtml schedules ResizeObserver and resize posts", () => {
   assert.ok(html.includes('msg.type === "fit"'));
 });
 
-test("buildTerminalHtml posts longpress with selection on touch hold", () => {
+test("buildTerminalHtml shows handles and toolbar on touch hold", () => {
   const html = buildTerminalHtml({
     theme: xtermTheme(true),
     fontSize: 13,
     scrollback: 2000,
     vendor: FAKE_VENDOR,
   });
-  assert.ok(html.includes('type: "longpress"'));
+  assert.ok(html.includes('id="selbar"'));
+  assert.ok(html.includes('id="hstart"'));
+  assert.ok(html.includes('id="hend"'));
+  assert.ok(html.includes("showSelUI"));
+  assert.ok(html.includes("hideSelUI"));
   assert.ok(html.includes("getSelection"));
+  assert.ok(html.includes("getSelectionPosition"));
   assert.ok(html.includes("touchstart"));
   assert.ok(html.includes("touchmove"));
   assert.ok(html.includes("touchend"));
-  assert.ok(html.includes("hasSelection"));
 });
 
-test("buildTerminalHtml answers get-buffer from scrollback lines", () => {
+test("buildTerminalHtml toolbar copies, pastes and dismisses", () => {
   const html = buildTerminalHtml({
     theme: xtermTheme(true),
     fontSize: 13,
     scrollback: 2000,
     vendor: FAKE_VENDOR,
   });
-  assert.ok(html.includes('msg.type === "get-buffer"'));
-  assert.ok(html.includes('type: "buffer"'));
+  assert.ok(html.includes('type: "copy"'));
+  assert.ok(html.includes('type: "paste-request"'));
+  assert.ok(html.includes("clearSelection"));
+  assert.ok(html.includes('msg.type === "labels"'));
   assert.ok(html.includes("translateToString"));
-  assert.ok(html.includes('msg.type === "get-selection"'));
-  assert.ok(html.includes('type: "selection"'));
+});
+
+test("buildTerminalHtml honors custom toolbar labels", () => {
+  const html = buildTerminalHtml({
+    theme: xtermTheme(true),
+    fontSize: 13,
+    scrollback: 2000,
+    vendor: FAKE_VENDOR,
+    labels: {
+      copy: "Kopieren",
+      copyAll: "Alles",
+      paste: "Einfügen",
+      dismiss: "X",
+    },
+  });
+  assert.ok(html.includes("Kopieren"));
+  assert.ok(html.includes("Alles"));
 });
 
 test("buildTerminalHtml selects the word at the long-press point", () => {

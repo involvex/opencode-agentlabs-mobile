@@ -645,6 +645,7 @@
       "copy": "Copy",
       "copyAll": "Copy all",
       "paste": "Paste",
+      "dismiss": "Dismiss",
       "copied": "Copied to clipboard",
       "pasted": "Pasted",
       "empty": "Terminal is empty",

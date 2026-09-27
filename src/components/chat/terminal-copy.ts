@@ -33,30 +33,14 @@ export function parseOutbound(raw: string): XtermOutbound | null {
       };
     }
     if (
-      (type === "longpress" || type === "selection") &&
-      typeof (parsed as { data?: unknown }).data === "string" &&
-      typeof (parsed as { hasSelection?: unknown }).hasSelection === "boolean"
-    ) {
-      const p = parsed as { data: string; hasSelection: boolean };
-      return { type, data: p.data, hasSelection: p.hasSelection };
-    }
-    if (
-      type === "buffer" &&
+      type === "copy" &&
       typeof (parsed as { data?: unknown }).data === "string"
     ) {
-      return { type: "buffer", data: (parsed as { data: string }).data };
+      return { type: "copy", data: (parsed as { data: string }).data };
     }
+    if (type === "paste-request") return { type: "paste-request" };
     return null;
   } catch {
     return null;
   }
-}
-
-export type TerminalMenuOption = "copy" | "copy-all" | "paste";
-
-export function buildTerminalMenuOptions(
-  hasSelection: boolean,
-): TerminalMenuOption[] {
-  if (hasSelection) return ["copy", "copy-all", "paste"];
-  return ["copy-all", "paste"];
 }
