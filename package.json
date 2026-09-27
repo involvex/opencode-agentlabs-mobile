@@ -2,6 +2,11 @@
   "name": "@opencode-ai/mobile",
   "version": "0.4.14",
   "private": true,
+  "packageManager": "bun@1.4.2",
+  "engines": {
+    "node": ">=22.0.0",
+    "bun": ">=1.4.2"
+  },
   "main": "expo-router/entry",
   "scripts": {
     "start": "expo start",
