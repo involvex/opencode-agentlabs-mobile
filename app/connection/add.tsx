@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useRef, useCallback } from "react";
 import {
   View,
   Text,
@@ -20,12 +20,18 @@ import { parseUrl } from "../../src/lib/diagnostics-classify";
 import { buildAuth } from "../../src/lib/auth";
 import { AnalyticsEvent, track } from "../../src/lib/analytics";
 import { useDensity, ds } from "../../src/lib/density";
+import type BottomSheet from "@gorhom/bottom-sheet";
+import { createClient, type Client } from "../../src/lib/sdk";
+import {
+  DirectorySwitcher,
+  DirectoryBrowserSheet,
+} from "../../src/components/chat";
 
 export default function AddConnectionScreen() {
   const isDark = useTheme();
   const { t } = useTranslation();
 
-  const { addConnection, testConnection } = useConnections();
+  const { addConnection, testConnection, recentDirectories } = useConnections();
   const density = useDensity();
 
   const [mode, setMode] = useState<"quick" | "advanced">("quick");
@@ -38,6 +44,61 @@ export default function AddConnectionScreen() {
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [isConnecting, setIsConnecting] = useState(false);
+
+  // Directory picker (same DirectorySwitcher → DirectoryBrowserSheet flow as
+  // the sessions tab). Only mounted in the advanced form (the quick form has
+  // no directory field), but the refs/hooks live at top level so hook order
+  // is identical across both returns.
+  const dirSheetRef = useRef<BottomSheet>(null);
+  const browserSheetRef = useRef<BottomSheet>(null);
+  const [browseStartDir, setBrowseStartDir] = useState<string | null>(null);
+  // Home directory of the server this form points at (for ~ expansion and as
+  // a browse start fallback) — fetched lazily on first picker open.
+  const [pickerHome, setPickerHome] = useState<string | null>(null);
+
+  // Browse client built from THIS form's typed values — nothing is saved yet,
+  // so there are no stored secrets to consult (unlike the edit screen).
+  const buildClient = useCallback(
+    (browseDir?: string): Client | null => {
+      const baseUrl = url.trim();
+      if (!parseUrl(baseUrl).valid) return null;
+      return createClient({
+        baseUrl,
+        directory: browseDir,
+        auth: buildAuth(username, password || undefined),
+      });
+    },
+    [url, username, password],
+  );
+
+  const openDirectoryPicker = useCallback(() => {
+    if (!parseUrl(url.trim()).valid) {
+      Alert.alert(t("common.error"), t("connection.shared.alerts.enterUrl"));
+      return;
+    }
+    dirSheetRef.current?.expand();
+    // Fill in the server home once (for ~ chips + browse start fallback).
+    if (pickerHome) return;
+    const probe = buildClient();
+    if (!probe) return;
+    probe.path
+      .get()
+      .then((paths) => setPickerHome(paths?.home ?? null))
+      .catch(() => {});
+  }, [url, pickerHome, buildClient, t]);
+
+  const openBrowserSheet = useCallback(() => {
+    setBrowseStartDir(directory || pickerHome || null);
+    browserSheetRef.current?.expand();
+  }, [directory, pickerHome]);
+
+  const handleSwitchDirectory = useCallback((dir?: string) => {
+    setDirectory(dir ?? "");
+  }, []);
+
+  const handleBrowserSelect = useCallback((dir: string) => {
+    setDirectory(dir);
+  }, []);
 
   const buildUrl = () => {
     if (mode === "advanced") return url.trim();
@@ -450,224 +511,269 @@ export default function AddConnectionScreen() {
 
   // Advanced mode - full options
   return (
-    <ScrollView
-      style={[styles.container, isDark && styles.containerDark]}
-      contentContainerStyle={[
-        styles.content,
-        { ...ds({ padding: 16 }, density) },
-      ]}
-      keyboardShouldPersistTaps="handled"
-    >
-      <TouchableOpacity
-        style={styles.backToQuick}
-        onPress={() => setMode("quick")}
+    <View style={[styles.container, isDark && styles.containerDark]}>
+      <ScrollView
+        style={[styles.container, isDark && styles.containerDark]}
+        contentContainerStyle={[
+          styles.content,
+          { ...ds({ padding: 16 }, density) },
+        ]}
+        keyboardShouldPersistTaps="handled"
       >
-        <Ionicons
-          name="chevron-back"
-          size={16}
-          color={isDark ? "#888888" : "#666666"}
-        />
-        <Text style={[styles.backToQuickText, isDark && styles.hintDark]}>
-          {t("connection.add.advanced.backToQuick")}
-        </Text>
-      </TouchableOpacity>
+        <TouchableOpacity
+          style={styles.backToQuick}
+          onPress={() => setMode("quick")}
+        >
+          <Ionicons
+            name="chevron-back"
+            size={16}
+            color={isDark ? "#888888" : "#666666"}
+          />
+          <Text style={[styles.backToQuickText, isDark && styles.hintDark]}>
+            {t("connection.add.advanced.backToQuick")}
+          </Text>
+        </TouchableOpacity>
 
-      {/* Connection Type */}
-      <Text style={[styles.label, isDark && styles.labelDark]}>
-        {t("connection.shared.connectionType")}
-      </Text>
-      <View style={styles.typeContainer}>
-        {[
-          {
-            type: "local" as const,
-            label: t("connection.shared.types.local"),
-            icon: "wifi" as const,
-          },
-          {
-            type: "tunnel" as const,
-            label: t("connection.shared.types.tunnel"),
-            icon: "globe" as const,
-          },
-          {
-            type: "cloud" as const,
-            label: t("connection.shared.types.cloud"),
-            icon: "cloud" as const,
-          },
-        ].map((opt) => (
-          <TouchableOpacity
-            key={opt.type}
+        {/* Connection Type */}
+        <Text style={[styles.label, isDark && styles.labelDark]}>
+          {t("connection.shared.connectionType")}
+        </Text>
+        <View style={styles.typeContainer}>
+          {[
+            {
+              type: "local" as const,
+              label: t("connection.shared.types.local"),
+              icon: "wifi" as const,
+            },
+            {
+              type: "tunnel" as const,
+              label: t("connection.shared.types.tunnel"),
+              icon: "globe" as const,
+            },
+            {
+              type: "cloud" as const,
+              label: t("connection.shared.types.cloud"),
+              icon: "cloud" as const,
+            },
+          ].map((opt) => (
+            <TouchableOpacity
+              key={opt.type}
+              style={[
+                styles.typeOption,
+                isDark && styles.typeOptionDark,
+                type === opt.type && styles.typeOptionSelected,
+                type === opt.type && isDark && styles.typeOptionSelectedDark,
+              ]}
+              onPress={() => setType(opt.type)}
+            >
+              <Ionicons
+                name={opt.icon}
+                size={20}
+                color={
+                  type === opt.type
+                    ? isDark
+                      ? "#0a0a0a"
+                      : "#ffffff"
+                    : isDark
+                      ? "#888888"
+                      : "#666666"
+                }
+              />
+              <Text
+                style={[
+                  styles.typeLabel,
+                  isDark && styles.textDark,
+                  type === opt.type && styles.typeLabelSelected,
+                  type === opt.type && isDark && styles.typeLabelSelectedDark,
+                ]}
+              >
+                {opt.label}
+              </Text>
+            </TouchableOpacity>
+          ))}
+        </View>
+
+        {/* Name */}
+        <Text style={[styles.label, isDark && styles.labelDark]}>
+          {t("connection.shared.name")}
+        </Text>
+        <TextInput
+          style={[styles.input, isDark && styles.inputDark]}
+          placeholder={t("connection.shared.namePlaceholder")}
+          placeholderTextColor={isDark ? "#666666" : "#999999"}
+          value={name}
+          onChangeText={setName}
+        />
+
+        {/* URL */}
+        <Text style={[styles.label, isDark && styles.labelDark]}>
+          {t("connection.shared.serverUrl")}
+        </Text>
+        <TextInput
+          style={[styles.input, isDark && styles.inputDark]}
+          placeholder={
+            type === "local"
+              ? "http://192.168.1.100:4096"
+              : type === "tunnel"
+                ? "https://your-tunnel.trycloudflare.com"
+                : "https://api.opencode.ai"
+          }
+          placeholderTextColor={isDark ? "#666666" : "#999999"}
+          value={url}
+          onChangeText={setUrl}
+          autoCapitalize="none"
+          autoCorrect={false}
+          keyboardType="url"
+        />
+        <Text style={[styles.hint, isDark && styles.hintDark]}>
+          {t("connection.add.advanced.urlHintPrefix")}
+          <Text style={styles.code}>http://100.64.12.34:4096</Text>
+          {t("connection.add.advanced.urlHintOr")}
+          <Text style={styles.code}>http://my-mac.tailnet.ts.net:4096</Text>
+          {t("connection.add.advanced.urlHintUse")}
+          <Text style={styles.code}>https://</Text>
+          {t("connection.add.advanced.urlHintSuffix")}
+        </Text>
+
+        {/* Directory */}
+        <Text style={[styles.label, isDark && styles.labelDark]}>
+          {t("connection.shared.directoryOptional")}
+        </Text>
+        <View style={styles.directoryRow}>
+          <TextInput
             style={[
-              styles.typeOption,
-              isDark && styles.typeOptionDark,
-              type === opt.type && styles.typeOptionSelected,
-              type === opt.type && isDark && styles.typeOptionSelectedDark,
+              styles.input,
+              styles.directoryInput,
+              isDark && styles.inputDark,
             ]}
-            onPress={() => setType(opt.type)}
+            placeholder="/path/to/project"
+            placeholderTextColor={isDark ? "#666666" : "#999999"}
+            value={directory}
+            onChangeText={setDirectory}
+            autoCapitalize="none"
+            autoCorrect={false}
+          />
+          <TouchableOpacity
+            style={[
+              styles.directoryPickBtn,
+              isDark && styles.directoryPickBtnDark,
+            ]}
+            onPress={openDirectoryPicker}
+            accessibilityRole="button"
+            accessibilityLabel={t("connection.shared.directoryPickerLabel")}
+            hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
           >
             <Ionicons
-              name={opt.icon}
+              name="swap-horizontal-outline"
               size={20}
-              color={
-                type === opt.type
-                  ? isDark
-                    ? "#0a0a0a"
-                    : "#ffffff"
-                  : isDark
-                    ? "#888888"
-                    : "#666666"
-              }
+              color={isDark ? "#c4b5fd" : "#6d28d9"}
+            />
+          </TouchableOpacity>
+        </View>
+        <Text style={[styles.hint, isDark && styles.hintDark]}>
+          {t("connection.add.advanced.directoryHint")}
+        </Text>
+
+        {/* Auth */}
+        <Text style={[styles.sectionTitle, isDark && styles.textDark]}>
+          {t("connection.shared.authentication")}
+        </Text>
+
+        <Text style={[styles.label, isDark && styles.labelDark]}>
+          {t("connection.shared.username")}
+        </Text>
+        <TextInput
+          style={[styles.input, isDark && styles.inputDark]}
+          placeholder="admin"
+          placeholderTextColor={isDark ? "#666666" : "#999999"}
+          value={username}
+          onChangeText={setUsername}
+          autoCapitalize="none"
+          autoCorrect={false}
+        />
+
+        <Text style={[styles.label, isDark && styles.labelDark]}>
+          {t("connection.shared.password")}
+        </Text>
+        <TextInput
+          style={[styles.input, isDark && styles.inputDark]}
+          placeholder="password"
+          placeholderTextColor={isDark ? "#666666" : "#999999"}
+          value={password}
+          onChangeText={setPassword}
+          secureTextEntry
+        />
+
+        {isHttp && (
+          <View
+            style={[styles.httpsWarning, isDark && styles.httpsWarningDark]}
+          >
+            <Ionicons
+              name="warning"
+              size={16}
+              color={isDark ? "#f59e0b" : "#d97706"}
             />
             <Text
               style={[
-                styles.typeLabel,
-                isDark && styles.textDark,
-                type === opt.type && styles.typeLabelSelected,
-                type === opt.type && isDark && styles.typeLabelSelectedDark,
+                styles.httpsWarningText,
+                isDark && styles.httpsWarningTextDark,
               ]}
             >
-              {opt.label}
+              {t(
+                "connection.add.httpsWarning",
+                "HTTP connections are unencrypted. Use HTTPS when possible.",
+              )}
             </Text>
-          </TouchableOpacity>
-        ))}
-      </View>
-
-      {/* Name */}
-      <Text style={[styles.label, isDark && styles.labelDark]}>
-        {t("connection.shared.name")}
-      </Text>
-      <TextInput
-        style={[styles.input, isDark && styles.inputDark]}
-        placeholder={t("connection.shared.namePlaceholder")}
-        placeholderTextColor={isDark ? "#666666" : "#999999"}
-        value={name}
-        onChangeText={setName}
-      />
-
-      {/* URL */}
-      <Text style={[styles.label, isDark && styles.labelDark]}>
-        {t("connection.shared.serverUrl")}
-      </Text>
-      <TextInput
-        style={[styles.input, isDark && styles.inputDark]}
-        placeholder={
-          type === "local"
-            ? "http://192.168.1.100:4096"
-            : type === "tunnel"
-              ? "https://your-tunnel.trycloudflare.com"
-              : "https://api.opencode.ai"
-        }
-        placeholderTextColor={isDark ? "#666666" : "#999999"}
-        value={url}
-        onChangeText={setUrl}
-        autoCapitalize="none"
-        autoCorrect={false}
-        keyboardType="url"
-      />
-      <Text style={[styles.hint, isDark && styles.hintDark]}>
-        {t("connection.add.advanced.urlHintPrefix")}
-        <Text style={styles.code}>http://100.64.12.34:4096</Text>
-        {t("connection.add.advanced.urlHintOr")}
-        <Text style={styles.code}>http://my-mac.tailnet.ts.net:4096</Text>
-        {t("connection.add.advanced.urlHintUse")}
-        <Text style={styles.code}>https://</Text>
-        {t("connection.add.advanced.urlHintSuffix")}
-      </Text>
-
-      {/* Directory */}
-      <Text style={[styles.label, isDark && styles.labelDark]}>
-        {t("connection.shared.directoryOptional")}
-      </Text>
-      <TextInput
-        style={[styles.input, isDark && styles.inputDark]}
-        placeholder="/path/to/project"
-        placeholderTextColor={isDark ? "#666666" : "#999999"}
-        value={directory}
-        onChangeText={setDirectory}
-        autoCapitalize="none"
-        autoCorrect={false}
-      />
-      <Text style={[styles.hint, isDark && styles.hintDark]}>
-        {t("connection.add.advanced.directoryHint")}
-      </Text>
-
-      {/* Auth */}
-      <Text style={[styles.sectionTitle, isDark && styles.textDark]}>
-        {t("connection.shared.authentication")}
-      </Text>
-
-      <Text style={[styles.label, isDark && styles.labelDark]}>
-        {t("connection.shared.username")}
-      </Text>
-      <TextInput
-        style={[styles.input, isDark && styles.inputDark]}
-        placeholder="admin"
-        placeholderTextColor={isDark ? "#666666" : "#999999"}
-        value={username}
-        onChangeText={setUsername}
-        autoCapitalize="none"
-        autoCorrect={false}
-      />
-
-      <Text style={[styles.label, isDark && styles.labelDark]}>
-        {t("connection.shared.password")}
-      </Text>
-      <TextInput
-        style={[styles.input, isDark && styles.inputDark]}
-        placeholder="password"
-        placeholderTextColor={isDark ? "#666666" : "#999999"}
-        value={password}
-        onChangeText={setPassword}
-        secureTextEntry
-      />
-
-      {isHttp && (
-        <View style={[styles.httpsWarning, isDark && styles.httpsWarningDark]}>
-          <Ionicons
-            name="warning"
-            size={16}
-            color={isDark ? "#f59e0b" : "#d97706"}
-          />
-          <Text
-            style={[
-              styles.httpsWarningText,
-              isDark && styles.httpsWarningTextDark,
-            ]}
-          >
-            {t(
-              "connection.add.httpsWarning",
-              "HTTP connections are unencrypted. Use HTTPS when possible.",
-            )}
-          </Text>
-        </View>
-      )}
-
-      {/* Save */}
-      <TouchableOpacity
-        style={[
-          styles.connectButton,
-          isDark && styles.connectButtonDark,
-          { marginTop: 32 },
-        ]}
-        onPress={handleAdvancedSave}
-        disabled={isConnecting}
-      >
-        {isConnecting ? (
-          <ActivityIndicator
-            size="small"
-            color={isDark ? "#0a0a0a" : "#ffffff"}
-          />
-        ) : (
-          <Text
-            style={[
-              styles.connectButtonText,
-              isDark && styles.connectButtonTextDark,
-            ]}
-          >
-            {t("connection.add.advanced.saveButton")}
-          </Text>
+          </View>
         )}
-      </TouchableOpacity>
-    </ScrollView>
+
+        {/* Save */}
+        <TouchableOpacity
+          style={[
+            styles.connectButton,
+            isDark && styles.connectButtonDark,
+            { marginTop: 32 },
+          ]}
+          onPress={handleAdvancedSave}
+          disabled={isConnecting}
+        >
+          {isConnecting ? (
+            <ActivityIndicator
+              size="small"
+              color={isDark ? "#0a0a0a" : "#ffffff"}
+            />
+          ) : (
+            <Text
+              style={[
+                styles.connectButtonText,
+                isDark && styles.connectButtonTextDark,
+              ]}
+            >
+              {t("connection.add.advanced.saveButton")}
+            </Text>
+          )}
+        </TouchableOpacity>
+      </ScrollView>
+
+      {/* Directory switcher + browsable folder picker — the same flow as the
+          sessions tab, built from this form's typed (unsaved) values. */}
+      <DirectorySwitcher
+        sheetRef={dirSheetRef}
+        current={directory || undefined}
+        recents={recentDirectories}
+        serverHome={pickerHome}
+        isDark={isDark}
+        onSwitch={handleSwitchDirectory}
+        onBrowse={openBrowserSheet}
+      />
+      <DirectoryBrowserSheet
+        sheetRef={browserSheetRef}
+        startDirectory={browseStartDir}
+        clientForDirectory={buildClient}
+        isDark={isDark}
+        onSelect={handleBrowserSelect}
+      />
+    </View>
   );
 }
 
@@ -863,6 +969,27 @@ const styles = StyleSheet.create({
   inputDark: {
     backgroundColor: "#1a1a1a",
     color: "#ffffff",
+  },
+  directoryRow: {
+    flexDirection: "row",
+    alignItems: "stretch",
+    gap: 8,
+  },
+  directoryInput: {
+    flex: 1,
+  },
+  directoryPickBtn: {
+    width: 48,
+    justifyContent: "center",
+    alignItems: "center",
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: "#e5e5e5",
+    backgroundColor: "#f5f5f5",
+  },
+  directoryPickBtnDark: {
+    borderColor: "#333333",
+    backgroundColor: "#1a1a1a",
   },
   sectionTitle: {
     fontSize: 18,

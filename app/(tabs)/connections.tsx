@@ -26,6 +26,7 @@ function ConnectionItem({
   isActive,
   onSelect,
   onEdit,
+  onDuplicate,
   onDelete,
 }: {
   connection: ServerConnection;
@@ -34,6 +35,7 @@ function ConnectionItem({
   isActive: boolean;
   onSelect: () => void;
   onEdit: () => void;
+  onDuplicate: () => void;
   onDelete: () => void;
 }) {
   const { t } = useTranslation();
@@ -45,10 +47,15 @@ function ConnectionItem({
         ? "globe"
         : "cloud";
 
-  const handleLongPress = () => {
+  // Shared by long-press and the ⋮ button so Duplicate is reachable both ways.
+  const openActions = () => {
     Alert.alert(connection.name, t("connectionsList.actionsAlert.message"), [
       { text: t("common.cancel"), style: "cancel" },
       { text: t("connectionsList.actionsAlert.edit"), onPress: onEdit },
+      {
+        text: t("connectionsList.actionsAlert.duplicate"),
+        onPress: onDuplicate,
+      },
       { text: t("common.delete"), style: "destructive", onPress: onDelete },
     ]);
   };
@@ -63,7 +70,7 @@ function ConnectionItem({
         isActive && isDark && styles.connectionItemActiveDark,
       ]}
       onPress={onSelect}
-      onLongPress={handleLongPress}
+      onLongPress={openActions}
     >
       <View
         style={[
@@ -134,7 +141,7 @@ function ConnectionItem({
         )}
       </View>
       <TouchableOpacity
-        onPress={onEdit}
+        onPress={openActions}
         hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
       >
         <Ionicons
@@ -157,8 +164,19 @@ export default function ConnectionsScreen() {
     activeConnection,
     setActiveConnection,
     removeConnection,
+    duplicateConnection,
   } = useConnections();
   const { pageSize, setPageSize } = useSettings();
+
+  // Await the store write before navigating: the Edit screen resolves the
+  // connection by id and would render "not found" on a stale list.
+  const handleDuplicate = async (connection: ServerConnection) => {
+    const newId = await duplicateConnection(
+      connection.id,
+      t("connectionsList.duplicateName", { name: connection.name }),
+    );
+    if (newId) router.push(`/connection/${newId}`);
+  };
 
   const handleDelete = (connection: ServerConnection) => {
     Alert.alert(
@@ -252,6 +270,7 @@ export default function ConnectionsScreen() {
             isActive={activeConnection?.id === item.id}
             onSelect={() => setActiveConnection(item.id)}
             onEdit={() => router.push(`/connection/${item.id}`)}
+            onDuplicate={() => handleDuplicate(item)}
             onDelete={() => handleDelete(item)}
           />
         )}

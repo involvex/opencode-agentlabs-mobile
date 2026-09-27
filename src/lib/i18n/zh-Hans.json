@@ -246,6 +246,7 @@
       "namePlaceholder": "我的服务器",
       "serverUrl": "服务器地址",
       "directoryOptional": "项目目录（可选）",
+      "directoryPickerLabel": "选择目录",
       "authentication": "身份验证",
       "username": "用户名",
       "password": "密码",
@@ -339,9 +340,11 @@
   "connectionsList": {
     "activeBadge": "当前使用",
     "lastConnected": "上次连接：{{date}}",
+    "duplicateName": "{{name}}（副本）",
     "actionsAlert": {
       "message": "您想执行什么操作？",
-      "edit": "编辑"
+      "edit": "编辑",
+      "duplicate": "复制"
     },
     "empty": {
       "title": "暂无连接",

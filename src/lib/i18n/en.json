@@ -246,6 +246,7 @@
       "namePlaceholder": "My Server",
       "serverUrl": "Server URL",
       "directoryOptional": "Project Directory (Optional)",
+      "directoryPickerLabel": "Choose directory",
       "authentication": "Authentication",
       "username": "Username",
       "password": "Password",
@@ -339,9 +340,11 @@
   "connectionsList": {
     "activeBadge": "Active",
     "lastConnected": "Last connected: {{date}}",
+    "duplicateName": "{{name}} (copy)",
     "actionsAlert": {
       "message": "What would you like to do?",
-      "edit": "Edit"
+      "edit": "Edit",
+      "duplicate": "Duplicate"
     },
     "empty": {
       "title": "No Connections",

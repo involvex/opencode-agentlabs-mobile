@@ -11,6 +11,7 @@ import {
 } from "../lib/analytics";
 import { buildAuth } from "../lib/auth";
 import { stripTrailingSlash } from "../lib/path-utils";
+import { buildDuplicate } from "../lib/duplicate-connection";
 
 const CONNECTIONS_KEY = "opencode_connections";
 const PASSWORDS_PREFIX = "opencode_password_";
@@ -48,6 +49,10 @@ interface ConnectionsState {
     password?: string,
   ) => Promise<void>;
   removeConnection: (id: string) => Promise<void>;
+  // Clone a connection (record + SecureStore password/headers) under a new
+  // id. The caller passes the localized copy name — the store has no i18n.
+  // Returns the new id, or null when the source id doesn't exist.
+  duplicateConnection: (id: string, name: string) => Promise<string | null>;
   setActiveConnection: (id: string) => Promise<void>;
   // `source` distinguishes the activation funnel (onboarding) from the edit
   // screen's Test button (edit_test) in analytics.
@@ -288,6 +293,38 @@ export const useConnections = create<ConnectionsState>((set, get) => ({
     } else {
       set({ connections });
     }
+  },
+
+  duplicateConnection: async (id, name) => {
+    const source = get().connections.find((c) => c.id === id);
+    if (!source) return null;
+
+    const newId = generateId();
+    const copy = buildDuplicate(source, newId, name);
+
+    // Copy the secret storage (password + custom auth header values) to the
+    // new id — both are keyed by connection id, and the copy is useless
+    // without them.
+    const [password, headers] = await Promise.all([
+      SecureStore.getItemAsync(`${PASSWORDS_PREFIX}${id}`),
+      SecureStore.getItemAsync(`${HEADERS_PREFIX}${id}`),
+    ]);
+    if (password) {
+      await SecureStore.setItemAsync(`${PASSWORDS_PREFIX}${newId}`, password);
+    }
+    if (headers) {
+      await SecureStore.setItemAsync(`${HEADERS_PREFIX}${newId}`, headers);
+    }
+
+    const connections = [...get().connections, copy];
+    await SecureStore.setItemAsync(
+      CONNECTIONS_KEY,
+      JSON.stringify(connections),
+    );
+    // The copy is never active (see buildDuplicate), so the live client/SSE
+    // session stays on the original connection.
+    set({ connections });
+    return newId;
   },
 
   setActiveConnection: async (id) => {
