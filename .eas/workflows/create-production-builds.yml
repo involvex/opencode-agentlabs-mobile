@@ -5,24 +5,11 @@ on:
     branches:
       - main
   workflow_dispatch:
-    inputs:
-      platform:
-        description: "The platform to build"
-        required: true
-        default: "android"
-        type: string
 
 jobs:
-  check_for_production_build:
-    runs-on: ubuntu-latest
-    steps:
-      - run: echo "Checking for production build"
-      - run: eas build:status --platform android --channel production
-        env:
-          EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
   build_android:
-    type: build # This job type creates a production build for Android
+    name: Build Android
+    type: build
     params:
       platform: android
-    needs:
-      - check_for_production_build
+      profile: production
