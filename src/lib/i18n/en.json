@@ -537,7 +537,10 @@
     },
     "modelPicker": {
       "title": "Select Model",
-      "searchPlaceholder": "Search models..."
+      "searchPlaceholder": "Search models...",
+      "favorites": "Favorites",
+      "noResults": "No models found",
+      "toggleFavorite": "Toggle favorite for {{model}}"
     },
     "variantPicker": {
       "title": "Reasoning Effort",

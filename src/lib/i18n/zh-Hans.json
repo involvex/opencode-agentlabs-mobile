@@ -537,7 +537,10 @@
     },
     "modelPicker": {
       "title": "选择模型",
-      "searchPlaceholder": "搜索模型..."
+      "searchPlaceholder": "搜索模型...",
+      "favorites": "收藏",
+      "noResults": "未找到模型",
+      "toggleFavorite": "切换 {{model}} 的收藏状态"
     },
     "variantPicker": {
       "title": "推理强度",
