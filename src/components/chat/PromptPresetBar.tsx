@@ -1,5 +1,6 @@
 import { ScrollView, StyleSheet, Text, TouchableOpacity } from "react-native";
 import { useDensity, ds } from "../../lib/density";
+import type { QuickAction } from "../../lib/quick-actions";
 
 export interface PromptPreset {
   id: string;
@@ -38,18 +39,48 @@ export const DEFAULT_PROMPT_PRESETS: PromptPreset[] = [
 interface Props {
   isDark: boolean;
   presets?: PromptPreset[];
+  /** When provided, renders these customizable actions instead of `presets`. */
+  quickActions?: QuickAction[];
   tapToSend?: boolean;
   onSelect: (text: string, sendImmediately: boolean) => void;
+  onQuickAction?: (action: QuickAction) => void;
+}
+
+function fallbackText(action: QuickAction): string {
+  if (action.kind === "text") return action.text;
+  const args = action.args?.trim() ? ` ${action.args.trim()}` : "";
+  return `/${action.trigger}${args}`;
 }
 
 export function PromptPresetBar({
   isDark,
   presets = DEFAULT_PROMPT_PRESETS,
+  quickActions,
   tapToSend = false,
   onSelect,
+  onQuickAction,
 }: Props) {
   const density = useDensity();
-  if (presets.length === 0) return null;
+  const items: { id: string; label: string }[] = quickActions
+    ? quickActions.map((a) => ({ id: a.id, label: a.label }))
+    : presets.map((p) => ({ id: p.id, label: p.label }));
+  if (items.length === 0) return null;
+
+  const handlePress = (id: string) => {
+    if (quickActions) {
+      const action = quickActions.find((a) => a.id === id);
+      if (action) {
+        if (onQuickAction) {
+          onQuickAction(action);
+          return;
+        }
+        onSelect(fallbackText(action), tapToSend);
+        return;
+      }
+    }
+    const preset = presets.find((p) => p.id === id);
+    if (preset) onSelect(preset.text, tapToSend);
+  };
 
   return (
     <ScrollView
@@ -65,11 +96,11 @@ export function PromptPresetBar({
       ]}
       testID="prompt-preset-bar"
     >
-      {presets.map((preset) => (
+      {items.map((item) => (
         <TouchableOpacity
-          key={preset.id}
+          key={item.id}
           style={[s.chip, isDark && s.chipDark]}
-          onPress={() => onSelect(preset.text, tapToSend)}
+          onPress={() => handlePress(item.id)}
         >
           <Text
             style={[
@@ -78,7 +109,7 @@ export function PromptPresetBar({
               { ...ds({ fontSize: 12 }, density) },
             ]}
           >
-            {preset.label}
+            {item.label}
           </Text>
         </TouchableOpacity>
       ))}

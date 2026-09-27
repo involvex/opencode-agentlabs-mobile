@@ -57,6 +57,11 @@ import {
   DEFAULT_BUILTINS,
 } from "../../src/lib/slash-commands";
 import { useSlashCommands } from "../../src/stores/slash-commands";
+import { useQuickActions } from "../../src/stores/quick-actions";
+import {
+  resolveQuickAction,
+  type QuickAction,
+} from "../../src/lib/quick-actions";
 import { useSlashKeyboard } from "../../src/lib/keyboard-slash";
 import { useKeyboardInset } from "../../src/lib/use-keyboard-inset";
 import {
@@ -400,6 +405,13 @@ export default function SessionScreen() {
     useSlashCommands.getState().load();
   }, []);
 
+  useEffect(() => {
+    void useQuickActions.getState().load();
+  }, []);
+
+  const quickActions = useQuickActions((s) => s.actions);
+  const quickTapToSend = useQuickActions((s) => s.tapToSend);
+
   const registryInstance = useMemo(() => {
     const r = new SlashCommandRegistry();
     r.registerBuiltin(DEFAULT_BUILTINS.new, () => {});
@@ -422,114 +434,122 @@ export default function SessionScreen() {
     [registryInstance, slashQuery],
   );
 
-  const handleSend = useCallback(async () => {
-    if (!input.trim() && attachments.length === 0 && pathContexts.length === 0)
-      return;
-    void hapticMedium();
-    const authenticated = await authenticateForMessage();
-    if (!authenticated) {
-      Alert.alert(
-        t("session.alerts.authRequiredTitle"),
-        t("session.alerts.authRequiredMessage"),
-      );
-      return;
-    }
-
-    let text = input.trim();
-    const files = [...attachments];
-    const contexts = [...pathContexts];
-    setInput("");
-    setAttachments([]);
-    setPathContexts([]);
-
-    if (contexts.length > 0) {
-      const listed = contexts.map((p) => `- ${p}`).join("\n");
-      const prefix = `Context files:\n${listed}\n\n`;
-      text = text ? prefix + text : prefix.trim();
-    }
-
-    if (replyTo) {
-      const quoted = replyTo.text.trim();
-      const prefix = quoted ? `> ${quoted.split("\n").join("\n> ")}\n\n` : "";
-      text = prefix + text;
-      setReplyTo(null);
-    }
-
-    if (text.startsWith("/") && files.length === 0) {
-      const [cmdName, ...args] = text.split(" ");
-      const name = cmdName.slice(1);
-      const match = serverCommands.find((c) => c.name === name);
-      if (match && sessionClient && currentSession) {
-        sessionClient.session
-          .command(currentSession.id, {
-            command: name,
-            arguments: args.join(" "),
-            agent,
-            model: model ? `${model.providerID}/${model.modelID}` : undefined,
-          })
-          .catch((err) => console.error("Command failed:", err));
+  const handleSend = useCallback(
+    async (overrideText?: string) => {
+      const sourceText = overrideText ?? input;
+      if (
+        !sourceText.trim() &&
+        attachments.length === 0 &&
+        pathContexts.length === 0
+      )
+        return;
+      void hapticMedium();
+      const authenticated = await authenticateForMessage();
+      if (!authenticated) {
+        Alert.alert(
+          t("session.alerts.authRequiredTitle"),
+          t("session.alerts.authRequiredMessage"),
+        );
         return;
       }
-    }
 
-    // Queue offline when SSE is reconnecting and there's no usable client.
-    if ((!sessionClient || reconnectAttempts > 0) && currentSession) {
-      await enqueueOffline({
-        sessionID: currentSession.id,
-        text,
-        pathContexts: contexts,
-      });
-      void hapticLight();
-      return;
-    }
+      let text = sourceText.trim();
+      const files = [...attachments];
+      const contexts = [...pathContexts];
+      setInput("");
+      setAttachments([]);
+      setPathContexts([]);
 
-    try {
-      await sendMessage(
-        text,
-        model || undefined,
-        agent || undefined,
-        files,
-        variant || undefined,
-      );
-      if (!hasAutoNamed.current && currentSession && !currentSession.title) {
-        hasAutoNamed.current = true;
-        useSessions.getState().autoNameSession(currentSession.id, text);
+      if (contexts.length > 0) {
+        const listed = contexts.map((p) => `- ${p}`).join("\n");
+        const prefix = `Context files:\n${listed}\n\n`;
+        text = text ? prefix + text : prefix.trim();
       }
-    } catch (err) {
-      console.error("Send failed:", err);
-      void hapticError();
-      if (currentSession) {
+
+      if (replyTo) {
+        const quoted = replyTo.text.trim();
+        const prefix = quoted ? `> ${quoted.split("\n").join("\n> ")}\n\n` : "";
+        text = prefix + text;
+        setReplyTo(null);
+      }
+
+      if (text.startsWith("/") && files.length === 0) {
+        const [cmdName, ...args] = text.split(" ");
+        const name = cmdName.slice(1);
+        const match = serverCommands.find((c) => c.name === name);
+        if (match && sessionClient && currentSession) {
+          sessionClient.session
+            .command(currentSession.id, {
+              command: name,
+              arguments: args.join(" "),
+              agent,
+              model: model ? `${model.providerID}/${model.modelID}` : undefined,
+            })
+            .catch((err) => console.error("Command failed:", err));
+          return;
+        }
+      }
+
+      // Queue offline when SSE is reconnecting and there's no usable client.
+      if ((!sessionClient || reconnectAttempts > 0) && currentSession) {
         await enqueueOffline({
           sessionID: currentSession.id,
           text,
           pathContexts: contexts,
         });
+        void hapticLight();
+        return;
       }
-      setInput((prev) => (prev ? prev : text));
-      setAttachments((prev) => (prev.length ? prev : files));
-      setPathContexts((prev) => (prev.length ? prev : contexts));
-      Alert.alert(
-        t("session.alerts.sendFailedTitle"),
-        t("session.alerts.sendFailedMessage"),
-      );
-    }
-  }, [
-    input,
-    attachments,
-    pathContexts,
-    replyTo,
-    authenticateForMessage,
-    t,
-    serverCommands,
-    sessionClient,
-    currentSession,
-    agent,
-    model,
-    variant,
-    sendMessage,
-    enqueueOffline,
-    reconnectAttempts,
-  ]);
+
+      try {
+        await sendMessage(
+          text,
+          model || undefined,
+          agent || undefined,
+          files,
+          variant || undefined,
+        );
+        if (!hasAutoNamed.current && currentSession && !currentSession.title) {
+          hasAutoNamed.current = true;
+          useSessions.getState().autoNameSession(currentSession.id, text);
+        }
+      } catch (err) {
+        console.error("Send failed:", err);
+        void hapticError();
+        if (currentSession) {
+          await enqueueOffline({
+            sessionID: currentSession.id,
+            text,
+            pathContexts: contexts,
+          });
+        }
+        setInput((prev) => (prev ? prev : text));
+        setAttachments((prev) => (prev.length ? prev : files));
+        setPathContexts((prev) => (prev.length ? prev : contexts));
+        Alert.alert(
+          t("session.alerts.sendFailedTitle"),
+          t("session.alerts.sendFailedMessage"),
+        );
+      }
+    },
+    [
+      input,
+      attachments,
+      pathContexts,
+      replyTo,
+      authenticateForMessage,
+      t,
+      serverCommands,
+      sessionClient,
+      currentSession,
+      agent,
+      model,
+      variant,
+      sendMessage,
+      enqueueOffline,
+      reconnectAttempts,
+    ],
+  );
 
   // Slash command handler
   const handleSlashSelect = useCallback(
@@ -607,6 +627,72 @@ export default function SessionScreen() {
       setInput(`/${cmd.trigger} `);
     },
     [router, cycleAgent, handleSend, messages],
+  );
+
+  // Quick-action chip handler: customizable actions above the composer.
+  // Text actions fill the composer (and optionally send); command actions
+  // resolve against builtin triggers + server commands at tap time so a
+  // stale/renamed server command degrades to plain insert-text.
+  const handleQuickAction = useCallback(
+    (action: QuickAction) => {
+      const builtinTriggers = Object.values(DEFAULT_BUILTINS).map(
+        (b) => b.trigger,
+      );
+      const resolved = resolveQuickAction(
+        action,
+        builtinTriggers,
+        serverCommands.map((c) => c.name),
+      );
+      const sendNow = action.sendImmediately ?? quickTapToSend;
+      const commandText = (trigger: string, args: string) =>
+        `/${trigger}${args ? ` ${args}` : ""}`;
+      if (resolved.type === "insert") {
+        if (sendNow) {
+          void handleSend(resolved.text);
+          return;
+        }
+        setInput(resolved.text);
+        return;
+      }
+      if (resolved.type === "builtin") {
+        if (resolved.trigger.toLowerCase() === "summarize" && sendNow) {
+          void handleSend(
+            "Summarize this conversation in 3 concise bullet points.",
+          );
+          return;
+        }
+        const cmd = registryInstance.getBuiltin(resolved.trigger);
+        if (cmd) {
+          handleSlashSelect(cmd);
+          return;
+        }
+        setInput(`${commandText(resolved.trigger, resolved.args)} `);
+        return;
+      }
+      if (sendNow && sessionClient && currentSession) {
+        sessionClient.session
+          .command(currentSession.id, {
+            command: resolved.trigger,
+            arguments: resolved.args,
+            agent,
+            model: model ? `${model.providerID}/${model.modelID}` : undefined,
+          })
+          .catch((err) => console.error("Command failed:", err));
+        return;
+      }
+      setInput(`${commandText(resolved.trigger, resolved.args)} `);
+    },
+    [
+      serverCommands,
+      quickTapToSend,
+      registryInstance,
+      handleSlashSelect,
+      handleSend,
+      sessionClient,
+      currentSession,
+      agent,
+      model,
+    ],
   );
 
   const { handleKey: slashKeyHandler } = useSlashKeyboard(
@@ -1894,12 +1980,16 @@ export default function SessionScreen() {
               />
               <PromptPresetBar
                 isDark={isDark}
+                quickActions={quickActions}
+                tapToSend={quickTapToSend}
                 onSelect={(text, sendImmediately) => {
-                  setInput(text);
                   if (sendImmediately) {
-                    setTimeout(() => void handleSend(), 0);
+                    void handleSend(text);
+                    return;
                   }
+                  setInput(text);
                 }}
+                onQuickAction={handleQuickAction}
               />
               <ImageAttachments
                 attachments={attachments}
@@ -2065,7 +2155,7 @@ export default function SessionScreen() {
                     (input.trim() || attachments.length > 0) && (
                       <TouchableOpacity
                         style={s.sendBtn}
-                        onPress={handleSend}
+                        onPress={() => void handleSend()}
                         testID="chat-send-button"
                       >
                         <Ionicons name="send" size={20} color="#ffffff" />

@@ -36,6 +36,8 @@ import {
 } from "../../src/lib/telemetry";
 import { PRIVACY_POLICY_URL } from "../../src/lib/links";
 import type { LocalePreference } from "../../src/lib/i18n/locale-resolve";
+import { QuickActionsEditor } from "../../src/components/settings/QuickActionsEditor";
+import { TerminalKeysEditor } from "../../src/components/settings/TerminalKeysEditor";
 import * as pkg from "../../package.json";
 
 function SettingRow({
@@ -368,6 +370,17 @@ export default function SettingsScreen() {
             />
           );
         })}
+      </SettingSection>
+
+      <SettingSection title={t("settings.sections.composer")} isDark={isDark}>
+        <QuickActionsEditor isDark={isDark} />
+      </SettingSection>
+
+      <SettingSection
+        title={t("settings.sections.terminalKeys")}
+        isDark={isDark}
+      >
+        <TerminalKeysEditor isDark={isDark} />
       </SettingSection>
 
       <SettingSection title={t("settings.sections.privacy")} isDark={isDark}>

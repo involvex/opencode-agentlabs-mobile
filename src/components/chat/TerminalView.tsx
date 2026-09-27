@@ -26,6 +26,7 @@ import {
 import { buildPtyWsUrl, PtyWebSocket } from "../../lib/pty-ws";
 import { ansiToSegments } from "../../lib/ansi-to-style";
 import { useSettings } from "../../stores/settings";
+import { useTerminalKeys } from "../../stores/terminal-keys";
 import { useTerminalRun } from "../../stores/terminal-run";
 import { useDensity, ds } from "../../lib/density";
 import { useKeyboardInset } from "../../lib/use-keyboard-inset";
@@ -59,22 +60,6 @@ const lineStyles = StyleSheet.create({
   line: { color: "#1a1a1a", lineHeight: 20 },
   lineDark: { color: "#e5e5e5" },
 });
-
-const SPECIAL_KEYS_NAV = [
-  { label: "↑", sequence: "\x1b[A" },
-  { label: "↓", sequence: "\x1b[B" },
-  { label: "←", sequence: "\x1b[D" },
-  { label: "→", sequence: "\x1b[C" },
-  { label: "Home", sequence: "\x1b[H" },
-  { label: "End", sequence: "\x1b[F" },
-] as const;
-
-const SPECIAL_KEYS_CTRL = [
-  { label: "Tab", sequence: "\t" },
-  { label: "Esc", sequence: "\x1b" },
-  { label: "Ctrl+C", sequence: "\x03" },
-  { label: "Ctrl+V", sequence: "\x16" },
-] as const;
 
 function tabLabel(session: PtySessionItem, index: number): string {
   const titled = session.title?.match(/(\d+)\s*$/);
@@ -324,6 +309,8 @@ function TerminalSocket({
   const density = useDensity();
   const { androidBottom: keyboardBottom, height: keyboardHeight } =
     useKeyboardInset();
+  const navKeys = useTerminalKeys((s) => s.nav);
+  const ctrlKeys = useTerminalKeys((s) => s.ctrl);
   const [wsState, setWsState] = useState<WsState>("connecting");
   const wsRef = useRef<PtyWebSocket | null>(null);
   const termHandleRef = useRef<TerminalWebViewHandle | null>(null);
@@ -473,9 +460,9 @@ function TerminalSocket({
                 { ...ds({ gap: 6, paddingBottom: 4 }, density) },
               ]}
             >
-              {SPECIAL_KEYS_NAV.map((k) => (
+              {navKeys.map((k) => (
                 <TerminalKeyButton
-                  key={k.label}
+                  key={k.id}
                   label={k.label}
                   onPress={() => wsRef.current?.send(k.sequence)}
                   isDark={isDark}
@@ -490,9 +477,9 @@ function TerminalSocket({
                 { ...ds({ gap: 6, paddingBottom: 8 }, density) },
               ]}
             >
-              {SPECIAL_KEYS_CTRL.map((k) => (
+              {ctrlKeys.map((k) => (
                 <TerminalKeyButton
-                  key={k.label}
+                  key={k.id}
                   label={k.label}
                   onPress={() => wsRef.current?.send(k.sequence)}
                   isDark={isDark}
@@ -526,6 +513,8 @@ function LocalTerminalView({
   const { t } = useTranslation();
   const { androidBottom: keyboardBottom, height: keyboardHeight } =
     useKeyboardInset();
+  const navKeys = useTerminalKeys((s) => s.nav);
+  const ctrlKeys = useTerminalKeys((s) => s.ctrl);
   const [output, setOutput] = useState<TerminalLine[]>([
     {
       id: "initial",
@@ -706,9 +695,9 @@ function LocalTerminalView({
                 { ...ds({ gap: 6, paddingBottom: 4 }, density) },
               ]}
             >
-              {SPECIAL_KEYS_NAV.map((k) => (
+              {navKeys.map((k) => (
                 <TerminalKeyButton
-                  key={k.label}
+                  key={k.id}
                   label={k.label}
                   onPress={() => {}}
                   isDark={isDark}
@@ -722,12 +711,12 @@ function LocalTerminalView({
                 { ...ds({ gap: 6, paddingBottom: 4 }, density) },
               ]}
             >
-              {SPECIAL_KEYS_CTRL.map((k) => (
+              {ctrlKeys.map((k) => (
                 <TerminalKeyButton
-                  key={k.label}
+                  key={k.id}
                   label={k.label}
                   onPress={() => {
-                    if (k.label === "Tab" || k.label === "Esc") {
+                    if (k.id === "tab" || k.id === "esc") {
                       setInput((prev) => prev + k.sequence);
                     }
                   }}
@@ -796,6 +785,9 @@ export default function TerminalView({
 }: Props) {
   const { t } = useTranslation();
   const terminalFontSize = useSettings((s) => s.terminalFontSize);
+  useEffect(() => {
+    void useTerminalKeys.getState().load();
+  }, []);
   const [mode, setMode] = useState<TerminalMode>("server");
   const [shell, setShell] = useState<ShellOption>("auto");
   const [wsFailed, setWsFailed] = useState(false);

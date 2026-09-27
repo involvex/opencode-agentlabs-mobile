@@ -14,6 +14,8 @@
       "security": "安全",
       "notifications": "通知",
       "privacy": "隐私",
+      "composer": "快捷操作",
+      "terminalKeys": "终端按键",
       "budget": "用量预算",
       "about": "关于",
       "developer": "开发者"
@@ -63,6 +65,49 @@
         "label": "终端字体大小",
         "description": "终端视图的字体大小（{{size}}px）"
       }
+    },
+    "composer": {
+      "tapToSend": {
+        "label": "立即发送快捷操作",
+        "description": "直接运行操作，而非填入输入框"
+      },
+      "hint": "聊天输入框上方的快捷按钮，命令类型可运行任意 / 命令。",
+      "add": {
+        "label": "添加快捷操作"
+      },
+      "reset": {
+        "label": "恢复默认",
+        "confirmTitle": "恢复默认快捷操作？",
+        "confirmMessage": "你的自定义按钮将被替换为默认设置。"
+      },
+      "maxReached": "最多可固定 8 个快捷操作。",
+      "invalidTitle": "无法保存",
+      "editTitle": "编辑快捷操作",
+      "labelLabel": "名称",
+      "kindText": "文本",
+      "kindCommand": "命令",
+      "textLabel": "消息文本",
+      "triggerLabel": "命令（不含 /）",
+      "argsLabel": "参数（可选）",
+      "sendNow": "立即发送",
+      "moveUp": "上移",
+      "moveDown": "下移",
+      "edit": "编辑"
+    },
+    "terminalKeys": {
+      "hint": "终端键盘上方按钮行的自定义设置。",
+      "navLabel": "导航行",
+      "ctrlLabel": "控制行",
+      "reset": {
+        "label": "恢复默认",
+        "confirmTitle": "恢复默认终端按键？",
+        "confirmMessage": "你的自定义按键名称和键序列将被替换为默认设置。"
+      },
+      "invalidTitle": "无法保存",
+      "labelLabel": "名称",
+      "sequenceLabel": "键序列",
+      "sequenceHint": "Esc 用 \\e · Tab 用 \\t · 控制码用 \\xNN",
+      "edit": "编辑"
     },
     "language": {
       "label": "语言",

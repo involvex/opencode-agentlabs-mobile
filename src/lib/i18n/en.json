@@ -14,6 +14,8 @@
       "security": "Security",
       "notifications": "Notifications",
       "privacy": "Privacy",
+      "composer": "Quick Actions",
+      "terminalKeys": "Terminal Keys",
       "budget": "Usage Budget",
       "about": "About",
       "developer": "Developer"
@@ -63,6 +65,49 @@
         "label": "Terminal font size",
         "description": "Font size for the terminal view ({{size}}px)"
       }
+    },
+    "composer": {
+      "tapToSend": {
+        "label": "Send quick actions immediately",
+        "description": "Run the action at once instead of filling the composer"
+      },
+      "hint": "Chips above the chat input. Command actions can run any /command.",
+      "add": {
+        "label": "Add quick action"
+      },
+      "reset": {
+        "label": "Reset to defaults",
+        "confirmTitle": "Reset quick actions?",
+        "confirmMessage": "Your custom chips will be replaced with the defaults."
+      },
+      "maxReached": "You can pin up to 8 quick actions.",
+      "invalidTitle": "Cannot save",
+      "editTitle": "Edit quick action",
+      "labelLabel": "Label",
+      "kindText": "Text",
+      "kindCommand": "Command",
+      "textLabel": "Message text",
+      "triggerLabel": "Command (without /)",
+      "argsLabel": "Arguments (optional)",
+      "sendNow": "Send immediately",
+      "moveUp": "Move up",
+      "moveDown": "Move down",
+      "edit": "Edit"
+    },
+    "terminalKeys": {
+      "hint": "Buttons in the rows above the terminal keyboard.",
+      "navLabel": "Navigation row",
+      "ctrlLabel": "Control row",
+      "reset": {
+        "label": "Reset to defaults",
+        "confirmTitle": "Reset terminal keys?",
+        "confirmMessage": "Your custom key labels and sequences will be replaced with the defaults."
+      },
+      "invalidTitle": "Cannot save",
+      "labelLabel": "Label",
+      "sequenceLabel": "Key sequence",
+      "sequenceHint": "Esc \\e · Tab \\t · control codes \\xNN",
+      "edit": "Edit"
     },
     "language": {
       "label": "Language",
