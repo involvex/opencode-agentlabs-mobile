@@ -553,6 +553,8 @@
     "message": {
       "timestamp": "消息时间戳",
       "copyTimestamp": "复制绝对时间",
+      "copy": "复制",
+      "copied": "已复制！",
       "addReaction": "添加反应",
       "reactions": {
         "title": "添加反应",

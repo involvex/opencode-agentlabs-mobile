@@ -553,6 +553,8 @@
     "message": {
       "timestamp": "Message timestamp",
       "copyTimestamp": "Copy absolute time",
+      "copy": "Copy",
+      "copied": "Copied!",
       "addReaction": "Add reaction",
       "reactions": {
         "title": "Add reaction",

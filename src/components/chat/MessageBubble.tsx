@@ -129,6 +129,17 @@ export const MessageBubble = memo(
       setShowReactionPicker(false);
     }, [onReply, message.id, message.role, text]);
 
+    const [copied, setCopied] = useState(false);
+
+    const handleCopyPress = useCallback(async () => {
+      try {
+        await Clipboard.setStringAsync(text);
+        setCopied(true);
+        setTimeout(() => setCopied(false), 2000);
+      } catch {}
+      setShowReactionPicker(false);
+    }, [text]);
+
     const messageReactions = useReactions((s) => s.reactions[message.id]);
 
     return (
@@ -431,6 +442,14 @@ export const MessageBubble = memo(
                   </TouchableOpacity>
                 ))}
               </View>
+              <TouchableOpacity
+                style={s.reactionSheetButton}
+                onPress={handleCopyPress}
+              >
+                <Text style={s.reactionSheetButtonText}>
+                  {copied ? t("chat.message.copied") : t("chat.message.copy")}
+                </Text>
+              </TouchableOpacity>
               <TouchableOpacity
                 style={s.reactionSheetButton}
                 onPress={handleReplyPress}
