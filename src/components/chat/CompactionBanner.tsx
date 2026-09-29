@@ -26,8 +26,24 @@ export function CompactionBanner({
   const density = useDensity();
   const [expanded, setExpanded] = useState(false);
 
+  // The server's CompactionPart carries no `text`/`state` — just flags.
+  // The actual compaction summary arrives as a separate text part in the
+  // same message (rendered by MessageBubble), so this banner is a status
+  // chip: label + badges. part.text is kept as a legacy fallback.
   const summary =
     part.text || t("chat.compactionBanner.default", "Conversation compacted");
+
+  // Expand is only meaningful when an older/newer server actually attached
+  // detail — otherwise the banner is honestly non-expandable instead of
+  // opening onto a blank "No additional details" view.
+  const hasDetail =
+    (typeof part.state?.input === "string" && part.state.input.length > 0) ||
+    (typeof part.state?.output === "string" && part.state.output.length > 0) ||
+    typeof part.state?.error?.message === "string";
+
+  const toggle = useCallback(() => {
+    if (hasDetail) setExpanded((v) => !v);
+  }, [hasDetail]);
   const elapsed =
     part.time?.start && part.time?.end
       ? (() => {
@@ -37,10 +53,6 @@ export function CompactionBanner({
         })()
       : null;
 
-  const toggle = useCallback(() => {
-    setExpanded((v) => !v);
-  }, []);
-
   return (
     <TouchableOpacity
       style={[
@@ -49,7 +61,7 @@ export function CompactionBanner({
         { ...ds({ padding: 10, marginBottom: 8 }, density) },
       ]}
       onPress={toggle}
-      activeOpacity={0.7}
+      activeOpacity={hasDetail ? 0.7 : 1}
     >
       <View style={[s.header, { ...ds({ gap: 6, marginBottom: 4 }, density) }]}>
         <Ionicons name="archive-outline" size={14} color="#6366f1" />
@@ -62,6 +74,30 @@ export function CompactionBanner({
         >
           {t("chat.compactionBanner.label", "Compacted")}
         </Text>
+        {part.auto !== undefined && (
+          <Text
+            style={[
+              s.badge,
+              isDark && s.badgeDark,
+              { ...ds({ fontSize: 10 }, density) },
+            ]}
+          >
+            {part.auto
+              ? t("chat.compactionBanner.auto", "Auto")
+              : t("chat.compactionBanner.manual", "Manual")}
+          </Text>
+        )}
+        {part.overflow === true && (
+          <Text
+            style={[
+              s.badge,
+              isDark && s.badgeDark,
+              { ...ds({ fontSize: 10 }, density) },
+            ]}
+          >
+            {t("chat.compactionBanner.overflow", "Overflow")}
+          </Text>
+        )}
         {elapsed && (
           <Text
             style={[
@@ -73,11 +109,13 @@ export function CompactionBanner({
             {elapsed}
           </Text>
         )}
-        <Ionicons
-          name={expanded ? "chevron-up" : "chevron-down"}
-          size={14}
-          color={isDark ? "#666666" : "#999999"}
-        />
+        {hasDetail && (
+          <Ionicons
+            name={expanded ? "chevron-up" : "chevron-down"}
+            size={14}
+            color={isDark ? "#666666" : "#999999"}
+          />
+        )}
       </View>
       <Text
         style={[
@@ -90,7 +128,7 @@ export function CompactionBanner({
       >
         {summary}
       </Text>
-      {expanded && (
+      {expanded && hasDetail && (
         <ScrollView
           {...WIDE_CONTENT_SCROLL_CONFIG}
           nestedScrollEnabled
@@ -186,22 +224,6 @@ export function CompactionBanner({
                   </Text>
                 </View>
               )}
-            {!part.state?.input &&
-              !part.state?.output &&
-              !part.state?.error?.message && (
-                <Text
-                  style={[
-                    s.emptyHint,
-                    isDark && s.emptyHintDark,
-                    { ...ds({ fontSize: 11 }, density) },
-                  ]}
-                >
-                  {t(
-                    "chat.compactionBanner.noDetails",
-                    "No additional details",
-                  )}
-                </Text>
-              )}
           </View>
         </ScrollView>
       )}
@@ -236,6 +258,17 @@ const s = StyleSheet.create({
     textTransform: "uppercase",
   },
   labelDark: { color: "#a78bfa" },
+  badge: {
+    fontSize: 10,
+    fontWeight: "600",
+    color: "#6366f1",
+    backgroundColor: "#ede9fe",
+    borderRadius: 8,
+    paddingHorizontal: 6,
+    paddingVertical: 1,
+    overflow: "hidden",
+  },
+  badgeDark: { color: "#a78bfa", backgroundColor: "#2a2440" },
   elapsed: {
     fontSize: 10,
     color: "#999999",
@@ -286,7 +319,4 @@ const s = StyleSheet.create({
   errorBannerDark: { backgroundColor: "#1a0a0a" },
   errorText: { fontSize: 12, color: "#dc2626", flex: 1, lineHeight: 18 },
   errorTextDark: { color: "#ff6b6b" },
-
-  emptyHint: { fontSize: 11, color: "#999999", fontStyle: "italic" },
-  emptyHintDark: { color: "#666666" },
 });

@@ -117,6 +117,22 @@ export interface Part {
   // Tool part
   tool?: string;
   callID?: string;
+  // Step-finish part (matches the server's StepFinishPart schema — step
+  // parts carry no `text`; the outcome lives in these fields)
+  reason?: string;
+  cost?: number;
+  tokens?: {
+    total?: number;
+    input: number;
+    output: number;
+    reasoning?: number;
+    cache?: { read: number; write: number };
+  };
+  // Compaction part (matches the server's CompactionPart schema — also no
+  // `text`/`state`; the summary arrives as a separate text part)
+  auto?: boolean;
+  overflow?: boolean;
+  tail_start_id?: string;
   state?: {
     status: "pending" | "running" | "completed" | "error";
     input?: unknown;

@@ -634,7 +634,7 @@
     "stepBlock": {
       "title": "Steps",
       "summary": "{{count}} steps",
-      "untitledStep": "Untitled step"
+      "stepN": "Step {{n}}"
     },
     "patchPartCard": {
       "defaultTitle": "File Patch",
@@ -650,6 +650,9 @@
     "compactionBanner": {
       "default": "Conversation compacted",
       "label": "Compacted",
+      "auto": "Auto",
+      "manual": "Manual",
+      "overflow": "Overflow",
       "inputLabel": "Prompt sent",
       "outputLabel": "Response"
     },

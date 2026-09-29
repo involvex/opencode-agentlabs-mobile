@@ -634,7 +634,7 @@
     "stepBlock": {
       "title": "步骤",
       "summary": "{{count}} 个步骤",
-      "untitledStep": "未命名步骤"
+      "stepN": "第 {{n}} 步"
     },
     "patchPartCard": {
       "defaultTitle": "文件补丁",
@@ -650,6 +650,9 @@
     "compactionBanner": {
       "default": "对话已压缩",
       "label": "已压缩",
+      "auto": "自动",
+      "manual": "手动",
+      "overflow": "溢出",
       "inputLabel": "发送的提示词",
       "outputLabel": "回复"
     },

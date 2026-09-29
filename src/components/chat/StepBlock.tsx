@@ -8,45 +8,52 @@ import {
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { useTranslation } from "react-i18next";
+import type { TFunction } from "i18next";
 import { WIDE_CONTENT_SCROLL_CONFIG } from "../../lib/scroll-config";
 import { useDensity, ds } from "../../lib/density";
 import type { Part } from "../../lib/sdk";
+import { pairStepParts, type StepPair } from "../../lib/step-pairs";
 
 const STEP_ICONS: Record<string, string> = {
   "step-start": "play-outline",
   "step-finish": "checkmark-outline",
 };
 
-export interface StepPair {
-  start: Part;
-  finish: Part | null;
-  index: number;
+// Re-exported so existing importers (MessageBubble) keep working; the
+// implementation lives in lib/ so plain `node --test` can cover it without
+// pulling in react-native.
+export { pairStepParts, type StepPair };
+
+// Display title for one step. The server's StepStartPart carries no `text`
+// (only an optional snapshot ref), so titles are positional — "Step N" —
+// with any legacy text a server does send kept as-is for compatibility.
+function stepTitle(pair: StepPair, t: TFunction): string {
+  return (
+    pair.start.text ||
+    pair.finish?.text ||
+    t("chat.stepBlock.stepN", "Step {{n}}", { n: pair.index + 1 })
+  );
 }
 
-export function pairStepParts(parts: Part[]): StepPair[] {
-  const pairs: StepPair[] = [];
-  let currentStart: Part | null = null;
-  let index = 0;
-
-  for (const part of parts) {
-    if (part.type === "step-start") {
-      if (currentStart) {
-        // Orphaned start (previous one had no matching finish) — store it
-        pairs.push({ start: currentStart, finish: null, index: index++ });
-      }
-      currentStart = part;
-    } else if (part.type === "step-finish" && currentStart) {
-      pairs.push({ start: currentStart, finish: part, index: index++ });
-      currentStart = null;
-    }
+// One-line outcome for a finished step, built from the fields
+// StepFinishPart actually carries (reason/cost/tokens — never `text`).
+// Returns null when the finish carries nothing displayable.
+function finishMetaLine(finish: Part | null): string | null {
+  if (!finish) return null;
+  const bits: string[] = [];
+  if (finish.reason) bits.push(finish.reason);
+  const tokens = finish.tokens;
+  if (
+    tokens &&
+    typeof tokens.input === "number" &&
+    typeof tokens.output === "number"
+  ) {
+    bits.push(`${(tokens.input + tokens.output).toLocaleString()} tokens`);
   }
-
-  // Any trailing unpaired start
-  if (currentStart) {
-    pairs.push({ start: currentStart, finish: null, index: index });
+  if (typeof finish.cost === "number" && finish.cost > 0) {
+    bits.push(`$${finish.cost.toFixed(4)}`);
   }
-
-  return pairs;
+  return bits.length > 0 ? bits.join(" · ") : null;
 }
 
 interface Props {
@@ -61,32 +68,27 @@ export function StepBlock({ parts, isDark }: Props) {
 
   const stepCount = parts.length;
 
-  // When expanded shows all steps; when collapsed shows only the first step title
+  // Collapsed: single step shows its title; multiple steps show the count.
+  // Expanded: every step shows its title plus any finish outcome.
   const summaryText = useMemo(() => {
     if (stepCount === 0) return "";
-    if (stepCount === 1) {
-      return (
-        parts[0]?.start.text ||
-        t("chat.stepBlock.untitledStep", "Untitled step")
-      );
+    if (stepCount === 1 && parts[0]) {
+      return stepTitle(parts[0], t);
     }
     return t("chat.stepBlock.summary", "{{count}} steps", { count: stepCount });
   }, [parts, t, stepCount]);
 
-  // Combine all step text for the expanded view
+  // Titles always exist (positional "Step N" fallback), so the expanded view
+  // is never blank when steps exist — it doubles as the has-content gate.
   const expandedText = useMemo(() => {
     return parts
       .map((pair) => {
-        const startText = pair.start.text || "";
-        const finishText = pair.finish?.text || "";
-        if (startText && finishText) {
-          return `→ ${startText}\n  ${finishText}`;
-        }
-        return `→ ${startText}`;
+        const title = stepTitle(pair, t);
+        const meta = finishMetaLine(pair.finish);
+        return meta ? `→ ${title}\n  ${meta}` : `→ ${title}`;
       })
-      .filter((s) => s.trim())
       .join("\n\n");
-  }, [parts]);
+  }, [parts, t]);
 
   if (stepCount === 0) return null;
 
@@ -184,11 +186,10 @@ export function StepBlock({ parts, isDark }: Props) {
                     ]}
                     selectable
                   >
-                    {pair.start.text ||
-                      t("chat.stepBlock.untitledStep", "Untitled step")}
+                    {stepTitle(pair, t)}
                   </Text>
                 </View>
-                {pair.finish && pair.finish.text && (
+                {pair.finish && finishMetaLine(pair.finish) && (
                   <Text
                     style={[
                       s.stepResult,
@@ -207,7 +208,7 @@ export function StepBlock({ parts, isDark }: Props) {
                     ]}
                     selectable
                   >
-                    {pair.finish.text}
+                    {finishMetaLine(pair.finish)}
                   </Text>
                 )}
               </View>
