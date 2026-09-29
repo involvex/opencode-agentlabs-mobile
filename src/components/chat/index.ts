@@ -11,6 +11,7 @@ export type { SlashCommand } from "../../lib/slash-commands";
 export { ModelPicker } from "./ModelPicker";
 export { VariantPicker } from "./VariantPicker";
 export { ImageAttachments, type Attachment } from "./ImageAttachments";
+export { AttachSheet } from "./AttachSheet";
 export { DirectorySwitcher } from "./DirectorySwitcher";
 export { DirectoryBrowserSheet } from "./DirectoryBrowserSheet";
 export { SessionInfo } from "./SessionInfo";

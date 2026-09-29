@@ -46,6 +46,7 @@ import {
   MessageSearchBar,
   OfflineQueueBanner,
   PromptPresetBar,
+  AttachSheet,
   type WorkspaceMode,
   type PaletteAction,
   type Attachment,
@@ -151,6 +152,7 @@ export default function SessionScreen() {
   const { t } = useTranslation();
 
   const flatListRef = useRef<FlatList>(null);
+  const attachSheetRef = useRef<BottomSheet>(null);
   const modelSheetRef = useRef<BottomSheet>(null);
   const variantSheetRef = useRef<BottomSheet>(null);
   const browserSheetRef = useRef<BottomSheet>(null);
@@ -1232,26 +1234,8 @@ export default function SessionScreen() {
 
   const showAttachSheet = useCallback(() => {
     void hapticSelection();
-    Alert.alert(t("session.alerts.attachTitle"), undefined, [
-      {
-        text: t("session.alerts.attachPhotos"),
-        onPress: () => void pickFromLibrary(),
-      },
-      {
-        text: t("session.alerts.attachCamera"),
-        onPress: () => void pickFromCamera(),
-      },
-      {
-        text: t("session.alerts.attachFiles"),
-        onPress: () => void pickDocument(),
-      },
-      {
-        text: t("session.alerts.attachPaste"),
-        onPress: () => void pasteFromClipboard(),
-      },
-      { text: t("common.cancel"), style: "cancel" },
-    ]);
-  }, [t, pickFromLibrary, pickFromCamera, pickDocument, pasteFromClipboard]);
+    attachSheetRef.current?.expand();
+  }, [attachSheetRef]);
 
   const removeAttachment = useCallback((index: number) => {
     void hapticLight();
@@ -2007,12 +1991,51 @@ export default function SessionScreen() {
                   },
                 ]}
               >
+                {/* Reply preview — full-width block above the input row so a
+                long quoted message can't squeeze the TextInput (it used to
+                live inside the horizontal inputRow and shrank the composer
+                to half a field). */}
+                {replyTo && (
+                  <View style={[s.replyPreview, isDark && s.replyPreviewDark]}>
+                    <View style={s.replyPreviewHeader}>
+                      <Text
+                        style={[
+                          s.replyPreviewLabel,
+                          isDark && s.replyPreviewLabelDark,
+                        ]}
+                      >
+                        {replyTo.role === "user"
+                          ? t("session.reply.inReplyToUser")
+                          : t("session.reply.inReplyToAssistant")}
+                      </Text>
+                      <TouchableOpacity
+                        onPress={cancelReply}
+                        style={s.replyPreviewDismiss}
+                      >
+                        <Ionicons
+                          name="close"
+                          size={16}
+                          color={isDark ? "#888888" : "#666666"}
+                        />
+                      </TouchableOpacity>
+                    </View>
+                    <Text
+                      style={[
+                        s.replyPreviewText,
+                        isDark && s.replyPreviewTextDark,
+                      ]}
+                      numberOfLines={3}
+                    >
+                      {replyTo.text || t("session.reply.emptyMessage")}
+                    </Text>
+                  </View>
+                )}
+
                 <View style={s.inputRow}>
                   {/* Attach button */}
                   <TouchableOpacity
                     style={s.attachBtn}
                     onPress={showAttachSheet}
-                    onLongPress={pickFromCamera}
                   >
                     <Ionicons
                       name="add-circle-outline"
@@ -2032,45 +2055,6 @@ export default function SessionScreen() {
                       color={isDark ? "#888888" : "#666666"}
                     />
                   </TouchableOpacity>
-
-                  {/* Reply preview */}
-                  {replyTo && (
-                    <View
-                      style={[s.replyPreview, isDark && s.replyPreviewDark]}
-                    >
-                      <View style={s.replyPreviewHeader}>
-                        <Text
-                          style={[
-                            s.replyPreviewLabel,
-                            isDark && s.replyPreviewLabelDark,
-                          ]}
-                        >
-                          {replyTo.role === "user"
-                            ? t("session.reply.inReplyToUser")
-                            : t("session.reply.inReplyToAssistant")}
-                        </Text>
-                        <TouchableOpacity
-                          onPress={cancelReply}
-                          style={s.replyPreviewDismiss}
-                        >
-                          <Ionicons
-                            name="close"
-                            size={16}
-                            color={isDark ? "#888888" : "#666666"}
-                          />
-                        </TouchableOpacity>
-                      </View>
-                      <Text
-                        style={[
-                          s.replyPreviewText,
-                          isDark && s.replyPreviewTextDark,
-                        ]}
-                        numberOfLines={3}
-                      >
-                        {replyTo.text || t("session.reply.emptyMessage")}
-                      </Text>
-                    </View>
-                  )}
 
                   <TextInput
                     ref={composerRef}
@@ -2239,6 +2223,52 @@ export default function SessionScreen() {
         onSelect={handlePromptSelect}
         onSaveCurrent={handleSavePrompt}
         onDelete={handleDeletePrompt}
+      />
+
+      {/* Attach bottom sheet — replaces the native Alert.alert that could not
+        be dismissed on Android (taps landed behind the keyboard padding). */}
+      <AttachSheet
+        sheetRef={attachSheetRef}
+        isDark={isDark}
+        actions={[
+          {
+            key: "photos",
+            icon: "images-outline",
+            label: t("session.alerts.attachPhotos", "Photos"),
+            description: t(
+              "session.alerts.attachPhotosDesc",
+              "Pick from your library",
+            ),
+            onPress: () => void pickFromLibrary(),
+          },
+          {
+            key: "camera",
+            icon: "camera-outline",
+            label: t("session.alerts.attachCamera", "Camera"),
+            description: t(
+              "session.alerts.attachCameraDesc",
+              "Take a new photo",
+            ),
+            onPress: () => void pickFromCamera(),
+          },
+          {
+            key: "files",
+            icon: "document-outline",
+            label: t("session.alerts.attachFiles", "Files"),
+            description: t("session.alerts.attachFilesDesc", "Pick a document"),
+            onPress: () => void pickDocument(),
+          },
+          {
+            key: "paste",
+            icon: "clipboard-outline",
+            label: t("session.alerts.attachPaste", "Paste"),
+            description: t(
+              "session.alerts.attachPasteDesc",
+              "Paste text or image",
+            ),
+            onPress: () => void pasteFromClipboard(),
+          },
+        ]}
       />
     </>
   );
