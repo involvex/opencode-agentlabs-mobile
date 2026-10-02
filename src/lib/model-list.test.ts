@@ -4,7 +4,7 @@ import {
   buildModelSections,
   modelFavKey,
   type ModelListProvider,
-} from "./model-list";
+} from "./model-list.ts";
 
 const providers: ModelListProvider[] = [
   {

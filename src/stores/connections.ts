@@ -20,7 +20,7 @@ const MAX_RECENT_DIRS = 10;
 // A bad IP (unreachable host, wrong port) otherwise hangs for the full 30s
 // general request timeout before the user sees a "connection failed" error —
 // a first-run bounce driver. The interactive connect flow can afford to fail
-// faster since a real server responds to /global/health in well under a
+// faster since a real server responds to /api/info in well under a
 // second; this does NOT affect the timeout used for real session traffic.
 const CONNECTION_TEST_TIMEOUT_MS = 12_000;
 

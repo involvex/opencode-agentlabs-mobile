@@ -98,15 +98,13 @@ export async function refreshPending(client: Client, sessionID: string) {
       client.permission.list(),
       client.question.list(),
     ]);
-    const sessionPerms = (perms || []).filter(
-      (p: Record<string, unknown>) => p.sessionID === sessionID,
-    );
+    const sessionPerms = (perms || []).filter((p) => p.sessionID === sessionID);
     const sessionQuestions = (questions || []).filter(
-      (q: Record<string, unknown>) => q.sessionID === sessionID,
+      (q) => q.sessionID === sessionID,
     );
     useEvents.setState((state) => ({
-      permissions: { ...state.permissions, [sessionID]: sessionPerms as any },
-      questions: { ...state.questions, [sessionID]: sessionQuestions as any },
+      permissions: { ...state.permissions, [sessionID]: sessionPerms },
+      questions: { ...state.questions, [sessionID]: sessionQuestions },
     }));
   } catch (err) {
     console.warn("[Events] Failed to refresh pending:", err);

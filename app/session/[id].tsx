@@ -1337,7 +1337,7 @@ export default function SessionScreen() {
       },
     }));
     try {
-      await sessionClient.permission.reply(requestID, reply);
+      await sessionClient.permission.reply(sessionID, requestID, reply);
       void hapticSuccess();
     } catch (err) {
       console.error("Permission reply failed:", err);
@@ -1367,7 +1367,7 @@ export default function SessionScreen() {
       },
     }));
     try {
-      await sessionClient.question.reply(requestID, answers);
+      await sessionClient.question.reply(sessionID, requestID, answers);
       void hapticSuccess();
     } catch (err) {
       console.error("Question reply failed:", err);
@@ -1392,7 +1392,7 @@ export default function SessionScreen() {
       },
     }));
     try {
-      await sessionClient.question.reject(requestID);
+      await sessionClient.question.reject();
     } catch (err) {
       console.error("Question reject failed:", err);
       useEvents.setState((state) => ({

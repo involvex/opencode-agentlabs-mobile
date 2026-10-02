@@ -1,22 +1,19 @@
-// Integration test for the "global recent sessions" feature.
+// Integration test for the V2 global recent-sessions list.
 //
-// Unlike session-list.test.ts (pure logic, injected fakes), this stands up the
-// real mock opencode server over HTTP and drives loadSessionList through the
-// SAME transport shape sdk.ts wires in production (fetch /experimental/session
-// first, fall back to /session on 404). It proves the feature works end-to-end
-// across the HTTP boundary: the Recent Sessions list is populated globally —
-// every session across every directory — WITHOUT the user picking a folder.
+// Stands up the mock opencode server over HTTP and drives loadSessionList
+// through the SAME transport shape sdk.ts wires in production (GET
+// /api/session with ?parentID=null for roots, cursor pagination, {data,
+// cursor} envelope). It proves the feature works end-to-end across the HTTP
+// boundary: the Recent Sessions list is populated globally — every session
+// across every directory — WITHOUT the user picking a folder.
 //
 // Run: node --test src/lib/session-list.integration.test.ts
 
 import { test, before, after } from "node:test";
 import assert from "node:assert/strict";
 import { createMockOpencodeServer } from "../../tests/fixtures/mock-opencode-server.ts";
-import {
-  loadSessionList,
-  legacySessionQuery,
-  type SessionListTransport,
-} from "./session-list.ts";
+import { loadSessionList, type SessionListTransport } from "./session-list.ts";
+import { adaptSession } from "./v2-adapters.ts";
 
 const PORT = 45071;
 let mock: ReturnType<typeof createMockOpencodeServer>;
@@ -35,33 +32,54 @@ after(async () => {
   await mock.close();
 });
 
-// The exact transport sdk.ts builds in production: prefer the global
-// experimental endpoint, signal fallback (null) only on 404.
-function realTransport(baseUrl: string): SessionListTransport {
+// Mirror of the production transport in sdk.ts session.list: large pages,
+// order=desc, roots:true -> ?parentID=null, cursor passthrough, {data,
+// cursor} envelope unwrapped, V2 sessions adapted to the legacy shape.
+function realTransport(
+  baseUrl: string,
+  params?: { roots?: boolean },
+  seenQueries: string[] = [],
+): SessionListTransport {
   return {
-    getExperimental: async () => {
-      const r = await fetch(`${baseUrl}/experimental/session`, {
-        headers: { Accept: "application/json" },
-      });
-      if (r.status === 404) return null;
-      if (!r.ok) throw new Error(`HTTP ${r.status}`);
-      return r.json();
-    },
-    getLegacy: async (query) => {
-      const r = await fetch(`${baseUrl}/session${query}`, {
+    getPage: async (cursor?: string) => {
+      const query = new URLSearchParams();
+      query.set("limit", "200");
+      query.set("order", "desc");
+      if (params?.roots) query.set("parentID", "null");
+      if (cursor) query.set("cursor", cursor);
+      seenQueries.push(query.toString());
+      const r = await fetch(`${baseUrl}/api/session?${query.toString()}`, {
         headers: { Accept: "application/json" },
       });
       if (!r.ok) throw new Error(`HTTP ${r.status}`);
-      return r.json();
+      const body = (await r.json()) as {
+        data?: Record<string, unknown>[];
+        cursor?: { next?: string | null };
+      };
+      const data = Array.isArray(body?.data) ? body.data : [];
+      return {
+        sessions: data.map((s) => adaptSession("", s)),
+        next: body?.cursor?.next ?? null,
+      };
     },
   };
 }
 
 test("global sessions: lists sessions from EVERY directory without picking a folder", async () => {
-  const sessions = await loadSessionList(realTransport(base), {
-    roots: true,
-    limit: 50,
-  });
+  const seen: string[] = [];
+  const sessions = await loadSessionList(
+    realTransport(base, { roots: true }, seen),
+    {
+      roots: true,
+      limit: 50,
+    },
+  );
+
+  // roots:true must map to ?parentID=null server-side.
+  assert.ok(
+    seen.some((q) => q.includes("parentID=null")),
+    "roots:true maps to ?parentID=null",
+  );
 
   // Both directories are represented — this is the whole feature.
   const ids = sessions.map((s) => s.id);
@@ -87,56 +105,31 @@ test("global sessions: lists sessions from EVERY directory without picking a fol
   assert.equal(sessions[1].id, "seed-default");
 });
 
-test("hit the experimental endpoint, not the directory-scoped one", async () => {
-  // Proves WHY the feature was needed: a plain directory-less GET /session
-  // (no ?roots, no x-opencode-directory header) is directory-scoped and returns
-  // ONLY the default directory's session — the old behavior that left the list
-  // empty/partial until a folder was chosen.
-  const scoped = await (await fetch(`${base}/session`)).json();
-  assert.equal(
-    scoped.length,
-    1,
-    "directory-scoped /session returns only the default dir",
-  );
-  assert.equal(scoped[0].id, "seed-default");
-
-  // The global endpoint returns everything.
-  const global = await (await fetch(`${base}/experimental/session`)).json();
-  assert.equal(
-    global.length,
-    2,
-    "/experimental/session returns all sessions globally",
-  );
-});
-
-test("older servers (404 on /experimental/session) fall back to /session and still list globally", async () => {
-  // Simulate a server that predates /experimental/session: getExperimental
-  // resolves null (as it would on a 404), forcing the legacy path.
-  const legacyTransport: SessionListTransport = {
-    getExperimental: async () => null,
-    getLegacy: async (query) => {
-      const r = await fetch(`${base}/session${query}`, {
-        headers: { Accept: "application/json" },
-      });
+test("cursor pagination: walks multiple pages until cursor.next is null", async () => {
+  // Force one-item pages to exercise the cursor loop.
+  const transport: SessionListTransport = {
+    getPage: async (cursor?: string) => {
+      const query = new URLSearchParams();
+      query.set("limit", "1");
+      query.set("parentID", "null");
+      if (cursor) query.set("cursor", cursor);
+      const r = await fetch(`${base}/api/session?${query.toString()}`);
       if (!r.ok) throw new Error(`HTTP ${r.status}`);
-      return r.json();
+      const body = (await r.json()) as {
+        data?: Record<string, unknown>[];
+        cursor?: { next?: string | null };
+      };
+      return {
+        sessions: (body.data ?? []).map((s) => adaptSession("", s)),
+        next: body?.cursor?.next ?? null,
+      };
     },
   };
 
-  const sessions = await loadSessionList(legacyTransport, {
-    roots: true,
-    limit: 50,
-  });
-  // The mock's /session?roots=true returns all sessions, so the fallback still
-  // produces a global list on old servers.
-  assert.equal(sessions.length, 2);
+  const sessions = await loadSessionList(transport, { roots: true });
+  assert.equal(sessions.length, 2, "both pages walked");
   assert.deepEqual(
     new Set(sessions.map((s) => s.id)),
     new Set(["seed-default", "seed-other"]),
-  );
-  // Sanity: the legacy query we sent is the exact one the old code sent.
-  assert.equal(
-    legacySessionQuery({ roots: true, limit: 50 }),
-    "?roots=true&limit=50",
   );
 });

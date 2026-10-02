@@ -2,14 +2,14 @@
   "expo": {
     "name": "OpenCode",
     "slug": "opencode-mobile",
-    "version": "0.4.14",
+    "version": "0.4.15",
     "orientation": "portrait",
     "scheme": "opencode",
     "userInterfaceStyle": "automatic",
     "icon": "./assets/icon.png",
     "android": {
       "package": "com.involvex.opencodemobile",
-      "versionCode": 40,
+      "versionCode": 41,
       "adaptiveIcon": {
         "foregroundImage": "./assets/adaptive-icon.png",
         "backgroundColor": "#0F172A"

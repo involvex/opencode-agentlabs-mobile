@@ -84,14 +84,24 @@ Package: `cc.agentlabs.opencode` · Android only · current version v0.4.7
 
 **Don't have a server yet?** Install the app and tap **Try a Demo** on the Sessions screen first — no setup required. It plays back a scripted bug-fix session through the app's real chat, diff, and permission-approval UI, offline, in about 30 seconds.
 
-**Step 1 — Start opencode on your machine**
+**Step 1 — Start opencode (v2) on your machine**
 
 ```bash
-# Install opencode (if you haven't already)
-npm install -g opencode-ai
+# Install the OpenCode v2 CLI (if you haven't already)
+npm install -g @opencode/cli
+# or: curl -fsSL https://opencode.ai/v2/install | bash
 
-# Run opencode in server mode
-OPENCODE_SERVER_PASSWORD=yourpassword opencode serve --hostname 0.0.0.0 --port 4096
+# Run opencode as a background service on all interfaces.
+# Set your own password — the app logs in with HTTP Basic auth,
+# username `opencode` + the password you choose here. Never commit
+# a real password to docs or chat logs.
+OPENCODE_SERVER_PASSWORD=<your-password> opencode serve --hostname 0.0.0.0 --port 4096
+```
+
+Optional: print a QR/pairing link for the phone (replace `<lan-ip>` with your machine's LAN IP):
+
+```bash
+opencode pair --url http://<lan-ip>:4096
 ```
 
 **Step 2 — Install OpenCode Mobile** via [Google Play, F-Droid, or a direct APK](#install-android) (or build from source — see [CONTRIBUTING.md](CONTRIBUTING.md)).
@@ -105,7 +115,20 @@ Open the app, tap **Add Connection**, and choose your connection type:
 - **Tailscale** — your machine's Tailscale IP, e.g. `http://100.x.x.x:4096`
 - **opencode Cloud** _(planned — not yet shipped)_ — one-tap managed hosting, no server to run
 
-Enter the password you set in Step 1, tap **Connect**, and you're in.
+Enter the password you set in Step 1 (username is always `opencode`), tap **Connect**, and you're in.
+
+### Server API surface used by the app
+
+The app speaks the opencode V2 HTTP + SSE API (`src/lib/sdk.ts`). All requests carry `Authorization: Basic` (username `opencode`) plus an `x-opencode-directory` header scoping the project. Only the PTY group lives under `/api/*`:
+
+| Area             | Routes                                                                                                                                                                                                                                                                                                                                        |
+| ---------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Health / events  | `GET /global/health`, `GET /global/event` (SSE stream)                                                                                                                                                                                                                                                                                        |
+| Projects / files | `GET /project`, `GET /project/current`, `GET /file?path=`, `GET /file/roots`, `GET /file/status`, `GET /file/content` (fallback `GET /file/read`), `GET /path`                                                                                                                                                                                |
+| Sessions         | `GET /experimental/session` (global list; falls back to `GET /session` on 404), `GET/POST /session`, `GET/PATCH/DELETE /session/:id`, `GET /session/:id/message`, `POST /session/:id/prompt_async`, `POST /session/:id/command`, `POST /session/:id/abort`, `GET /session/:id/diff`, `POST /session/:id/revert`, `POST /session/:id/unrevert` |
+| Approvals        | `GET /permission`, `POST /permission/:id/reply`, `GET /question`, `POST /question/:id/reply`, `POST /question/:id/reject`                                                                                                                                                                                                                     |
+| Catalog          | `GET /agent`, `GET /command`, `GET /provider`, `GET /config`                                                                                                                                                                                                                                                                                  |
+| Terminal (PTY)   | `GET/POST /api/pty`, `GET/PATCH/DELETE /api/pty/:id`, `POST /api/pty/:id/connect-token`, WS `/api/pty/:id/connect`                                                                                                                                                                                                                            |
 
 ---
 

@@ -88,7 +88,7 @@ npx expo run:android  # Android emulator
 
 ## Connecting
 
-Run `opencode serve --hostname 0.0.0.0 --port 4096` on your machine, then add a connection in the app with your machine's local IP and port 4096.
+Run `opencode serve --hostname 0.0.0.0 --port 4096` on your machine, then add a connection in the app with your machine's local IP and port 4096. Auth is HTTP Basic: username `opencode` + the password from `OPENCODE_SERVER_PASSWORD`. A pairing link can be printed with `opencode pair --url http://<lan-ip>:4096`.
 
 **Dev server**: `100.108.64.76:4096` (Tailscale, hostname `openclaw-dev-1`)
 

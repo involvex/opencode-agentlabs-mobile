@@ -70,8 +70,12 @@ function RootLayout() {
             const client = connectionStore.client;
             if (client) {
               try {
-                await client.permission.reply(data.permissionId, reply);
                 if (data.sessionId) {
+                  await client.permission.reply(
+                    data.sessionId,
+                    data.permissionId,
+                    reply,
+                  );
                   useEvents.setState((state) => ({
                     permissions: {
                       ...state.permissions,

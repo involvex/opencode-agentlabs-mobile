@@ -112,7 +112,7 @@ export async function probeConnection(
   if (parsed.valid) {
     const base = `${parsed.scheme}://${parsed.host}:${parsed.port}`;
     [health, root, internet] = await Promise.all([
-      timedFetch("health", `${base}/global/health`, { headers }),
+      timedFetch("health", `${base}/api/info`, { headers }),
       timedFetch("server-root", `${base}/`, { headers }, { requireOk: false }),
       timedFetch("internet", INTERNET_CHECK_URL),
     ]);

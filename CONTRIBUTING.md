@@ -83,11 +83,20 @@ npx expo start
 You need a running [opencode](https://github.com/sst/opencode) server to test the app end-to-end.
 
 ```bash
-# Install opencode
-npm install -g opencode-ai
+# Install the OpenCode v2 CLI
+npm install -g @opencode/cli
+# or: curl -fsSL https://opencode.ai/v2/install | bash
 
-# Start it in server mode on all interfaces
-OPENCODE_SERVER_PASSWORD=devpassword opencode serve --hostname 0.0.0.0 --port 4096
+# Start it as a background service on all interfaces.
+# Pick your own password — the app authenticates with HTTP Basic auth
+# (username `opencode` + this password). Never commit a real password.
+OPENCODE_SERVER_PASSWORD=<your-password> opencode serve --hostname 0.0.0.0 --port 4096
+```
+
+Optional pairing link for the phone (replace `<lan-ip>` with your machine's LAN IP):
+
+```bash
+opencode pair --url http://<lan-ip>:4096
 ```
 
 In the app, add a connection:

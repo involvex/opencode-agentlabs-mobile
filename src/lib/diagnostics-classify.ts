@@ -80,7 +80,7 @@ export function classify(
   if (root.ok) {
     return {
       classification: "health-failed",
-      summary: `Server is reachable but /global/health failed (HTTP ${health.status ?? "error"}). Likely wrong path, auth, or an old server version.`,
+      summary: `Server is reachable but /api/info failed (HTTP ${health.status ?? "error"}). Likely wrong path, auth, or an old server version.`,
     };
   }
   if (!internet.ok) {
