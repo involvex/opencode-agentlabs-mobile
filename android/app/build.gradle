@@ -92,8 +92,8 @@ android {
         applicationId 'com.involvex.opencodemobile'
         minSdkVersion rootProject.ext.minSdkVersion
         targetSdkVersion rootProject.ext.targetSdkVersion
-        versionCode 40
-        versionName "0.4.14"
+        versionCode 41
+        versionName "0.4.15"
 
         buildConfigField "String", "REACT_NATIVE_RELEASE_LEVEL", "\"${findProperty('reactNativeReleaseLevel') ?: 'stable'}\""
     }
