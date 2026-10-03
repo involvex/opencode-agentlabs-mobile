@@ -78,6 +78,13 @@ export function classify(
   // probe (captive portal, no WAN but Tailscale LAN still up, etc.) must not
   // override it and misreport a reachable server as "no internet".
   if (root.ok) {
+    if (health.status === 401 || health.status === 403) {
+      return {
+        classification: "health-failed",
+        summary:
+          "Server is reachable but rejected the credentials (HTTP 401/403). Re-enter the password (server OPENCODE_SERVER_PASSWORD, username defaults to opencode) and Test again — a blank password field reuses the saved one only after this fix.",
+      };
+    }
     return {
       classification: "health-failed",
       summary: `Server is reachable but /api/info failed (HTTP ${health.status ?? "error"}). Likely wrong path, auth, or an old server version.`,

@@ -216,6 +216,25 @@ export default function EditConnectionScreen() {
     }
 
     setIsTesting(true);
+    // The password field loads blank (stored passwords are never read back
+    // into the form). A blank field means "keep the existing password", not
+    // "test with no password" — fall back to the stored secret so Test does
+    // not 401 against a password-protected server the saved connection
+    // already reaches. A typed value always wins (password rotation). The
+    // ref may not have loaded yet on a fast tap, so read SecureStore
+    // directly as a fallback.
+    let effectivePassword: string | undefined =
+      password || storedPasswordRef.current || undefined;
+    if (!effectivePassword) {
+      try {
+        effectivePassword =
+          (await SecureStore.getItemAsync(
+            `opencode_password_${connection.id}`,
+          )) || undefined;
+      } catch {
+        // ignore — test proceeds unauthenticated and reports the real error
+      }
+    }
     const result = await testConnection(
       {
         id: connection.id,
@@ -226,7 +245,7 @@ export default function EditConnectionScreen() {
         username: username.trim() || undefined,
       },
       "edit_test",
-      password || undefined,
+      effectivePassword,
     );
 
     if (result.ok) {
@@ -239,9 +258,12 @@ export default function EditConnectionScreen() {
     }
 
     // Failed: run active diagnostics, offer a shareable report.
+    // Use the same effective password as the test above — probing with a
+    // blank password when a stored one exists would always 401 and
+    // misreport a working server as "auth failed".
     const report = await probeConnection(
       url.trim(),
-      buildAuth(username, password),
+      buildAuth(username, effectivePassword),
     );
     setIsTesting(false);
 
