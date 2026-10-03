@@ -1,7 +1,7 @@
 import type { TerminalVendor } from "./terminal-assets";
 
-export const XTERM_VERSION = "5.5.0";
-export const XTERM_FIT_VERSION = "0.10.0";
+export const XTERM_VERSION = "6.0.0";
+export const XTERM_FIT_VERSION = "0.11.0";
 
 export interface XtermTheme {
   background: string;
