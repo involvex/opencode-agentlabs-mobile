@@ -393,11 +393,35 @@ export default function SessionScreen() {
   // on every re-render while it remains set.
   useEffect(() => {
     if (!speech.error) return;
+    if (speech.needsSettings) {
+      Alert.alert(
+        t("session.alerts.speechErrorTitle"),
+        t("session.alerts.speechErrorMessage"),
+        [
+          {
+            text: t("common.dismiss"),
+            style: "cancel",
+            onPress: speech.clearError,
+          },
+          {
+            text: t("session.alerts.speechErrorSettings"),
+            onPress: speech.openSettings,
+          },
+        ],
+      );
+      return;
+    }
     Alert.alert(
       t("session.alerts.speechErrorTitle"),
       t("session.alerts.speechErrorMessage"),
     );
-  }, [speech.error, t]);
+  }, [
+    speech.error,
+    speech.needsSettings,
+    speech.clearError,
+    speech.openSettings,
+    t,
+  ]);
 
   // Slash command state
   const slashActive = input.startsWith("/") && !input.includes(" ");

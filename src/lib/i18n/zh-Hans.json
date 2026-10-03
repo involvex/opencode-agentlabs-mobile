@@ -276,7 +276,8 @@
       "attachFiles": "文件",
       "attachPaste": "从剪贴板粘贴",
       "speechErrorTitle": "语音输入失败",
-      "speechErrorMessage": "无法使用语音输入。请检查麦克风权限后重试。"
+      "speechErrorMessage": "无法使用语音输入。请检查麦克风权限后重试。",
+      "speechErrorSettings": "打开设置"
     }
   },
   "connection": {

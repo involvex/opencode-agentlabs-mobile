@@ -276,7 +276,8 @@
       "attachFiles": "Files",
       "attachPaste": "Paste from clipboard",
       "speechErrorTitle": "Voice input failed",
-      "speechErrorMessage": "Could not use voice input. Check your microphone permission and try again."
+      "speechErrorMessage": "Could not use voice input. Check your microphone permission and try again.",
+      "speechErrorSettings": "Open Settings"
     }
   },
   "connection": {

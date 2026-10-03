@@ -1,4 +1,5 @@
 import { useState, useCallback, useRef, useEffect } from "react";
+import { Linking } from "react-native";
 import {
   ExpoSpeechRecognitionModule,
   useSpeechRecognitionEvent,
@@ -8,12 +9,15 @@ interface SpeechState {
   listening: boolean;
   transcript: string;
   error: string | null;
+  needsSettings: boolean;
 }
 
 interface SpeechActions {
   start: () => Promise<void>;
   stop: () => void;
   cancel: () => void;
+  openSettings: () => void;
+  clearError: () => void;
 }
 
 export function useSpeech(
@@ -22,6 +26,7 @@ export function useSpeech(
   const [listening, setListening] = useState(false);
   const [transcript, setTranscript] = useState("");
   const [error, setError] = useState<string | null>(null);
+  const [needsSettings, setNeedsSettings] = useState(false);
   const pending = useRef("");
 
   useSpeechRecognitionEvent("start", () => {
@@ -58,9 +63,23 @@ export function useSpeech(
   });
 
   const start = useCallback(async () => {
-    const result = await ExpoSpeechRecognitionModule.requestPermissionsAsync();
-    if (!result.granted) {
-      setError("Microphone permission denied");
+    setError(null);
+    setNeedsSettings(false);
+    const current = await ExpoSpeechRecognitionModule.getPermissionsAsync();
+    if (!current.granted) {
+      const requested =
+        await ExpoSpeechRecognitionModule.requestPermissionsAsync();
+      if (!requested.granted) {
+        if (requested.canAskAgain === false) {
+          setNeedsSettings(true);
+        }
+        setError("Microphone permission denied");
+        return;
+      }
+    }
+    const services = ExpoSpeechRecognitionModule.getSpeechRecognitionServices();
+    if (services.length === 0) {
+      setError("No speech recognition service available");
       return;
     }
     ExpoSpeechRecognitionModule.start({
@@ -81,6 +100,15 @@ export function useSpeech(
     setTranscript("");
   }, []);
 
+  const openSettings = useCallback(() => {
+    void Linking.openSettings();
+  }, []);
+
+  const clearError = useCallback(() => {
+    setError(null);
+    setNeedsSettings(false);
+  }, []);
+
   // Stop the native recognition session when the screen unmounts — otherwise
   // the mic stays hot in the background. abort() is a no-op when not listening.
   useEffect(() => {
@@ -89,5 +117,15 @@ export function useSpeech(
     };
   }, []);
 
-  return { listening, transcript, error, start, stop, cancel };
+  return {
+    listening,
+    transcript,
+    error,
+    needsSettings,
+    start,
+    stop,
+    cancel,
+    openSettings,
+    clearError,
+  };
 }
