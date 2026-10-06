@@ -9,6 +9,7 @@ import { isAuthError } from "../lib/api-error";
 import { useSettings } from "./settings";
 import { isSessionActuallyIdle } from "../lib/session-status-reconcile";
 import type { Client, Part, Session, Message } from "../lib/sdk";
+import { normalizePermission } from "../lib/permission-normalize";
 
 export interface SSEEvent {
   type: string;
@@ -448,7 +449,8 @@ export const useEvents = create<EventsState>((set, get) => ({
             }
 
             case "permission.asked": {
-              const req = props as any;
+              const raw = props as Record<string, unknown>;
+              const req = normalizePermission(raw);
               if (!req.id || !req.sessionID) break;
               const existing = get().permissions[req.sessionID] || [];
               if (existing.some((item) => item.id === req.id)) break;

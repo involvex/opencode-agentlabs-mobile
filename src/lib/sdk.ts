@@ -34,6 +34,7 @@ import {
   baseName,
 } from "./v2-adapters";
 import type { FileRoot } from "./file-roots";
+import { normalizePermission } from "./permission-normalize";
 
 export interface PtyInfo {
   id: string;
@@ -911,24 +912,7 @@ export function createClient(config: ClientConfig) {
           data?: Record<string, unknown>[];
         }>(config, "/api/permission/request");
         const data = Array.isArray(body?.data) ? body.data : [];
-        return data.map((r) => {
-          const source = r.source as
-            { type?: string; messageID?: string; id?: string } | undefined;
-          return {
-            id: (r.id as string) ?? "",
-            sessionID: (r.sessionID as string) ?? "",
-            permission: (r.action as string) ?? "",
-            patterns: Array.isArray(r.resources)
-              ? (r.resources as string[])
-              : [],
-            metadata: (r.metadata as Record<string, unknown>) ?? {},
-            ...(source?.type === "tool" && source.messageID && source.id
-              ? {
-                  tool: { messageID: source.messageID, callID: source.id },
-                }
-              : {}),
-          };
-        });
+        return data.map((r) => normalizePermission(r));
       },
 
       // V2 replies are session-scoped: POST

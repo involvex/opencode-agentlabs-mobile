@@ -4,7 +4,11 @@ import { useTranslation } from "react-i18next";
 import { useDensity, ds } from "../../lib/density";
 
 interface Props {
-  permission: { id: string; permission: string; patterns: string[] };
+  permission: {
+    id: string;
+    permission?: string | null;
+    patterns?: string[] | null;
+  };
   isDark: boolean;
   onReply: (reply: "once" | "always" | "reject") => void;
 }
@@ -12,6 +16,10 @@ interface Props {
 export function PermissionPrompt({ permission, isDark, onReply }: Props) {
   const { t } = useTranslation();
   const density = useDensity();
+  const patterns = Array.isArray(permission?.patterns)
+    ? permission.patterns.filter((p): p is string => typeof p === "string")
+    : [];
+  const label = permission?.permission || "permission";
   return (
     <View
       style={[
@@ -39,7 +47,8 @@ export function PermissionPrompt({ permission, isDark, onReply }: Props) {
           { ...ds({ fontSize: 13, marginBottom: 12 }, density) },
         ]}
       >
-        {permission.permission}: {permission.patterns.join(", ")}
+        {label}
+        {patterns.length > 0 ? `: ${patterns.join(", ")}` : ""}
       </Text>
       <View style={[s.actions, { ...ds({ gap: 8 }, density) }]}>
         <TouchableOpacity
