@@ -220,7 +220,7 @@ async function ensureChannel() {
   if (Platform.OS !== "android") return;
   await Notifications.setNotificationChannelAsync("prompts", {
     name: "Session Prompts & Updates",
-    importance: Notifications.AndroidImportance.HIGH,
+    importance: 6,
     vibrationPattern: [0, 250, 250, 250],
     sound: "ping",
   });

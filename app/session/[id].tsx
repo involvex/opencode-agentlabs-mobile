@@ -23,7 +23,7 @@ import { useTranslation } from "react-i18next";
 import * as ImagePicker from "expo-image-picker";
 import * as ImageManipulator from "expo-image-manipulator";
 import * as Clipboard from "expo-clipboard";
-import * as expoMediaLibrary from "expo-media-library";
+import * as expoMediaLibrary from "expo-media-library/legacy";
 import type BottomSheet from "@gorhom/bottom-sheet";
 import {
   MessageBubble,
