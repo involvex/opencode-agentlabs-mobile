@@ -434,7 +434,7 @@ export function DirectoryBrowserSheet({
                 {error}
               </Text>
             </View>
-          ) : null
+          ) : undefined
         }
         ListEmptyComponent={
           !loading && !error ? (
@@ -449,7 +449,7 @@ export function DirectoryBrowserSheet({
                 ? t("chat.directoryBrowserSheet.noSubfolders")
                 : t("chat.directoryBrowserSheet.enterPathHint")}
             </Text>
-          ) : null
+          ) : undefined
         }
       />
 

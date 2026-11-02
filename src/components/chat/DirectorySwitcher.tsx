@@ -359,7 +359,7 @@ export function DirectorySwitcher({
             >
               {t("chat.directorySwitcher.recentProjectsLabel")}
             </Text>
-          ) : null
+          ) : undefined
         }
       />
     </BottomSheet>

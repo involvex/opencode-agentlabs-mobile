@@ -13,6 +13,7 @@ import {
   TextInput,
   TouchableOpacity,
   View,
+  type ScrollViewInstance,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { useTranslation } from "react-i18next";
@@ -523,7 +524,7 @@ function LocalTerminalView({
   ]);
   const [input, setInput] = useState("");
   const [executing, setExecuting] = useState(false);
-  const scrollRef = useRef<ScrollView>(null);
+  const scrollRef = useRef<ScrollViewInstance>(null);
   const cwdRef = useRef(sessionDirectory || "/");
   const showKeys = keyboardHeight === 0;
 

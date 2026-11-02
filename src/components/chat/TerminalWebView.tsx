@@ -52,7 +52,7 @@ export default function TerminalWebView({
   handleRef,
   testID,
 }: Props) {
-  const webRef = useRef<WebView>(null);
+  const webRef = useRef<InstanceType<typeof WebView>>(null);
   const [ready, setReady] = useState(false);
   const [failed, setFailed] = useState<string | null>(null);
   const [reloadKey, setReloadKey] = useState(0);

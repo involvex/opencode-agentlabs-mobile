@@ -11,6 +11,7 @@ import {
   ActivityIndicator,
   Alert,
   useWindowDimensions,
+  type TextInputInstance,
 } from "react-native";
 import {
   useLocalSearchParams,
@@ -158,7 +159,7 @@ export default function SessionScreen() {
   const browserSheetRef = useRef<BottomSheet>(null);
   const promptSheetRef = useRef<BottomSheet>(null);
   const helpSheetRef = useRef<BottomSheet>(null);
-  const composerRef = useRef<TextInput>(null);
+  const composerRef = useRef<TextInputInstance>(null);
   const [browseStartDir] = useState<string | null>(null);
   const [input, setInput] = useState(templatePrompt || "");
   const [attachments, setAttachments] = useState<Attachment[]>([]);
@@ -1771,7 +1772,7 @@ export default function SessionScreen() {
                           {t("session.loadingOlder")}
                         </Text>
                       </View>
-                    ) : null
+                    ) : undefined
                   }
                 />
                 {/* Empty state rendered OUTSIDE the inverted list to avoid the

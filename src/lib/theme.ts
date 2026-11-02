@@ -12,7 +12,7 @@ export function resolveTheme(theme: Theme, system: ColorSchemeName): boolean {
 export function useTheme(): boolean {
   const theme = useSettings((s) => s.theme);
   const system = useColorScheme();
-  return resolveTheme(theme, system);
+  return resolveTheme(theme, system ?? "light");
 }
 
 export function useAccentColor(): string {

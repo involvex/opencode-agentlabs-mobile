@@ -6,6 +6,7 @@ import {
   ScrollView,
   StyleSheet,
   Dimensions,
+  type ScrollViewInstance,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { useTranslation } from "react-i18next";
@@ -38,7 +39,7 @@ export function SlashPopover({
   const { t } = useTranslation();
   const { recent, favorites, addRecent, toggleFavorite } = useSlashCommands();
   const density = useDensity();
-  const scrollViewRef = useRef<ScrollView>(null);
+  const scrollViewRef = useRef<ScrollViewInstance>(null);
 
   const filtered = useMemo(() => {
     const raw = filterCommands(query, commands);
